@@ -48,3 +48,17 @@ structures (without having to write/find them) gives me pause.
 Therefore, the ideal state seems to be to move away from threads and rewrite in
 a higher level language. auracle attempts to address these problems and more
 through it's C++ implementation and adoption of Curl's multi API.
+
+This code is all subject to change until a tag is pushed. If you have opinions,
+feature requests, or bug reports, please file issues.
+
+### Building
+
+auracle uses the [meson](http://mesonbuild.com/) build system. To configure,
+build, and install the project:
+
+```sh
+$ meson build -D buildtype=release
+$ ninja -C build
+$ sudo ninja -C build install
+```

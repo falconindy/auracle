@@ -1,0 +1,107 @@
+=head1 NAME
+
+auracle - an AUR client with a focus on flexibility
+
+=head1 SYNOPSIS
+
+I<auracle> [OPTIONS...] COMMAND [ARGS...]
+
+=head1 DESCRIPTION
+
+auracle is a tool for querying information stored by the Arch User Repository
+(AUR). Invoking auracle consists of supplying an operation, any applicable
+options, and usually one or more arguments.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--color=>
+
+Control colored output. Argument must be one of I<auto>, I<never>, or
+I<always>. When set to I<auto>, color will be enabled if stdout is connected
+to a terminal.
+
+This option defaults to I<auto>.
+
+=item B<--connect-timeout=>
+
+Pass an integer to specify a connection timeout, in seconds, for each
+connection made to the AUR. A singled failed connection will result in the
+entire operation failing. If zero, there will be no connection timeout.
+
+This option defaults to 0 (no timeout).
+
+=item B<-h>, B<--help>
+
+Print a short help text and exit.
+
+=item B<--literal>
+
+When used with the B<search> command, interpret all search terms as literal,
+rather than as regular expressions.
+
+=item B<--max-connections=>
+
+Pass an integer value to limit the number of simultaneous connections to the
+AUR backend. If zero, there will be no connection limit.
+
+This option defaults to 0 (no limit).
+
+=item B<--quiet>
+
+When used with the B<search> command, output will be limited to package names
+only.
+
+=item B<-r>, B<--recurse>
+
+When used with the B<download> command, recursively follow and download
+dependencies of each given argument.
+
+=item B<--searchby=>
+
+When used with the B<search> command, change the search dimension. Argument
+must be one of I<name>, I<name-desc>, or I<maintainer>.
+
+This option defaults to I<name-desc>.
+
+=back
+
+
+=head1 COMMANDS
+
+=over 4
+
+=item B<search> I<TERMS>B<...>
+
+Pass one to many arguments to perform a search query. Results will be the
+intersection of all terms. Terms may be a regular expression as described by
+the POSIX extended regex specification.
+
+B<NOTE>: the AUR does not actually support searching by regular expressions
+and support in auracle is implemented on a best-effort basis.
+
+=item B<info> I<PACKAGES>B<...>
+
+Pass one to many arguments to perform an info query.
+
+=item B<sync>
+
+Herp the derp, because splurp.
+
+=item B<download> I<PACKAGES>B<...>
+
+Pass one to many arguments to download packages. Use the B<--recurse> flag
+to download dependencies of packages.
+
+=item B<buildorder> I<PACKAGES>B<...>
+
+Pass one to many arguments to print a build order for the given packages.
+The resulting output will be the total ordering to build all packages.
+
+=back
+
+=head1 AUTHOR
+
+Dave Reisner E<lt>d@falconindy.comE<gt>
+
