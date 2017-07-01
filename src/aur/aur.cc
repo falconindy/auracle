@@ -303,12 +303,12 @@ void Aur::QueueRequest(const Request* request,
 
 void Aur::QueueRpcRequest(const RpcRequest* request,
                           const RpcResponseCallback& callback) {
-  QueueRequest<RpcRequestTraits>(request, std::move(callback));
+  QueueRequest<RpcRequestTraits>(request, callback);
 }
 
 void Aur::QueueDownloadRequest(const DownloadRequest* request,
                                const DownloadResponseCallback& callback) {
-  QueueRequest<DownloadRequestTraits>(request, std::move(callback));
+  QueueRequest<DownloadRequestTraits>(request, callback);
 }
 
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }

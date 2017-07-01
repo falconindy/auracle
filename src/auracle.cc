@@ -7,8 +7,6 @@
 #include <memory>
 #include <regex>
 #include <string_view>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "aur/response.hh"
 #include "format.hh"
@@ -197,17 +195,34 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
     return true;
   };
 
-  std::set<aur::Package, sort::PackageNameLess> packages;
-  for (const auto& arg : args) {
-    aur::SearchRequest request;
-    request.SetSearchBy(by);
-    request.AddArg(allow_regex_ ? SearchFragFromRegex(arg) : std::string(arg));
+  std::vector<aur::SearchRequest> requests(args.size());
+  for (size_t i = 0; i < args.size(); ++i) {
+    auto r = &requests[i];
 
+    r->SetSearchBy(by);
+
+    if (allow_regex_) {
+      auto frag = SearchFragFromRegex(args[i]);
+      if (frag.empty()) {
+        std::cerr << "error: search string '" << std::string(args[i])
+                  << "' insufficient for searching by regular expression."
+                  << std::endl;
+        return 1;
+      }
+      r->AddArg(frag);
+    } else {
+      r->AddArg(args[i]);
+    }
+  }
+
+  std::set<aur::Package, sort::PackageNameLess> packages;
+  for (size_t i = 0; i < args.size(); ++i) {
     aur_.QueueRpcRequest(
-        &request, [&, arg](aur::HttpStatusOr<aur::RpcResponse> response) {
+        &requests[i],
+        [&, arg{args[i]} ](aur::HttpStatusOr<aur::RpcResponse> response) {
           if (!response.ok()) {
-            std::cerr << "requested failed for " << std::string(arg) << ": "
-                      << response.error() << std::endl;
+            std::cerr << "error: request failed for '" << std::string(arg)
+                      << "': " << response.error() << std::endl;
             return 1;
           } else {
             const auto& results = response.value().results;
