@@ -21,7 +21,7 @@ libcurl = dependency('libcurl')
 nlohmann_json_sp = subproject('nlohmann_json')
 
 pod2man = find_program('pod2man')
-ragel = find_program('ragel')
+ragel = find_program('ragel', required : false)
 
 aurlib_sources = '''
   src/aur/aur.cc src/aur/aur.hh
@@ -52,12 +52,14 @@ auracle_sources = '''
   src/inmemory_repo.cc src/inmemory_repo.hh
 '''.split()
 
-gen_ragel = custom_target(
-    'gen-ragel',
-    input : ['src/format_parser.rl'],
-    output : ['format_parser.cc'],
-    command : [ ragel, '@INPUT@', '-o', '@OUTPUT@' ])
-auracle_sources += gen_ragel
+if ragel.found()
+  gen_ragel = custom_target(
+      'gen-ragel',
+      input : ['src/format_parser.rl'],
+      output : ['format_parser.cc'],
+      command : [ ragel, '@INPUT@', '-o', '@OUTPUT@' ])
+  auracle_sources += gen_ragel
+endif
 
 executable(
     'auracle',
