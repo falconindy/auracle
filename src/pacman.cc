@@ -90,7 +90,8 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
                   std::back_inserter(state->ignorepkgs));
       }
     } else {
-      alpm_register_syncdb(state->alpm, state->section.c_str(), 0);
+      alpm_register_syncdb(state->alpm, state->section.c_str(),
+                           static_cast<alpm_siglevel_t>(0));
     }
 
     if (key == "Include") {
