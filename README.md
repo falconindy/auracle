@@ -52,6 +52,15 @@ through it's C++ implementation and adoption of Curl's multi API.
 This code is all subject to change until a tag is pushed. If you have opinions,
 feature requests, or bug reports, please file issues.
 
+### TODO
+
+This code is incomplete. Still remaining to implement:
+
+* Sorting by package fields
+* Custom output formatting
+* Machine-readable output
+* Determine future of `sync` action
+
 ### Building
 
 auracle uses the [meson](http://mesonbuild.com/) build system. To configure,
