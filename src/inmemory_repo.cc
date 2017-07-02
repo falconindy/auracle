@@ -45,7 +45,7 @@ InMemoryRepo::BuildList InMemoryRepo::BuildOrder(
 void InMemoryRepo::Walk(const std::string& name, InMemoryRepo::BuildList* order,
                         std::unordered_set<std::string>* visited) const {
   // TODO: detect and return depcycles rather than blindly breaking/ignoring
-  // them..
+  // them. Perhaps Tarjan would help here.
 
   if (auto iter = visited->find(name); iter != visited->end()) {
     return;

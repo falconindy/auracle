@@ -1,7 +1,7 @@
 #ifndef INMEMORY_REPO_HH
 #define INMEMORY_REPO_HH
 
-#include <map>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "aur/package.hh"
@@ -39,8 +39,8 @@ class InMemoryRepo {
   // We store integer indicies into the packages_ vector above rather than
   // pointers to the packages. This allows the vector to resize and not
   // invalidate our index maps.
-  std::map<std::string, int> index_by_pkgname_;
-  std::map<std::string, int> index_by_pkgbase_;
+  std::unordered_map<std::string, int> index_by_pkgname_;
+  std::unordered_map<std::string, int> index_by_pkgbase_;
 };
 
 }  // namespace dlr
