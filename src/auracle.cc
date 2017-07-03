@@ -408,9 +408,11 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
                                      return p.pkgname == r.name;
                                    });
           if (dlr::Pacman::Vercmp(r.version, iter->pkgver) > 0) {
-            printf("%s %s -> %s\n", terminal::Bold(r.name).c_str(),
-                   terminal::BoldRed(iter->pkgver).c_str(),
-                   terminal::BoldGreen(r.version).c_str());
+            if (options_.quiet) {
+              std::cout << format::NameOnly(r);
+            } else {
+              std::cout << format::Update(*iter, r);
+            }
           }
         }
 
@@ -439,6 +441,7 @@ __attribute__((noreturn)) void usage(void) {
       "  -h --help                Show this help\n"
       "     --version             Show software version\n"
       "\n"
+      "  -q --quiet               Output less, when possible\n"
       "  -r --recurse             Recurse through dependencies on download\n"
       "     --literal             Disallow regex in searches\n"
       "     --searchby=BY         Change search-by dimension\n"

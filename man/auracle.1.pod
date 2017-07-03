@@ -50,8 +50,8 @@ This option defaults to 0 (no limit).
 
 =item B<--quiet>
 
-When used with the B<search> command, output will be limited to package names
-only.
+When used with the B<search> and B<sync> commands, output will be limited to
+package names only.
 
 =item B<-r>, B<--recurse>
 
