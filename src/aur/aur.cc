@@ -165,10 +165,8 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   long response_code;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
-  std::string error;
-  if (!std::string_view(handler->error_buffer).empty()) {
-    error = handler->error_buffer;
-  } else {
+  std::string error = handler->error_buffer;
+  if (error.empty()) {
     if (result == CURLE_OK) {
       if (response_code != 200) {
         error = "HTTP " + std::to_string(response_code);
