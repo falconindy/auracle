@@ -6,7 +6,7 @@ namespace dlr {
 
 std::pair<const aur::Package*, bool> InMemoryRepo::AddPackage(
     aur::Package package) {
-  auto iter = std::find_if(
+  const auto iter = std::find_if(
       packages_.cbegin(), packages_.cend(),
       [&package](const aur::Package& p) { return p.name == package.name; });
   if (iter != packages_.cend()) {
@@ -22,13 +22,13 @@ std::pair<const aur::Package*, bool> InMemoryRepo::AddPackage(
 
 const aur::Package* InMemoryRepo::LookupByPkgname(
     const std::string& pkgname) const {
-  auto iter = index_by_pkgname_.find(pkgname);
+  const auto iter = index_by_pkgname_.find(pkgname);
   return iter == index_by_pkgname_.end() ? nullptr : &packages_[iter->second];
 }
 
 const aur::Package* InMemoryRepo::LookupByPkgbase(
     const std::string& pkgbase) const {
-  auto iter = index_by_pkgbase_.find(pkgbase);
+  const auto iter = index_by_pkgbase_.find(pkgbase);
   return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
 }
 
@@ -47,7 +47,7 @@ void InMemoryRepo::Walk(const std::string& name, InMemoryRepo::BuildList* order,
   // TODO: detect and return depcycles rather than blindly breaking/ignoring
   // them. Perhaps Tarjan would help here.
 
-  if (auto iter = visited->find(name); iter != visited->end()) {
+  if (const auto iter = visited->find(name); iter != visited->end()) {
     return;
   }
 
