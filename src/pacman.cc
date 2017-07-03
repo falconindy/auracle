@@ -10,11 +10,16 @@
 #include <string>
 #include <vector>
 
-namespace {
+namespace std {
 
-struct GlobbufFree {
+template <>
+struct default_delete<glob_t> {
   void operator()(glob_t* globbuf) { globfree(globbuf); }
 };
+
+}  // namespace std
+
+namespace {
 
 std::string& ltrim(std::string& s) {
   s.erase(s.begin(),
@@ -33,6 +38,10 @@ std::string& rtrim(std::string& s) {
 
 std::string& trim(std::string& s) { return ltrim(rtrim(s)); }
 
+bool IsSection(const std::string& s) {
+  return s.size() > 2 && s[0] == '[' && s[s.size() - 1] == ']';
+}
+
 }  // namespace
 
 namespace dlr {
@@ -50,10 +59,6 @@ struct ParseState {
   std::string section;
   std::vector<std::string> ignorepkgs;
 };
-
-bool IsSection(const std::string& s) {
-  return s.size() > 2 && s[0] == '[' && s[s.size() - 1] == ']';
-}
 
 bool ParseOneFile(const std::string& path, ParseState* state) {
   std::ifstream file(path);
@@ -95,7 +100,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     }
 
     if (key == "Include") {
-      std::unique_ptr<glob_t, GlobbufFree> globbuf(new glob_t);
+      auto globbuf = std::make_unique<glob_t>();
 
       if (glob(value.c_str(), GLOB_NOCHECK, nullptr, globbuf.get()) != 0) {
         return false;
@@ -161,10 +166,10 @@ std::vector<Pacman::Package> Pacman::ForeignPackages() const {
 
   for (auto i = alpm_db_get_pkgcache(local_db_); i; i = i->next) {
     const auto pkg = static_cast<alpm_pkg_t*>(i->data);
-    const std::string pkgname(alpm_pkg_get_name(pkg));
+    std::string pkgname(alpm_pkg_get_name(pkg));
 
     if (RepoForPackage(pkgname).empty()) {
-      packages.emplace_back(pkgname, alpm_pkg_get_version(pkg));
+      packages.emplace_back(std::move(pkgname), alpm_pkg_get_version(pkg));
     }
   }
 
