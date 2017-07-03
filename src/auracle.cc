@@ -408,9 +408,12 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
                                      return p.pkgname == r.name;
                                    });
           if (dlr::Pacman::Vercmp(r.version, iter->pkgver) > 0) {
-            printf("%s %s -> %s\n", terminal::Bold(r.name).c_str(),
-                   terminal::BoldRed(iter->pkgver).c_str(),
-                   terminal::BoldGreen(r.version).c_str());
+            if (options_.quiet)
+              printf("%s\n", r.name.c_str());
+            else
+              printf("%s %s -> %s\n", terminal::Bold(r.name).c_str(),
+                     terminal::BoldRed(iter->pkgver).c_str(),
+                     terminal::BoldGreen(r.version).c_str());
           }
         }
 
@@ -445,6 +448,7 @@ __attribute__((noreturn)) void usage(void) {
       "     --connect-timeout=N   Set connection timeout in seconds\n"
       "     --max-connections=N   Limit active connections\n"
       "     --color=WHEN          One of 'auto', 'never', or 'always'\n"
+      "     --quiet               Only display package names when searching or syncing\n"
       "\n"
       "Commands:\n"
       "  search\n"
