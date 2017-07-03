@@ -87,7 +87,10 @@ Pass one to many arguments to perform an info query.
 
 =item B<sync>
 
-Herp the derp, because splurp.
+Pass one to many arguments to check for newer versions existing in the AUR.
+Each argument is assumed to be a package installed locally using B<pacman>(8).
+If no arguments are given, pacman is queried for all foreign packages as an
+input to this operation.
 
 =item B<download> I<PACKAGES>B<...>
 
