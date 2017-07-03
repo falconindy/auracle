@@ -27,6 +27,11 @@ using SearchBy = aur::SearchRequest::SearchBy;
 
 namespace {
 
+int ErrorNotEnoughArgs() {
+  std::cerr << "error: not enough arguments." << std::endl;
+  return 1;
+}
+
 template <typename Container>
 void FormatLong(std::ostream& os, const Container& packages) {
   for (const auto& p : packages) {
@@ -142,6 +147,10 @@ std::string SearchFragFromRegex(const std::string& s) {
 }
 
 int Auracle::Info(const std::vector<PackageOrDependency>& args) {
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
+
   aur::InfoRequest request;
 
   for (const auto& arg : args) {
@@ -163,6 +172,10 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
 }
 
 int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
+
   std::vector<std::regex> patterns;
   for (const auto& arg : args) {
     try {
@@ -341,8 +354,11 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 
 int Auracle::Download(const std::vector<PackageOrDependency>& args,
                       bool recurse) {
-  PackageIterator iter(recurse, /* download = */ true);
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
 
+  PackageIterator iter(recurse, /* download = */ true);
   IteratePackages(args, &iter);
 
   if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
@@ -353,8 +369,11 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
 }
 
 int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args) {
-  PackageIterator iter(/* recurse = */ true, /* download = */ false);
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
 
+  PackageIterator iter(/* recurse = */ true, /* download = */ false);
   IteratePackages(args, &iter);
 
   if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
@@ -450,11 +469,11 @@ __attribute__((noreturn)) void usage(void) {
       "     --color=WHEN          One of 'auto', 'never', or 'always'\n"
       "\n"
       "Commands:\n"
-      "  search\n"
-      "  info\n"
-      "  download\n"
-      "  sync\n"
-      "  buildorder\n",
+      "  buildorder               Show build order\n"
+      "  download                 Download tarball snapshots\n"
+      "  info                     Show detailed information\n"
+      "  search                   Search for packages\n"
+      "  sync                     Check for updates for foreign packages\n",
       stdout);
   exit(0);
 }
@@ -616,7 +635,7 @@ int main(int argc, char** argv) {
     return auracle.BuildOrder(args);
   }
 
-  std::cerr << "bad action" << std::endl;
+  std::cerr << "Unknown action " << action << std::endl;
   return 1;
 }
 
