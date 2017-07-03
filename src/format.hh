@@ -6,6 +6,7 @@
 #include <variant>
 
 #include "aur/package.hh"
+#include "pacman.hh"
 
 namespace format {
 
@@ -37,6 +38,16 @@ struct Long {
 
  private:
   const aur::Package& package;
+};
+
+struct Update {
+ Update(const dlr::Pacman::Package& from, const aur::Package& to) : from(from), to(to) {}
+
+ friend std::ostream& operator<<(std::ostream& os, const Update& u);
+
+ private:
+  const dlr::Pacman::Package& from;
+  const aur::Package& to;
 };
 
 // TODO: custom formatting

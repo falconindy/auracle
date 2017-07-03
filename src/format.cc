@@ -244,4 +244,13 @@ std::ostream& operator<<(std::ostream& os, const Long& l) {
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const Update& u) {
+  namespace t = terminal;
+
+  os << t::Bold(u.from.pkgver) << " " << t::BoldRed(u.from.pkgver) << " -> "
+     << t::BoldGreen(u.to.version) << std::endl;
+
+  return os;
+}
+
 }  // namespace format
