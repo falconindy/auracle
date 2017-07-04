@@ -247,7 +247,7 @@ std::ostream& operator<<(std::ostream& os, const Long& l) {
 std::ostream& operator<<(std::ostream& os, const Update& u) {
   namespace t = terminal;
 
-  os << t::Bold(u.from.pkgver) << " " << t::BoldRed(u.from.pkgver) << " -> "
+  os << t::Bold(u.from.pkgname) << " " << t::BoldRed(u.from.pkgver) << " -> "
      << t::BoldGreen(u.to.version) << std::endl;
 
   return os;
