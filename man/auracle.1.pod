@@ -72,7 +72,7 @@ This option defaults to I<name-desc>.
 
 =over 4
 
-=item B<search> I<TERMS>B<...>
+=item B<search> I<TERMS>...
 
 Pass one to many arguments to perform a search query. Results will be the
 intersection of all terms. Terms may be a regular expression as described by
@@ -81,23 +81,23 @@ the POSIX extended regex specification.
 B<NOTE>: the AUR does not actually support searching by regular expressions
 and support in auracle is implemented on a best-effort basis.
 
-=item B<info> I<PACKAGES>B<...>
+=item B<info> I<PACKAGES>...
 
 Pass one to many arguments to perform an info query.
 
-=item B<sync>
+=item B<sync> [I<PACKAGES>...]
 
 Pass one to many arguments to check for newer versions existing in the AUR.
 Each argument is assumed to be a package installed locally using B<pacman>(8).
 If no arguments are given, pacman is queried for all foreign packages as an
 input to this operation.
 
-=item B<download> I<PACKAGES>B<...>
+=item B<download> I<PACKAGES>...
 
 Pass one to many arguments to download packages. Use the B<--recurse> flag
 to download dependencies of packages.
 
-=item B<buildorder> I<PACKAGES>B<...>
+=item B<buildorder> I<PACKAGES>...
 
 Pass one to many arguments to print a build order for the given packages.
 The resulting output will be the total ordering to build all packages.
