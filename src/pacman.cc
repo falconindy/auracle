@@ -161,6 +161,16 @@ bool Pacman::PackageIsInstalled(const std::string& package) const {
   return alpm_find_satisfier(cache, package.c_str()) != nullptr;
 }
 
+std::variant<bool, Pacman::Package> Pacman::GetLocalPackage(
+    const std::string& name) const {
+  auto* pkg = alpm_db_get_pkg(local_db_, name.c_str());
+  if (pkg == nullptr) {
+    return false;
+  }
+
+  return Package{alpm_pkg_get_name(pkg), alpm_pkg_get_version(pkg)};
+}
+
 std::vector<Pacman::Package> Pacman::ForeignPackages() const {
   std::vector<Package> packages;
 

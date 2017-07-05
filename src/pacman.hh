@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <alpm.h>
@@ -42,6 +43,8 @@ class Pacman {
   // A list of installed packages which are not found in any currently enabled
   // Sync DB.
   std::vector<Package> ForeignPackages() const;
+
+  std::variant<bool, Package> GetLocalPackage(const std::string& name) const;
 
  private:
   Pacman(alpm_handle_t* alpm, std::vector<std::string> ignored_packages);
