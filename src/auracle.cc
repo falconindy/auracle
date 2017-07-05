@@ -37,7 +37,8 @@ void FormatLong(std::ostream& os, const Container& packages,
                 const dlr::Pacman* pacman) {
   for (const auto& p : packages) {
     auto local_pkg = pacman->GetLocalPackage(p.name);
-    os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg));
+    os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg))
+       << std::endl;
   }
 }
 
