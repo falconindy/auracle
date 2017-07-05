@@ -160,18 +160,31 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
     request.AddArg(arg);
   }
 
+  int resultcount = 0;
   aur_.QueueRpcRequest(
-      &request, [this](aur::HttpStatusOr<aur::RpcResponse> response) {
+      &request,
+      [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error()
                     << std::endl;
         } else {
-          FormatLong(std::cout, response.value().results, pacman_);
+          const auto& result = response.value();
+          FormatLong(std::cout, result.results, pacman_);
+          resultcount = result.resultcount;
         }
         return 0;
       });
 
-  return aur_.Wait();
+  auto r = aur_.Wait();
+  if (r) {
+    return r;
+  }
+
+  if (resultcount == 0) {
+    return 1;
+  }
+
+  return 0;
 }
 
 int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
