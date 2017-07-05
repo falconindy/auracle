@@ -30,7 +30,7 @@ DEFINE_VECTOR_DEPENDENCY_FIELD(MakeDepends, makedepends);
 DEFINE_VECTOR_STRING_FIELD(Conflicts, conflicts);
 DEFINE_VECTOR_STRING_FIELD(Groups, groups);
 DEFINE_VECTOR_STRING_FIELD(Keywords, keywords);
-DEFINE_VECTOR_STRING_FIELD(Licenses, licenses);
+DEFINE_VECTOR_STRING_FIELD(License, licenses);
 DEFINE_VECTOR_STRING_FIELD(OptDepends, optdepends);
 DEFINE_VECTOR_STRING_FIELD(Provides, provides);
 DEFINE_VECTOR_STRING_FIELD(Replaces, replaces);
@@ -103,7 +103,7 @@ void from_json(const nlohmann::json& j, Package& p) {
   Store<fields::Conflicts>(j, p);
   Store<fields::Groups>(j, p);
   Store<fields::Keywords>(j, p);
-  Store<fields::Licenses>(j, p);
+  Store<fields::License>(j, p);
   Store<fields::OptDepends>(j, p);
   Store<fields::Provides>(j, p);
   Store<fields::Replaces>(j, p);
