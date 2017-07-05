@@ -181,6 +181,34 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
   return os;
 }
 
+struct Version {
+  const aur::Package* p = nullptr;
+  const dlr::Pacman::Package* l = nullptr;
+};
+
+std::ostream& FormatFieldValue(
+    std::ostream& os, const std::string_view field,
+    const Version& version) {
+  const auto* p = version.p;
+  const auto* l = version.l;
+
+  namespace t = terminal;
+  const auto aur_ver_color = p->out_of_date ? &t::BoldRed : &t::BoldGreen;
+
+  os << Field(field) << aur_ver_color(p->version);
+
+  if (l != nullptr) {
+    const auto local_ver_color = dlr::Pacman::Vercmp(l->pkgver, p->version) < 0
+                                     ? &t::BoldRed
+                                     : &t::BoldGreen;
+    os << " [installed: " << local_ver_color(l->pkgver) << "]";
+  }
+
+  os << std::endl;
+
+  return os;
+}
+
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, const NameOnly& n) {
@@ -207,11 +235,10 @@ std::ostream& operator<<(std::ostream& os, const Long& l) {
   namespace t = terminal;
 
   const auto& p = l.package;
-  const auto ood_color = p.out_of_date ? &t::BoldRed : &t::BoldGreen;
 
   os << FieldValue("Repository", t::BoldMagenta("aur"));
   os << FieldValue("Name", p.name);
-  os << FieldValue("Version", ood_color(p.version));
+  os << FieldValue("Version", Version{&l.package, l.local_package});
 
   if (p.name != p.pkgbase) {
     os << FieldValue("PackageBase", p.pkgbase);

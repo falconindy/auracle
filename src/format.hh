@@ -31,19 +31,22 @@ struct Short {
 };
 
 struct Long {
-  Long(const aur::Package& package) : package(package) {}
+  Long(const aur::Package& package, const dlr::Pacman::Package* local_package)
+      : package(package), local_package(local_package) {}
   ~Long() = default;
 
   friend std::ostream& operator<<(std::ostream& os, const Long& f);
 
  private:
   const aur::Package& package;
+  const dlr::Pacman::Package* local_package;
 };
 
 struct Update {
- Update(const dlr::Pacman::Package& from, const aur::Package& to) : from(from), to(to) {}
+  Update(const dlr::Pacman::Package& from, const aur::Package& to)
+      : from(from), to(to) {}
 
- friend std::ostream& operator<<(std::ostream& os, const Update& u);
+  friend std::ostream& operator<<(std::ostream& os, const Update& u);
 
  private:
   const dlr::Pacman::Package& from;

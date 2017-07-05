@@ -33,9 +33,11 @@ int ErrorNotEnoughArgs() {
 }
 
 template <typename Container>
-void FormatLong(std::ostream& os, const Container& packages) {
+void FormatLong(std::ostream& os, const Container& packages,
+                const dlr::Pacman* pacman) {
   for (const auto& p : packages) {
-    os << format::Long(p);
+    auto local_pkg = pacman->GetLocalPackage(p.name);
+    os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg));
   }
 }
 
@@ -158,12 +160,12 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
   }
 
   aur_.QueueRpcRequest(
-      &request, [](aur::HttpStatusOr<aur::RpcResponse> response) {
+      &request, [this](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error()
                     << std::endl;
         } else {
-          FormatLong(std::cout, response.value().results);
+          FormatLong(std::cout, response.value().results, pacman_);
         }
         return 0;
       });
