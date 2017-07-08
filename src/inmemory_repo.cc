@@ -32,39 +32,35 @@ const aur::Package* InMemoryRepo::LookupByPkgbase(
   return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
 }
 
-InMemoryRepo::BuildList InMemoryRepo::BuildOrder(
-    const std::string& name) const {
-  BuildList order;
+void InMemoryRepo::WalkDependencies(
+    const std::string& name,
+    std::function<void(const aur::Package*)> cb) const {
   std::unordered_set<std::string> visited;
 
-  Walk(name, &order, &visited);
-
-  return order;
-};
-
-void InMemoryRepo::Walk(const std::string& name, InMemoryRepo::BuildList* order,
-                        std::unordered_set<std::string>* visited) const {
-  // TODO: detect and return depcycles rather than blindly breaking/ignoring
-  // them. Perhaps Tarjan would help here.
-
-  if (const auto iter = visited->find(name); iter != visited->end()) {
-    return;
-  }
-
-  const auto pkg = LookupByPkgname(name);
-  if (pkg == nullptr) {
-    return;
-  }
-
-  for (const auto* deplist :
-       {&pkg->depends, &pkg->makedepends, &pkg->checkdepends}) {
-    for (const auto& dep : *deplist) {
-      Walk(dep.name, order, visited);
+  std::function<void(std::string)> walk;
+  walk = [this, &visited, &walk, &cb](const std::string& n) {
+    if (visited.find(n) != visited.end()) {
+      return;
     }
-  }
 
-  order->emplace_back(pkg);
-  visited->insert(pkg->name);
+    const auto pkg = LookupByPkgname(n);
+    if (pkg == nullptr) {
+      return;
+    }
+
+    visited.insert(pkg->name);
+
+    for (const auto* deplist :
+         {&pkg->depends, &pkg->makedepends, &pkg->checkdepends}) {
+      for (const auto& dep : *deplist) {
+        walk(dep.name);
+      }
+    }
+
+    cb(pkg);
+  };
+
+  walk(name);
 }
 
 }  // namespace dlr

@@ -292,7 +292,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
       continue;
     }
 
-    if (auto repo = pacman_->RepoForPackage(arg); !repo.empty()) {
+    if (const auto repo = pacman_->RepoForPackage(arg); !repo.empty()) {
       std::cout << std::string(arg) << " is available in " << repo << std::endl;
       continue;
     }
@@ -398,21 +398,21 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args) {
 
   std::vector<const aur::Package*> total_ordering;
   for (const auto& arg : args) {
-    auto name = std::string(arg);
-    const auto order = iter.package_repo.BuildOrder(name);
-    std::copy(order.cbegin(), order.cend(), std::back_inserter(total_ordering));
+    const auto name = std::string(arg);
+
+    iter.package_repo.WalkDependencies(
+        name, [&total_ordering](const aur::Package* package) {
+          total_ordering.push_back(package);
+        });
   }
 
+  // TODO: dedupe for when multiple args given.
   for (const auto& p : total_ordering) {
-    if (pacman_->PackageIsInstalled(p->name)) {
+    if (pacman_->DependencyIsSatisfied(p->name)) {
       continue;
     }
 
-    if (pacman_->RepoForPackage(p->name).empty()) {
-      std::cout << "BUILD " << p->name << std::endl;
-    } else {
-      std::cout << "INSTALL " << p->name << std::endl;
-    }
+    std::cout << "BUILD " << p->name << std::endl;
   }
 
   return 0;

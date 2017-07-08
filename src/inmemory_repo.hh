@@ -1,6 +1,7 @@
 #ifndef INMEMORY_REPO_HH
 #define INMEMORY_REPO_HH
 
+#include <functional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -26,14 +27,10 @@ class InMemoryRepo {
 
   int size() const { return packages_.size(); }
 
-  using BuildList = std::vector<const aur::Package*>;
-
-  BuildList BuildOrder(const std::string& name) const;
+  void WalkDependencies(const std::string& name,
+                        std::function<void(const aur::Package*)> cb) const;
 
  private:
-  void Walk(const std::string& name, BuildList* order,
-            std::unordered_set<std::string>* visited) const;
-
   std::vector<aur::Package> packages_;
 
   // We store integer indicies into the packages_ vector above rather than

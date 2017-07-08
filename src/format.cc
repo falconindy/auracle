@@ -186,9 +186,8 @@ struct Version {
   const dlr::Pacman::Package* l = nullptr;
 };
 
-std::ostream& FormatFieldValue(
-    std::ostream& os, const std::string_view field,
-    const Version& version) {
+std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
+                               const Version& version) {
   const auto* p = version.p;
   const auto* l = version.l;
 

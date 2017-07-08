@@ -38,7 +38,7 @@ class Pacman {
   // if the package was not found in any repo.
   std::string RepoForPackage(const std::string& package) const;
 
-  bool PackageIsInstalled(const std::string& package) const;
+  bool DependencyIsSatisfied(const std::string& package) const;
 
   // A list of installed packages which are not found in any currently enabled
   // Sync DB.

@@ -156,7 +156,7 @@ std::string Pacman::RepoForPackage(const std::string& package) const {
   return std::string();
 }
 
-bool Pacman::PackageIsInstalled(const std::string& package) const {
+bool Pacman::DependencyIsSatisfied(const std::string& package) const {
   auto* cache = alpm_db_get_pkgcache(local_db_);
   return alpm_find_satisfier(cache, package.c_str()) != nullptr;
 }
