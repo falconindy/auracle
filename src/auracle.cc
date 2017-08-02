@@ -285,6 +285,8 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 
   for (const auto& arg : args) {
     if (pacman_->ShouldIgnorePackage(arg)) {
+      std::cout << std::string(arg) << " is being ignored in "
+                << kPacmanConf << "." << std::endl;
       continue;
     }
 
