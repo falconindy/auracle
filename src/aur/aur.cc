@@ -246,24 +246,22 @@ int Aur::Wait() {
 }
 
 struct RpcRequestTraits {
-  enum : bool { need_headers = false };
+  enum : bool { kNeedHeaders = false };
 
   using CallbackType = Aur::RpcResponseCallback;
   using ResponseHandlerType = RpcResponseHandler;
 
-  static constexpr char kEncoding[] = "";
+  static constexpr char const* kEncoding = "";
 };
-constexpr char RpcRequestTraits::kEncoding[];
 
 struct DownloadRequestTraits {
-  enum : bool { need_headers = true };
+  enum : bool { kNeedHeaders = true };
 
   using CallbackType = Aur::DownloadResponseCallback;
   using ResponseHandlerType = DownloadResponseHandler;
 
-  static constexpr char kEncoding[] = "identity";
+  static constexpr char const* kEncoding = "identity";
 };
-constexpr char DownloadRequestTraits::kEncoding[];
 
 template <typename RequestType>
 void Aur::QueueRequest(const Request* request,
@@ -290,7 +288,7 @@ void Aur::QueueRequest(const Request* request,
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout_);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
 
-    if (RequestType::need_headers) {
+    if (RequestType::kNeedHeaders) {
       curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &RH::HeaderCallback);
       curl_easy_setopt(curl, CURLOPT_HEADERDATA, response_handler);
     }
