@@ -18,8 +18,6 @@ libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
 
-nlohmann_json_sp = subproject('nlohmann_json')
-
 pod2man = find_program('pod2man')
 ragel = find_program('ragel', required : false)
 
@@ -36,12 +34,9 @@ aurlib = static_library(
     aurlib_sources,
     include_directories : [
         include_directories('src'),
-        nlohmann_json_sp.get_variable('nlohmann_json_inc')
+        include_directories('/usr/include/nlohmann')
     ],
-    dependencies : [
-        libcurl,
-        nlohmann_json_sp.get_variable('nlohmann_json_dep')
-    ])
+    dependencies : [libcurl])
 
 auracle_sources = '''
   src/auracle.cc src/auracle.hh
@@ -82,4 +77,3 @@ man = custom_target(
     ],
     install : true,
     install_dir : join_paths(get_option('mandir'), 'man1'))
-
