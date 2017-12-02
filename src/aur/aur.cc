@@ -50,12 +50,13 @@ bool ConsumePrefix(ci_string_view* view, ci_string_view prefix) {
   return true;
 }
 
-struct ResponseHandler {
+class ResponseHandler {
+ public:
   virtual ~ResponseHandler() = default;
 
   static size_t DataCallback(char* ptr, size_t size, size_t nmemb,
                              void* userdata) {
-    ResponseHandler* const handler = static_cast<ResponseHandler*>(userdata);
+    auto* handler = static_cast<ResponseHandler*>(userdata);
 
     handler->body.append(ptr, size * nmemb);
 
@@ -64,7 +65,7 @@ struct ResponseHandler {
 
   static size_t HeaderCallback(char* buffer, size_t size, size_t nitems,
                                void* userdata) {
-    ResponseHandler* const handler = static_cast<ResponseHandler*>(userdata);
+    auto* handler = static_cast<ResponseHandler*>(userdata);
 
     // Remove 2 bytes to ignore trailing \r\n
     ci_string_view header(buffer, size * nitems - 2);
@@ -105,39 +106,44 @@ struct ResponseHandler {
   }
 };
 
-struct RpcResponseHandler : public ResponseHandler {
-  RpcResponseHandler(Aur::RpcResponseCallback cb_) : cb(std::move(cb_)) {}
+class RpcResponseHandler : public ResponseHandler {
+ public:
+  RpcResponseHandler(Aur::RpcResponseCallback callback)
+      : callback_(std::move(callback)) {}
 
   int RunCallback(const std::string& error) const override {
     if (!error.empty()) {
-      return cb(error);
+      return callback_(error);
     }
 
     auto json = aur::RpcResponse::Parse(body);
     if (!json.error.empty()) {
-      return cb(json.error);
+      return callback_(json.error);
     }
 
-    return cb(std::move(json));
+    return callback_(std::move(json));
   }
 
-  Aur::RpcResponseCallback cb;
+ private:
+  const Aur::RpcResponseCallback callback_;
 };
 
-struct DownloadResponseHandler : public ResponseHandler {
-  DownloadResponseHandler(Aur::DownloadResponseCallback cb_)
-      : cb(std::move(cb_)) {}
+class DownloadResponseHandler : public ResponseHandler {
+ public:
+  DownloadResponseHandler(Aur::DownloadResponseCallback callback)
+      : callback_(std::move(callback)) {}
 
   int RunCallback(const std::string& error) const override {
-    if (error.empty()) {
-      return cb(DownloadResponse{std::move(content_disposition_filename),
-                                 std::move(body)});
-    } else {
-      return cb(error);
+    if (!error.empty()) {
+      return callback_(error);
     }
+
+    return callback_(DownloadResponse{std::move(content_disposition_filename),
+                                      std::move(body)});
   }
 
-  Aur::DownloadResponseCallback cb;
+ private:
+  const Aur::DownloadResponseCallback callback_;
 };
 
 }  // namespace
