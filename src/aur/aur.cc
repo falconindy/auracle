@@ -87,7 +87,7 @@ class ResponseHandler {
   void FilenameFromHeader(ci_string_view value) {
     constexpr char kFilenameKey[] = "filename=";
 
-    auto pos = value.find(kFilenameKey);
+    const auto pos = value.find(kFilenameKey);
     if (pos == std::string_view::npos) {
       return;
     }
@@ -102,7 +102,7 @@ class ResponseHandler {
     // 1) filename is either quoted or the last
     // 2) filename is never a path (contains no slashes)
     ConsumePrefix(&value, "\"");
-    content_disposition_filename = std::string(value.data(), value.find('"'));
+    content_disposition_filename.assign(value.data(), value.find('"'));
   }
 };
 
@@ -168,22 +168,23 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   ResponseHandler* handler;
   curl_easy_getinfo(curl, CURLINFO_PRIVATE, &handler);
 
+  std::unique_ptr<ResponseHandler> handler_deleter(handler);
+
   long response_code;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
-  std::string error = handler->error_buffer;
-  if (error.empty()) {
-    if (result == CURLE_OK) {
-      if (response_code != 200) {
-        error = "HTTP " + std::to_string(response_code);
-      }
-    } else {
-      error = curl_easy_strerror(result);
+  std::string error;
+  if (result == CURLE_OK) {
+    if (response_code != 200) {
+      error = "HTTP " + std::to_string(response_code);
     }
+  } else {
+    error = strlen(handler->error_buffer) > 0
+        ? handler->error_buffer
+        : curl_easy_strerror(result);
   }
 
   auto r = dispatch_callback ? handler->RunCallback(error) : 0;
-  delete handler;
 
   active_requests_.erase(curl);
   curl_multi_remove_handle(curl_multi_, curl);
@@ -223,21 +224,17 @@ void Aur::Cancel() {
 
 int Aur::Wait() {
   while (!active_requests_.empty()) {
-    int nfd, rc = curl_multi_wait(curl_multi_, NULL, 0, 1000, &nfd);
-    if (rc != CURLM_OK) {
-      fprintf(stderr, "error: curl_multi_wait failed (%d)\n", rc);
-      return 1;
-    }
-
-    if (nfd < 0) {
-      fprintf(stderr, "error: poll error, possible network problem\n");
-      return 1;
-    }
-
     int active;
-    rc = curl_multi_perform(curl_multi_, &active);
+    auto rc = curl_multi_perform(curl_multi_, &active);
     if (rc != CURLM_OK) {
       fprintf(stderr, "error: curl_multi_perform failed (%d)\n", rc);
+      return 1;
+    }
+
+    int nfd;
+    rc = curl_multi_wait(curl_multi_, NULL, 0, 1000, &nfd);
+    if (rc != CURLM_OK) {
+      fprintf(stderr, "error: curl_multi_wait failed (%d)\n", rc);
       return 1;
     }
 
