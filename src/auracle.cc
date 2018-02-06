@@ -451,7 +451,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
           }
         }
 
-        return 1;
+        return 0;
       });
 
   return aur_.Wait();
