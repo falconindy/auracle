@@ -553,13 +553,8 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         flags->allow_regex = false;
         break;
       case SEARCHBY:
-        if (sv_optarg == "name") {
-          flags->search_by = SearchBy::NAME;
-        } else if (sv_optarg == "name-desc") {
-          flags->search_by = SearchBy::NAME_DESC;
-        } else if (sv_optarg == "maintainer") {
-          flags->search_by = SearchBy::MAINTAINER;
-        } else {
+        flags->search_by = aur::SearchRequest::ParseSearchBy(sv_optarg);
+        if (flags->search_by == SearchBy::INVALID) {
           std::cerr << "error: invalid arg to --searchby: " << sv_optarg
                     << std::endl;
           return false;

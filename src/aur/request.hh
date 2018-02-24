@@ -85,10 +85,35 @@ class InfoRequest : public RpcRequest {
 class SearchRequest : public RpcRequest {
  public:
   enum class SearchBy {
+    INVALID,
     NAME,
     NAME_DESC,
     MAINTAINER,
+    DEPENDS,
+    MAKEDEPENDS,
+    OPTDEPENDS,
+    CHECKDEPENDS,
   };
+
+  static SearchBy ParseSearchBy(std::string_view searchby) {
+    if (searchby == "name") {
+      return SearchBy::NAME;
+    } else if (searchby == "name-desc") {
+      return SearchBy::NAME_DESC;
+    } else if (searchby == "maintainer") {
+      return SearchBy::MAINTAINER;
+    } else if (searchby == "depends") {
+      return SearchBy::DEPENDS;
+    } else if (searchby == "makedepends") {
+      return SearchBy::MAKEDEPENDS;
+    } else if (searchby == "optdepends") {
+      return SearchBy::OPTDEPENDS;
+    } else if (searchby == "checkdepends") {
+      return SearchBy::CHECKDEPENDS;
+    } else {
+      return SearchBy::INVALID;
+    }
+  }
 
   SearchRequest() : RpcRequest() { AddParam("type", "search"); }
 
@@ -105,11 +130,17 @@ class SearchRequest : public RpcRequest {
         return "name-desc";
       case SearchBy::MAINTAINER:
         return "maintainer";
+      case SearchBy::DEPENDS:
+        return "depends";
+      case SearchBy::MAKEDEPENDS:
+        return "makedepends";
+      case SearchBy::OPTDEPENDS:
+        return "optdepends";
+      case SearchBy::CHECKDEPENDS:
+        return "checkdepends";
+      default:
+        return "";
     }
-
-    // impossible, but gcc complains that this function might have no return
-    // value.
-    return "";
   }
 };
 
