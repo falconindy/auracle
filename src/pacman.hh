@@ -55,6 +55,6 @@ class Pacman {
   std::vector<std::string> ignored_packages_;
 };
 
-}  // namespace
+}  // namespace dlr
 
 #endif  // PACMAN_HH

@@ -248,7 +248,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
   for (size_t i = 0; i < args.size(); ++i) {
     aur_.QueueRpcRequest(
         &requests[i],
-        [&, arg{args[i]} ](aur::HttpStatusOr<aur::RpcResponse> response) {
+        [&, arg{args[i]}](aur::HttpStatusOr<aur::RpcResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed for '" << std::string(arg)
                       << "': " << response.error() << std::endl;
@@ -300,72 +300,75 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
     info_request.AddArg(arg);
   }
 
-  aur_.QueueRpcRequest(&info_request, [
-    this, state, want{std::move(args)}
-  ](aur::HttpStatusOr<aur::RpcResponse> response) {
-    if (!response.ok()) {
-      std::cerr << "error: request failed: " << response.error() << std::endl;
-      return 1;
-    }
+  aur_.QueueRpcRequest(
+      &info_request, [this, state, want{std::move(args)}](
+                         aur::HttpStatusOr<aur::RpcResponse> response) {
+        if (!response.ok()) {
+          std::cerr << "error: request failed: " << response.error()
+                    << std::endl;
+          return 1;
+        }
 
-    const auto& results = response.value().results;
+        const auto& results = response.value().results;
 
-    for (const auto& p : NotFoundPackages(want, results, state->package_repo)) {
-      std::cerr << "no results found for " << p << std::endl;
-    }
+        for (const auto& p :
+             NotFoundPackages(want, results, state->package_repo)) {
+          std::cerr << "no results found for " << p << std::endl;
+        }
 
-    for (auto& result : results) {
-      // check for the pkgbase existing in our repo
-      const bool have_pkgbase =
-          state->package_repo.LookupByPkgbase(result.pkgbase) != nullptr;
+        for (auto& result : results) {
+          // check for the pkgbase existing in our repo
+          const bool have_pkgbase =
+              state->package_repo.LookupByPkgbase(result.pkgbase) != nullptr;
 
-      // Regardless, try to add the package, as it might be another member of
-      // the same pkgbase.
-      auto[p, added] = state->package_repo.AddPackage(std::move(result));
+          // Regardless, try to add the package, as it might be another member
+          // of the same pkgbase.
+          auto [p, added] = state->package_repo.AddPackage(std::move(result));
 
-      if (!added || have_pkgbase) {
-        continue;
-      }
-
-      if (state->download) {
-        aur::DownloadRequest request(*p);
-        aur_.QueueDownloadRequest(&request, [
-          this, pkgbase{p->pkgbase}
-        ](aur::HttpStatusOr<aur::DownloadResponse> response) {
-          if (!response.ok()) {
-            std::cerr << "error: request failed: " << response.error()
-                      << std::endl;
-            return 1;
+          if (!added || have_pkgbase) {
+            continue;
           }
 
-          std::cout << "download complete: " << pwd_.get() << "/" << pkgbase
-                    << std::endl;
-          return ExtractArchive(response.value().archive_bytes);
-        });
-      }
+          if (state->download) {
+            aur::DownloadRequest request(*p);
+            aur_.QueueDownloadRequest(
+                &request,
+                [this, pkgbase{p->pkgbase}](
+                    aur::HttpStatusOr<aur::DownloadResponse> response) {
+                  if (!response.ok()) {
+                    std::cerr << "error: request failed: " << response.error()
+                              << std::endl;
+                    return 1;
+                  }
 
-      if (state->recurse) {
-        std::vector<PackageOrDependency> alldeps;
-        alldeps.reserve(p->depends.size() + p->makedepends.size() +
-                        p->checkdepends.size());
+                  std::cout << "download complete: " << pwd_.get() << "/"
+                            << pkgbase << std::endl;
+                  return ExtractArchive(response.value().archive_bytes);
+                });
+          }
 
-        for (const auto* deparray :
-             {&p->depends, &p->makedepends, &p->checkdepends}) {
-          for (const auto& dep : *deparray) {
-            if (!pacman_->RepoForPackage(dep.depstring).empty()) {
-              continue;
+          if (state->recurse) {
+            std::vector<PackageOrDependency> alldeps;
+            alldeps.reserve(p->depends.size() + p->makedepends.size() +
+                            p->checkdepends.size());
+
+            for (const auto* deparray :
+                 {&p->depends, &p->makedepends, &p->checkdepends}) {
+              for (const auto& dep : *deparray) {
+                if (!pacman_->RepoForPackage(dep.depstring).empty()) {
+                  continue;
+                }
+
+                alldeps.push_back(dep);
+              }
             }
 
-            alldeps.push_back(dep);
+            IteratePackages(std::move(alldeps), state);
           }
         }
 
-        IteratePackages(std::move(alldeps), state);
-      }
-    }
-
-    return 0;
-  });
+        return 0;
+      });
 }
 
 int Auracle::Download(const std::vector<PackageOrDependency>& args,

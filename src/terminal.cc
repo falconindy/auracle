@@ -11,7 +11,7 @@ namespace terminal {
 namespace {
 static int g_cached_columns = -1;
 static WantColor g_want_color = WantColor::AUTO;
-}
+}  // namespace
 
 void Init(WantColor want) {
   if (want == WantColor::AUTO) {
