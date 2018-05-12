@@ -77,3 +77,6 @@ man = custom_target(
     ],
     install : true,
     install_dir : join_paths(get_option('mandir'), 'man1'))
+
+clang_format = run_target(
+  'fmt', command : ['clang-format', '-i', '--style=Google' ] + auracle_sources)
