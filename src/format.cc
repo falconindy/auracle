@@ -40,7 +40,6 @@ std::ostream& float_precision(std::ostream& os) {
 class Field {
  public:
   static constexpr int kIndentSize = 17;
-  static constexpr int kDelimSize = 2;
 
   explicit Field(const std::string_view field) : field_(field) {}
 
