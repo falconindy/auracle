@@ -11,9 +11,11 @@ namespace aur {
 
 namespace {
 
+using QueryParam = std::pair<std::string, std::string>;
+
 class EncodedParam {
  public:
-  EncodedParam(const std::pair<std::string, std::string>& kv) : kv_(kv) {}
+  EncodedParam(const QueryParam& kv) : kv_(kv) {}
 
   friend std::ostream& operator<<(std::ostream& os, const EncodedParam& param) {
     std::unique_ptr<char> escaped(curl_easy_escape(
@@ -23,7 +25,7 @@ class EncodedParam {
   }
 
  private:
-  const std::pair<std::string, std::string>& kv_;
+  const QueryParam& kv_;
 };
 
 }  // namespace
@@ -60,7 +62,7 @@ std::string Querystring::Build() {
     return size;
   };
 
-  auto param_size = [](const std::pair<std::string, std::string>& kv) {
+  auto param_size = [](const QueryParam& kv) {
     // Size of key, plus '=', and worst case scenario for value size.
     return kv.first.size() + 1 + kv.second.size() * 3;
   };
