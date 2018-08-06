@@ -1,0 +1,70 @@
+#!/bin/bash
+
+__contains_word () {
+  local w word=$1; shift
+
+  for w in "$@"; do
+    [[ $w = "$word" ]] && return 0
+  done
+
+  return 1
+}
+
+_auracle() {
+  local cur=${COMP_WORDS[COMP_CWORD]} prev=${COMP_WORDS[COMP_CWORD-1]}
+  local i verb comps mode
+
+  local -A OPTS=(
+         [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
+                [ARG]='--searchby --connect-timeout --max-connections --color'
+  )
+
+  if __contains_word "$prev" ${OPTS[ARG]}; then
+    case $prev in
+      '--color')
+        comps='always never auto'
+        ;;
+      '--searchby')
+        comps='name name-desc maintainer depends makedepends optdepends checkdepends'
+        ;;
+    esac
+
+    COMPREPLY=($(compgen -W '$comps' -- "$cur"))
+    return 0
+  fi
+
+  if [[ "$cur" = -* ]]; then
+    COMPREPLY=( $(compgen -W '${OPTS[*]}' -- "$cur") )
+    return 0
+  fi
+
+  local -A VERBS=(
+      [AUR_PACKAGES]='buildorder download info'
+    [LOCAL_PACKAGES]='sync'
+              [NONE]='search'
+  )
+
+  for ((i=0; i < COMP_CWORD; i++)); do
+    if __contains_word "${COMP_WORDS[i]}" ${VERBS[*]} &&
+      ! __contains_word "${COMP_WORDS[i-1]}" ${OPTS[ARG]}; then
+      verb=${COMP_WORDS[i]}
+      break
+    fi
+  done
+
+
+  if [[ -z $verb ]]; then
+    comps=${VERBS[*]}
+  elif __contains_word "$verb" ${VERBS[AUR_PACKAGES]}; then
+    if (( ${#cur} >= 2 )); then
+      comps=$(auracle search --quiet "$cur" 2>/dev/null)
+    fi
+  elif __contains_word "$verb" ${VERBS[LOCAL_PACKAGES]}; then
+    comps=$(pacman -Qmq)
+  fi
+
+  COMPREPLY=($(compgen -W '$comps' -- "$cur"))
+  return 0
+}
+
+complete -F _auracle auracle

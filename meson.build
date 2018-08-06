@@ -68,5 +68,10 @@ man = custom_target(
     install : true,
     install_dir : join_paths(get_option('mandir'), 'man1'))
 
+install_data(
+  files('extra/bash_completion'),
+  rename : ['auracle'],
+  install_dir : join_paths(get_option('datadir'), 'bash-completion/completions'))
+
 run_target(
   'fmt', command : ['clang-format', '-i', '--style=Google' ] + auracle_sources)
