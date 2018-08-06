@@ -19,7 +19,6 @@ libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
 
 pod2man = find_program('pod2man')
-ragel = find_program('ragel', required : false)
 
 aurlib_sources = '''
   src/aur/aur.cc src/aur/aur.hh
@@ -47,15 +46,6 @@ auracle_sources = '''
   src/inmemory_repo.cc src/inmemory_repo.hh
 '''.split()
 
-if ragel.found()
-  gen_ragel = custom_target(
-      'gen-ragel',
-      input : ['src/format_parser.rl'],
-      output : ['format_parser.cc'],
-      command : [ ragel, '@INPUT@', '-o', '@OUTPUT@' ])
-  auracle_sources += gen_ragel
-endif
-
 executable(
     'auracle',
     auracle_sources,
@@ -78,5 +68,5 @@ man = custom_target(
     install : true,
     install_dir : join_paths(get_option('mandir'), 'man1'))
 
-clang_format = run_target(
+run_target(
   'fmt', command : ['clang-format', '-i', '--style=Google' ] + auracle_sources)
