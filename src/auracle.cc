@@ -203,27 +203,6 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
     }
   }
 
-  auto matches = [&patterns, &by](const aur::Package& p) -> bool {
-    for (const auto& re : patterns) {
-      switch (by) {
-        case SearchBy::NAME:
-          if (!std::regex_search(p.name, re)) {
-            return false;
-          }
-        case SearchBy::NAME_DESC:
-          if (!std::regex_search(p.name, re) &&
-              !std::regex_search(p.description, re)) {
-            return false;
-          }
-        // No support for filtering regex on maintainer
-        default:
-          break;
-      }
-    }
-
-    return true;
-  };
-
   std::vector<aur::SearchRequest> requests(args.size());
   for (size_t i = 0; i < args.size(); ++i) {
     auto r = &requests[i];
@@ -244,6 +223,24 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
     }
   }
 
+  const auto matches = [&patterns, by](const aur::Package& p) -> bool {
+    return std::all_of(patterns.begin(), patterns.end(),
+                       [&p, by](const std::regex& re) {
+                         switch (by) {
+                           case SearchBy::NAME:
+                             return std::regex_search(p.name, re);
+                           case SearchBy::NAME_DESC:
+                             return std::regex_search(p.name, re) ||
+                                    std::regex_search(p.description, re);
+                           default:
+                             // The AUR only matches maintainer and *depends
+                             // fields exactly so there's no point in doing
+                             // additional filtering on these types.
+                             return true;
+                         }
+                       });
+  };
+
   std::set<aur::Package, sort::PackageNameLess> packages;
   for (size_t i = 0; i < args.size(); ++i) {
     aur_.QueueRpcRequest(
@@ -255,11 +252,9 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
             return 1;
           } else {
             const auto& results = response.value().results;
-            std::copy_if(
-                std::make_move_iterator(results.begin()),
-                std::make_move_iterator(results.end()),
-                std::inserter(packages, packages.end()),
-                [&matches](const aur::Package& p) { return matches(p); });
+            std::copy_if(std::make_move_iterator(results.begin()),
+                         std::make_move_iterator(results.end()),
+                         std::inserter(packages, packages.end()), matches);
           }
           return 0;
         });
