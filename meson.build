@@ -2,7 +2,7 @@ project('auracle', 'cpp',
         version : '0',
         license : 'MIT',
         default_options : [
-          'cpp_std=c++1z',
+          'cpp_std=c++17',
         ])
 
 conf = configuration_data()
