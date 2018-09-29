@@ -325,11 +325,10 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
           }
 
           if (state->download) {
-            aur::DownloadRequest request(*p);
-            aur_.QueueDownloadRequest(
-                &request,
-                [this, pkgbase{p->pkgbase}](
-                    aur::HttpStatusOr<aur::DownloadResponse> response) {
+            aur::RawRequest request(aur::RawRequest::UrlForTarball(*p));
+            aur_.QueueTarballRequest(
+                &request, [this, pkgbase{p->pkgbase}](
+                              aur::HttpStatusOr<aur::RawResponse> response) {
                   if (!response.ok()) {
                     std::cerr << "error: request failed: " << response.error()
                               << std::endl;
@@ -338,7 +337,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 
                   std::cout << "download complete: " << pwd_.get() << "/"
                             << pkgbase << std::endl;
-                  return ExtractArchive(response.value().archive_bytes);
+                  return ExtractArchive(response.value().bytes);
                 });
           }
 
@@ -376,6 +375,63 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   IteratePackages(args, &iter);
 
   if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
+
+  aur::InfoRequest info_request;
+  for (const auto& arg : args) {
+    info_request.AddArg(arg);
+  }
+
+  int resultcount = 0;
+  aur_.QueueRpcRequest(
+      &info_request,
+      [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
+        if (!response.ok()) {
+          std::cerr << "request failed: " << response.error() << std::endl;
+          return 0;
+        }
+
+        resultcount = response.value().resultcount;
+
+        const bool print_header = response.value().results.size() > 1;
+
+        std::vector<aur::RawRequest> requests;
+        for (const auto& arg : response.value().results) {
+          const auto& r =
+              requests.emplace_back(aur::RawRequest::UrlForPkgbuild(arg));
+          aur_.QueuePkgbuildRequest(
+              &r, [print_header, pkgbase{arg.pkgbase}](
+                      const aur::HttpStatusOr<aur::RawResponse> response) {
+                if (!response.ok()) {
+                  std::cerr << "request failed: " << response.error()
+                            << std::endl;
+                  return 1;
+                }
+
+                if (print_header) {
+                  std::cout << "### BEGIN " << pkgbase << "/PKGBUILD"
+                            << std::endl;
+                }
+                std::cout << response.value().bytes << std::endl;
+                return 0;
+              });
+        }
+
+        return 0;
+      });
+
+  aur_.Wait();
+
+  if (resultcount == 0) {
     return 1;
   }
 
@@ -486,6 +542,7 @@ __attribute__((noreturn)) void usage(void) {
       "  buildorder               Show build order\n"
       "  download                 Download tarball snapshots\n"
       "  info                     Show detailed information\n"
+      "  pkgbuild                 Show PKGBUILDs\n"
       "  search                   Search for packages\n"
       "  sync                     Check for updates for foreign packages\n",
       stdout);
@@ -642,6 +699,8 @@ int main(int argc, char** argv) {
     return auracle.Sync(args);
   } else if (action == "buildorder") {
     return auracle.BuildOrder(args);
+  } else if (action == "pkgbuild") {
+    return auracle.Pkgbuild(args);
   }
 
   std::cerr << "Unknown action " << action << std::endl;

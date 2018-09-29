@@ -79,8 +79,12 @@ class ResponseHandler {
 
   virtual int RunCallback(const std::string& error) const = 0;
 
+  void set_filename_hint(const std::string& filename_hint) {
+    this->filename_hint = filename_hint;
+  }
+
   std::string body;
-  std::string content_disposition_filename;
+  std::string filename_hint;
   char error_buffer[CURL_ERROR_SIZE]{};
 
  private:
@@ -102,7 +106,7 @@ class ResponseHandler {
     // 1) filename is either quoted or the last
     // 2) filename is never a path (contains no slashes)
     ConsumePrefix(&value, "\"");
-    content_disposition_filename.assign(value.data(), value.find('"'));
+    filename_hint.assign(value.data(), value.find('"'));
   }
 };
 
@@ -128,9 +132,9 @@ class RpcResponseHandler : public ResponseHandler {
   const Aur::RpcResponseCallback callback_;
 };
 
-class DownloadResponseHandler : public ResponseHandler {
+class RawResponseHandler : public ResponseHandler {
  public:
-  DownloadResponseHandler(Aur::DownloadResponseCallback callback)
+  RawResponseHandler(Aur::RawResponseCallback callback)
       : callback_(std::move(callback)) {}
 
   int RunCallback(const std::string& error) const override {
@@ -138,18 +142,18 @@ class DownloadResponseHandler : public ResponseHandler {
       return callback_(error);
     }
 
-    return callback_(DownloadResponse{std::move(content_disposition_filename),
-                                      std::move(body)});
+    return callback_(RawResponse{std::move(filename_hint),
+                                 std::move(body)});
   }
 
  private:
-  const Aur::DownloadResponseCallback callback_;
+  const Aur::RawResponseCallback callback_;
 };
 
 }  // namespace
 
 Aur::Aur(const std::string& baseurl) : baseurl_(baseurl) {
-  assert(curl_global_init(CURL_GLOBAL_SSL) == 0);
+  curl_global_init(CURL_GLOBAL_SSL);
   curl_multi_ = curl_multi_init();
   curl_multi_setopt(curl_multi_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
 }
@@ -255,15 +259,27 @@ struct RpcRequestTraits {
   using ResponseHandlerType = RpcResponseHandler;
 
   static constexpr char const* kEncoding = "";
+  static constexpr char const* kFilenameHint = nullptr;
 };
 
 struct DownloadRequestTraits {
   enum : bool { kNeedHeaders = true };
 
-  using CallbackType = Aur::DownloadResponseCallback;
-  using ResponseHandlerType = DownloadResponseHandler;
+  using CallbackType = Aur::RawResponseCallback;
+  using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "identity";
+  static constexpr char const* kFilenameHint = nullptr;
+};
+
+struct PkgbuildRequestTraits {
+  enum : bool { kNeedHeaders = false };
+
+  using CallbackType = Aur::RawResponseCallback;
+  using ResponseHandlerType = RawResponseHandler;
+
+  static constexpr char const* kEncoding = "";
+  static constexpr char const* kFilenameHint = "PKGBUILD";
 };
 
 template <typename RequestType>
@@ -296,6 +312,10 @@ void Aur::QueueRequest(const Request* request,
       curl_easy_setopt(curl, CURLOPT_HEADERDATA, response_handler);
     }
 
+    if (RequestType::kFilenameHint) {
+      response_handler->set_filename_hint(RequestType::kFilenameHint);
+    }
+
     StartRequest(curl);
   }
 }
@@ -305,9 +325,14 @@ void Aur::QueueRpcRequest(const RpcRequest* request,
   QueueRequest<RpcRequestTraits>(request, callback);
 }
 
-void Aur::QueueDownloadRequest(const DownloadRequest* request,
-                               const DownloadResponseCallback& callback) {
+void Aur::QueueTarballRequest(const RawRequest* request,
+                              const RawResponseCallback& callback) {
   QueueRequest<DownloadRequestTraits>(request, callback);
+}
+
+void Aur::QueuePkgbuildRequest(const RawRequest* request,
+                               const RawResponseCallback& callback) {
+  QueueRequest<PkgbuildRequestTraits>(request, callback);
 }
 
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }

@@ -108,13 +108,23 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
   return requests;
 }
 
-std::vector<std::string> DownloadRequest::Build(
-    const std::string& baseurl) const {
+// static
+std::string RawRequest::UrlForTarball(const Package& package) {
+  return package.aur_urlpath;
+}
+
+// static
+std::string RawRequest::UrlForPkgbuild(const Package& package) {
+  return "/cgit/aur.git/plain/PKGBUILD?h=" + package.pkgbase;
+}
+
+std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
   std::stringstream ss;
 
   ss << baseurl << urlpath_;
 
   return {ss.str()};
 }
+
 
 }  // namespace aur

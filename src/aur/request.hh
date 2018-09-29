@@ -48,15 +48,17 @@ class Request {
   virtual std::vector<std::string> Build(const std::string& baseurl) const = 0;
 };
 
-// A download request describes a GET request for a snapshot tarball.
-class DownloadRequest : public Request {
+class RawRequest : public Request {
  public:
-  DownloadRequest(const Package& package) : urlpath_(package.aur_urlpath) {}
+  static std::string UrlForTarball(const Package& package);
+  static std::string UrlForPkgbuild(const Package& package);
+
+  RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
  private:
-  std::string urlpath_;
+  const std::string urlpath_;
 };
 
 // A base class describing a GET request to the RPC endpoint of the AUR.

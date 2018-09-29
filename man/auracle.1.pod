@@ -102,6 +102,10 @@ to download dependencies of packages.
 Pass one to many arguments to print a build order for the given packages.
 The resulting output will be the total ordering to build all packages.
 
+=item B<pkgbuild> I<PACKAGES>...
+
+Pass one to many arguments to print the PKGBUILDs for the given packages.
+
 =back
 
 =head1 AUTHOR

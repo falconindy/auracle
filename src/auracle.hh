@@ -90,6 +90,7 @@ class Auracle {
   int Download(const std::vector<PackageOrDependency>& args, bool recurse);
   int Sync(const std::vector<PackageOrDependency>& args);
   int BuildOrder(const std::vector<PackageOrDependency>& args);
+  int Pkgbuild(const std::vector<PackageOrDependency>& args);
 
  private:
   struct PackageIterator {

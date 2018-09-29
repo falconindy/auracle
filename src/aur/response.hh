@@ -29,9 +29,9 @@ struct RpcResponse {
   static RpcResponse Parse(const std::string& json_bytes);
 };
 
-struct DownloadResponse {
-  std::string filename;
-  std::string archive_bytes;
+struct RawResponse {
+  std::string filename_hint;
+  std::string bytes;
 };
 
 }  // namespace aur

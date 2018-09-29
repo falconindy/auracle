@@ -39,7 +39,7 @@ _auracle() {
   fi
 
   local -A VERBS=(
-      [AUR_PACKAGES]='buildorder download info'
+      [AUR_PACKAGES]='buildorder download pkgbuild info'
     [LOCAL_PACKAGES]='sync'
               [NONE]='search'
   )

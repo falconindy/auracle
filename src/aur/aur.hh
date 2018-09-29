@@ -17,8 +17,7 @@ namespace aur {
 class Aur {
  public:
   using RpcResponseCallback = std::function<int(HttpStatusOr<RpcResponse>)>;
-  using DownloadResponseCallback =
-      std::function<int(HttpStatusOr<DownloadResponse>)>;
+  using RawResponseCallback = std::function<int(HttpStatusOr<RawResponse>)>;
 
   // Construct a new Aur object, rooted at the given URL, e.g.
   // https://aur.archlinux.org.
@@ -44,8 +43,11 @@ class Aur {
 
   // Asynchronously issue a download request. The callback will be invoked when
   // the call completes.
-  void QueueDownloadRequest(const DownloadRequest* request,
-                            const DownloadResponseCallback& callback);
+  void QueueTarballRequest(const RawRequest* request,
+                           const RawResponseCallback& callback);
+
+  void QueuePkgbuildRequest(const RawRequest* request,
+                            const RawResponseCallback& callback);
 
   // Wait for all pending requests to complete. Returns non-zero if any request
   // failed or was cancelled by a callback.
