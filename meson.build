@@ -17,6 +17,8 @@ add_project_arguments('-include', 'config.h', language : 'cpp')
 libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
+gtest = dependency('gtest', required : false)
+gmock = dependency('gmock', required : false)
 
 pod2man = find_program('pod2man')
 
@@ -74,4 +76,26 @@ install_data(
   install_dir : join_paths(get_option('datadir'), 'bash-completion/completions'))
 
 run_target(
-  'fmt', command : ['clang-format', '-i', '--style=Google' ] + auracle_sources)
+  'fmt', command : [
+    'find',
+    '-name', '*.[ch][ch]',
+    '-exec', 'clang-format', '-i', '-style=Google', '{}', '+'
+  ])
+
+tests = [
+  'src/aur/request_test.cc'
+]
+
+if gtest.found() and gmock.found()
+  foreach input : tests
+    basename = input.split('/')[-1].split('.')[0]
+
+    test(
+      basename,
+      executable(
+        basename,
+        input,
+        link_with : [aurlib],
+        dependencies : [gtest, gmock]))
+    endforeach
+endif
