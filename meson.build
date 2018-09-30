@@ -8,17 +8,34 @@ project('auracle', 'cpp',
 conf = configuration_data()
 conf.set('PACKAGE_VERSION', meson.project_version())
 
+cpp = meson.get_compiler('cpp')
+
 configure_file(
     output : 'config.h',
     configuration : conf)
 
 add_project_arguments('-include', 'config.h', language : 'cpp')
 
+possible_cpp_flags = []
+possible_link_flags = []
+if get_option('buildtype') != 'debug'
+        possible_cpp_flags += [
+                '-ffunction-sections',
+                '-fdata-sections',
+        ]
+
+        possible_link_flags += '-Wl,--gc-sections'
+endif
+
+add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
+add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
+
 libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
+stdcppfs = cpp.find_library('stdc++fs')
 
 pod2man = find_program('pod2man')
 
