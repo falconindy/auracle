@@ -46,6 +46,8 @@ class Aur {
   void QueueTarballRequest(const RawRequest* request,
                            const RawResponseCallback& callback);
 
+  // Asynchronous issue a PKGBUILD request. The callbcak will be invoked when
+  // the call complete.
   void QueuePkgbuildRequest(const RawRequest* request,
                             const RawResponseCallback& callback);
 
@@ -72,6 +74,6 @@ class Aur {
   std::unordered_set<CURL*> active_requests_;
 };
 
-}  // namespace
+}  // namespace aur
 
 #endif  // AUR_HH

@@ -48,6 +48,7 @@ class Request {
   virtual std::vector<std::string> Build(const std::string& baseurl) const = 0;
 };
 
+// A class describing a GET request for an arbitrary URL on the AUR.
 class RawRequest : public Request {
  public:
   static std::string UrlForTarball(const Package& package);

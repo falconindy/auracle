@@ -142,8 +142,7 @@ class RawResponseHandler : public ResponseHandler {
       return callback_(error);
     }
 
-    return callback_(RawResponse{std::move(filename_hint),
-                                 std::move(body)});
+    return callback_(RawResponse{std::move(filename_hint), std::move(body)});
   }
 
  private:
@@ -183,9 +182,8 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
       error = "HTTP " + std::to_string(response_code);
     }
   } else {
-    error = strlen(handler->error_buffer) > 0
-        ? handler->error_buffer
-        : curl_easy_strerror(result);
+    error = strlen(handler->error_buffer) > 0 ? handler->error_buffer
+                                              : curl_easy_strerror(result);
   }
 
   auto r = dispatch_callback ? handler->RunCallback(error) : 0;

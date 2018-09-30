@@ -126,5 +126,4 @@ std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
   return {ss.str()};
 }
 
-
 }  // namespace aur
