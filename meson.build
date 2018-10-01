@@ -69,7 +69,7 @@ executable(
     'auracle',
     auracle_sources,
     link_with : [aurlib],
-    dependencies : [libarchive, libalpm],
+    dependencies : [libarchive, libalpm, stdcppfs],
     install : true)
 
 man = custom_target(

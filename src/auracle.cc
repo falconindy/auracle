@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <locale.h>
 
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <regex>
@@ -22,6 +23,8 @@
 
 constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
 constexpr char kPacmanConf[] = "/etc/pacman.conf";
+
+namespace fs = std::filesystem;
 
 using SearchBy = aur::SearchRequest::SearchBy;
 
@@ -327,7 +330,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
           if (state->download) {
             aur::RawRequest request(aur::RawRequest::UrlForTarball(*p));
             aur_.QueueTarballRequest(
-                &request, [this, pkgbase{p->pkgbase}](
+                &request, [pkgbase{p->pkgbase}](
                               aur::HttpStatusOr<aur::RawResponse> response) {
                   if (!response.ok()) {
                     std::cerr << "error: request failed: " << response.error()
@@ -335,8 +338,10 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                     return 1;
                   }
 
-                  std::cout << "download complete: " << pwd_.get() << "/"
-                            << pkgbase << std::endl;
+                  std::cout
+                      << "download complete: "
+                      << (fs::current_path() / pkgbase).string()
+                      << std::endl;
                   return ExtractArchive(response.value().bytes);
                 });
           }

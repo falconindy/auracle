@@ -74,8 +74,7 @@ class Auracle {
       : options_(std::move(options)),
         aur_(options_.aur_baseurl),
         allow_regex_(options_.allow_regex),
-        pacman_(options_.pacman),
-        pwd_(getcwd(nullptr, 0)) {
+        pacman_(options_.pacman) {
     aur_.SetMaxConnections(options_.max_connections);
     aur_.SetConnectTimeout(options_.connection_timeout);
   }
@@ -110,7 +109,6 @@ class Auracle {
   aur::Aur aur_;
   bool allow_regex_;
   dlr::Pacman* const pacman_;
-  std::unique_ptr<char> pwd_;
 };
 
 #endif  // AURACLE_HH
