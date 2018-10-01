@@ -41,7 +41,7 @@ Print a short help text and exit.
 When used with the B<search> command, interpret all search terms as literal,
 rather than as regular expressions.
 
-=item B<--max-connections=>
+=item B<--max-connections=>I<N>
 
 Pass an integer value to limit the number of simultaneous connections to the
 AUR backend. If zero, there will be no connection limit.
@@ -58,10 +58,11 @@ package names only.
 When used with the B<download> command, recursively follow and download
 dependencies of each given argument.
 
-=item B<--searchby=>
+=item B<--searchby=>I<BY>
 
-When used with the B<search> command, change the search dimension. Argument
-must be one of I<name>, I<name-desc>, or I<maintainer>.
+When used with the B<search> command, change the search dimension. I<BY> must
+be one of I<name>, I<name-desc>, I<maintainer>, I<depends>, I<makedepends>,
+I<optdepends>, or I<checkdepends>.
 
 This option defaults to I<name-desc>.
 
