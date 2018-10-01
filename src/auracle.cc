@@ -337,7 +337,8 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                     return 1;
                   }
 
-                  std::cout << "download complete: " << pwd_.get() << "/"
+                  std::cout << "download complete: "
+                            << getcwd(nullptr, 0) << "/"
                             << pkgbase << std::endl;
                   return ExtractArchive(response.value().archive_bytes);
                 });
