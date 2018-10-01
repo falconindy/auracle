@@ -486,7 +486,7 @@ __attribute__((noreturn)) void usage(void) {
       "\n"
       "  -q --quiet               Output less, when possible\n"
       "  -r --recurse             Recurse through dependencies on download\n"
-      "  -C --directory=PATH      Change directory before download\n"
+      "  -C DIR, --directory=DIR  Change directory before download\n"
       "     --literal             Disallow regex in searches\n"
       "     --searchby=BY         Change search-by dimension\n"
       "     --connect-timeout=N   Set connection timeout in seconds\n"
