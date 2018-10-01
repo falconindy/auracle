@@ -1,5 +1,6 @@
 #include "auracle.hh"
 
+#include <errno.h>
 #include <getopt.h>
 #include <locale.h>
 
@@ -76,7 +77,6 @@ int ExtractArchive(const std::string& archive_bytes) {
 
   while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
     r = archive_read_extract(archive, entry, archive_flags);
-    /* NOOP ON ARCHIVE_{OK,WARN,RETRY} */
     if (r == ARCHIVE_FATAL || r == ARCHIVE_WARN) {
       r = archive_errno(archive);
       break;
@@ -89,7 +89,7 @@ int ExtractArchive(const std::string& archive_bytes) {
   archive_read_close(archive);
   archive_read_free(archive);
 
-  return 0;
+  return r;
 }
 
 std::vector<std::string> NotFoundPackages(
@@ -338,11 +338,17 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                     return 1;
                   }
 
-                  std::cout
-                      << "download complete: "
-                      << (fs::current_path() / pkgbase).string()
-                      << std::endl;
-                  return ExtractArchive(response.value().bytes);
+                  int r = ExtractArchive(response.value().bytes);
+                  if (r != 0) {
+                    std::cerr << "error: failed to extract tarball for "
+                              << pkgbase << ": " << strerror(r) << std::endl;
+                    return r;
+                  }
+
+                  std::cout << "download complete: "
+                            << (fs::current_path() / pkgbase).string()
+                            << std::endl;
+                  return 0;
                 });
           }
 
