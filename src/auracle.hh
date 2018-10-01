@@ -1,6 +1,7 @@
 #ifndef AURACLE_HH
 #define AURACLE_HH
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -83,7 +84,8 @@ class Auracle {
   int Info(const std::vector<PackageOrDependency>& args);
   int Search(const std::vector<PackageOrDependency>& args,
              aur::SearchRequest::SearchBy by);
-  int Download(const std::vector<PackageOrDependency>& args, bool recurse);
+  int Download(const std::vector<PackageOrDependency>& args, bool recurse,
+               const std::filesystem::path& directory);
   int Sync(const std::vector<PackageOrDependency>& args);
   int BuildOrder(const std::vector<PackageOrDependency>& args);
   int Pkgbuild(const std::vector<PackageOrDependency>& args);

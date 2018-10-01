@@ -16,7 +16,7 @@ _auracle() {
 
   local -A OPTS=(
          [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
-                [ARG]='--searchby --connect-timeout --max-connections --color'
+                [ARG]='-C --chdir --searchby --connect-timeout --max-connections --color'
   )
 
   if __contains_word "$prev" ${OPTS[ARG]}; then
@@ -26,6 +26,10 @@ _auracle() {
         ;;
       '--searchby')
         comps='name name-desc maintainer depends makedepends optdepends checkdepends'
+        ;;
+      '-C'|'--chdir')
+        comps=$(compgen -A directory -- "$cur" )
+        compopt -o filenames
         ;;
     esac
 

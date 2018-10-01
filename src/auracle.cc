@@ -377,9 +377,19 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 }
 
 int Auracle::Download(const std::vector<PackageOrDependency>& args,
-                      bool recurse) {
+                      bool recurse, const fs::path& directory) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
+  }
+
+  if (!directory.empty()) {
+    try {
+      fs::current_path(directory);
+    } catch (const fs::filesystem_error& err) {
+      std::cerr << "error: failed to change directory to " << directory << ": "
+                << err.code().message() << std::endl;
+      return 1;
+    }
   }
 
   PackageIterator iter(recurse, /* download = */ true);
@@ -530,6 +540,7 @@ struct Flags {
   bool allow_regex = true;
   bool quiet = false;
   terminal::WantColor color = terminal::WantColor::AUTO;
+  fs::path directory;
 };
 
 __attribute__((noreturn)) void usage(void) {
@@ -538,16 +549,17 @@ __attribute__((noreturn)) void usage(void) {
       "\n"
       "Query the AUR or download snapshots of packages.\n"
       "\n"
-      "  -h --help                Show this help\n"
-      "     --version             Show software version\n"
+      "  -h, --help               Show this help\n"
+      "      --version            Show software version\n"
       "\n"
-      "  -q --quiet               Output less, when possible\n"
-      "  -r --recurse             Recurse through dependencies on download\n"
-      "     --literal             Disallow regex in searches\n"
-      "     --searchby=BY         Change search-by dimension\n"
-      "     --connect-timeout=N   Set connection timeout in seconds\n"
-      "     --max-connections=N   Limit active connections\n"
-      "     --color=WHEN          One of 'auto', 'never', or 'always'\n"
+      "  -q, --quiet              Output less, when possible\n"
+      "  -r, --recurse            Recurse through dependencies on download\n"
+      "      --literal            Disallow regex in searches\n"
+      "      --searchby=BY        Change search-by dimension\n"
+      "      --connect-timeout=N  Set connection timeout in seconds\n"
+      "      --max-connections=N  Limit active connections\n"
+      "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
+      "  -C DIR, --chdir=DIR      Change directory to DIR before downloading\n"
       "\n"
       "Commands:\n"
       "  buildorder               Show build order\n"
@@ -581,6 +593,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "quiet",             no_argument,       0, 'q' },
       { "recurse",           no_argument,       0, 'r' },
 
+      { "chdir",             required_argument, 0, 'C' },
       { "color",             required_argument, 0, COLOR },
       { "connect-timeout",   required_argument, 0, CONNECT_TIMEOUT },
       { "literal",           no_argument,       0, LITERAL },
@@ -602,8 +615,8 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
     return true;
   };
 
-  int opt, optidx;
-  while ((opt = getopt_long(*argc, *argv, "hqr", opts, &optidx)) != -1) {
+  int opt;
+  while ((opt = getopt_long(*argc, *argv, "C:hqr", opts, nullptr)) != -1) {
     std::string_view sv_optarg(optarg);
 
     switch (opt) {
@@ -614,6 +627,13 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         break;
       case 'r':
         flags->recurse = true;
+        break;
+      case 'C':
+        if (sv_optarg.empty()) {
+          std::cerr << "error: meaningless option: -C ''" << std::endl;
+          return false;
+        }
+        flags->directory = optarg;
         break;
       case LITERAL:
         flags->allow_regex = false;
@@ -705,7 +725,7 @@ int main(int argc, char** argv) {
   } else if (action == "info") {
     return auracle.Info(args);
   } else if (action == "download") {
-    return auracle.Download(args, flags.recurse);
+    return auracle.Download(args, flags.recurse, flags.directory);
   } else if (action == "sync") {
     return auracle.Sync(args);
   } else if (action == "buildorder") {

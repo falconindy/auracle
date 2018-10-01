@@ -65,6 +65,10 @@ must be one of I<name>, I<name-desc>, or I<maintainer>.
 
 This option defaults to I<name-desc>.
 
+=item B<-C >I<DIR>, B<--chdir=>I<DIR>
+
+Change directory to I<DIR> before downloading and extracting tarballs.
+
 =back
 
 
