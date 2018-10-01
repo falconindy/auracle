@@ -2,6 +2,7 @@
 
 #include <getopt.h>
 #include <locale.h>
+#include <unistd.h>
 
 #include <functional>
 #include <memory>
@@ -335,7 +336,8 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                     return 1;
                   }
 
-                  std::cout << "download complete: " << pwd_.get() << "/"
+                  std::cout << "download complete: "
+                            << getcwd(nullptr, 0) << "/"
                             << pkgbase << std::endl;
                   return ExtractArchive(response.value().bytes);
                 });
@@ -366,9 +368,16 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 }
 
 int Auracle::Download(const std::vector<PackageOrDependency>& args,
-                      bool recurse) {
+                      bool recurse, std::optional<std::string> directory) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
+  }
+
+  if (directory.has_value()) {
+    if (chdir(directory.value().c_str()) != 0) {
+      std::cerr << "error: couldn't change directory" << std::endl;
+      return 1;
+    }
   }
 
   PackageIterator iter(recurse, /* download = */ true);
@@ -519,6 +528,7 @@ struct Flags {
   bool allow_regex = true;
   bool quiet = false;
   terminal::WantColor color = terminal::WantColor::AUTO;
+  std::optional<std::string> directory = std::nullopt;
 };
 
 __attribute__((noreturn)) void usage(void) {
@@ -532,6 +542,7 @@ __attribute__((noreturn)) void usage(void) {
       "\n"
       "  -q --quiet               Output less, when possible\n"
       "  -r --recurse             Recurse through dependencies on download\n"
+      "  -C DIR, --directory=DIR  Change directory before download\n"
       "     --literal             Disallow regex in searches\n"
       "     --searchby=BY         Change search-by dimension\n"
       "     --connect-timeout=N   Set connection timeout in seconds\n"
@@ -569,6 +580,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "help",              no_argument,       0, 'h' },
       { "quiet",             no_argument,       0, 'q' },
       { "recurse",           no_argument,       0, 'r' },
+      { "directory",         required_argument, 0, 'C' },
 
       { "color",             required_argument, 0, COLOR },
       { "connect-timeout",   required_argument, 0, CONNECT_TIMEOUT },
@@ -592,7 +604,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
   };
 
   int opt, optidx;
-  while ((opt = getopt_long(*argc, *argv, "hqr", opts, &optidx)) != -1) {
+  while ((opt = getopt_long(*argc, *argv, "hqrC:", opts, &optidx)) != -1) {
     std::string_view sv_optarg(optarg);
 
     switch (opt) {
@@ -603,6 +615,9 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         break;
       case 'r':
         flags->recurse = true;
+        break;
+      case 'C':
+        flags->directory = std::string(sv_optarg);
         break;
       case LITERAL:
         flags->allow_regex = false;
@@ -694,7 +709,7 @@ int main(int argc, char** argv) {
   } else if (action == "info") {
     return auracle.Info(args);
   } else if (action == "download") {
-    return auracle.Download(args, flags.recurse);
+    return auracle.Download(args, flags.recurse, flags.directory);
   } else if (action == "sync") {
     return auracle.Sync(args);
   } else if (action == "buildorder") {

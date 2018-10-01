@@ -74,8 +74,7 @@ class Auracle {
       : options_(std::move(options)),
         aur_(options_.aur_baseurl),
         allow_regex_(options_.allow_regex),
-        pacman_(options_.pacman),
-        pwd_(getcwd(nullptr, 0)) {
+        pacman_(options_.pacman) {
     aur_.SetMaxConnections(options_.max_connections);
     aur_.SetConnectTimeout(options_.connection_timeout);
   }
@@ -87,7 +86,8 @@ class Auracle {
   int Info(const std::vector<PackageOrDependency>& args);
   int Search(const std::vector<PackageOrDependency>& args,
              aur::SearchRequest::SearchBy by);
-  int Download(const std::vector<PackageOrDependency>& args, bool recurse);
+  int Download(const std::vector<PackageOrDependency>& args, bool recurse,
+               std::optional<std::string> directory);
   int Sync(const std::vector<PackageOrDependency>& args);
   int BuildOrder(const std::vector<PackageOrDependency>& args);
   int Pkgbuild(const std::vector<PackageOrDependency>& args);
