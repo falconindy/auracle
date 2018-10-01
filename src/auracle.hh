@@ -1,10 +1,7 @@
 #ifndef AURACLE_HH
 #define AURACLE_HH
 
-#include <iostream>
-#include <set>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "aur/aur.hh"
