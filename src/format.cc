@@ -87,7 +87,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
                                const T& value) {
   ios_flags_saver ifs(os);
 
-  return os << Field(field) << float_precision << value << std::endl;
+  return os << Field(field) << float_precision << value << "\n";
 }
 
 template <>
@@ -104,7 +104,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 
     if (columns > 0 &&
         (line_size + item_size) >= (columns - Field::kIndentSize)) {
-      os << std::endl << Field("");
+      os << "\n" << Field("");
       line_size = 0;
     } else {
       os << "  ";
@@ -114,7 +114,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
     line_size += item_size;
   }
 
-  return os << std::endl;
+  return os << "\n";
 }
 
 template <>
@@ -131,7 +131,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 
     if (columns > 0 &&
         (line_size + item_size) >= (columns - Field::kIndentSize)) {
-      os << std::endl << Field("");
+      os << "\n" << Field("");
       line_size = 0;
     } else {
       os << "  ";
@@ -141,7 +141,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
     line_size += item_size;
   }
 
-  return os << std::endl;
+  return os << "\n";
 }
 
 template <>
@@ -150,13 +150,13 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
   struct tm t;
   localtime_r(&value, &t);
 
-  return os << Field(field) << std::put_time(&t, "%c") << std::endl;
+  return os << Field(field) << std::put_time(&t, "%c") << "\n";
 }
 
 template <>
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
                                const double& value) {
-  return os << Field(field) << float_precision << value << std::endl;
+  return os << Field(field) << float_precision << value << "\n";
 }
 
 // Specialization for optdepends since we don't treat them the same as other
@@ -202,7 +202,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
     os << " [installed: " << local_ver_color(l->pkgver) << "]";
   }
 
-  os << std::endl;
+  os << "\n";
 
   return os;
 }
@@ -210,7 +210,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, const NameOnly& n) {
-  return os << terminal::Bold(n.package.name) << std::endl;
+  return os << terminal::Bold(n.package.name) << "\n";
 }
 
 std::ostream& operator<<(std::ostream& os, const Short& s) {
@@ -223,8 +223,8 @@ std::ostream& operator<<(std::ostream& os, const Short& s) {
 
   os << t::BoldMagenta("aur/") << t::Bold(p.name) << " " << ood_color(p.version)
      << " (" << p.votes << ", " << float_precision << p.popularity << ")"
-     << std::endl
-     << "    " << p.description << std::endl;
+     << "\n"
+     << "    " << p.description << "\n";
 
   return os;
 }
@@ -273,7 +273,7 @@ std::ostream& operator<<(std::ostream& os, const Update& u) {
   namespace t = terminal;
 
   os << t::Bold(u.from.pkgname) << " " << t::BoldRed(u.from.pkgver) << " -> "
-     << t::BoldGreen(u.to.version) << std::endl;
+     << t::BoldGreen(u.to.version) << "\n";
 
   return os;
 }

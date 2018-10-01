@@ -32,7 +32,7 @@ using SearchBy = aur::SearchRequest::SearchBy;
 namespace {
 
 int ErrorNotEnoughArgs() {
-  std::cerr << "error: not enough arguments." << std::endl;
+  std::cerr << "error: not enough arguments.\n";
   return 1;
 }
 
@@ -42,7 +42,7 @@ void FormatLong(std::ostream& os, const Container& packages,
   for (const auto& p : packages) {
     auto local_pkg = pacman->GetLocalPackage(p.name);
     os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg))
-       << std::endl;
+       << "\n";
   }
 }
 
@@ -168,8 +168,7 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
       &request,
       [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error()
-                    << std::endl;
+          std::cerr << "error: request failed: " << response.error() << "\n";
         } else {
           const auto& result = response.value();
           FormatLong(std::cout, result.results, pacman_);
@@ -201,7 +200,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
       patterns.emplace_back(std::string(arg),
                             std::regex::icase | std::regex::optimize);
     } catch (const std::regex_error& e) {
-      std::cerr << "error: invalid regex: " << std::string(arg) << std::endl;
+      std::cerr << "error: invalid regex: " << std::string(arg) << "\n";
       return 1;
     }
   }
@@ -216,8 +215,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
       auto frag = SearchFragFromRegex(args[i]);
       if (frag.empty()) {
         std::cerr << "error: search string '" << std::string(args[i])
-                  << "' insufficient for searching by regular expression."
-                  << std::endl;
+                  << "' insufficient for searching by regular expression.\n";
         return 1;
       }
       r->AddArg(frag);
@@ -251,7 +249,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
         [&, arg{args[i]}](aur::HttpStatusOr<aur::RpcResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed for '" << std::string(arg)
-                      << "': " << response.error() << std::endl;
+                      << "': " << response.error() << "\n";
             return 1;
           } else {
             const auto& results = response.value().results;
@@ -291,7 +289,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
     }
 
     if (const auto repo = pacman_->RepoForPackage(arg); !repo.empty()) {
-      std::cout << std::string(arg) << " is available in " << repo << std::endl;
+      std::cout << std::string(arg) << " is available in " << repo << "\n";
       continue;
     }
 
@@ -302,8 +300,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
       &info_request, [this, state, want{std::move(args)}](
                          aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error()
-                    << std::endl;
+          std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
         }
 
@@ -311,7 +308,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 
         for (const auto& p :
              NotFoundPackages(want, results, state->package_repo)) {
-          std::cerr << "no results found for " << p << std::endl;
+          std::cerr << "no results found for " << p << "\n";
         }
 
         for (auto& result : results) {
@@ -334,20 +331,19 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                               aur::HttpStatusOr<aur::RawResponse> response) {
                   if (!response.ok()) {
                     std::cerr << "error: request failed: " << response.error()
-                              << std::endl;
+                              << "\n";
                     return 1;
                   }
 
                   int r = ExtractArchive(response.value().bytes);
                   if (r != 0) {
                     std::cerr << "error: failed to extract tarball for "
-                              << pkgbase << ": " << strerror(r) << std::endl;
+                              << pkgbase << ": " << strerror(r) << "\n";
                     return r;
                   }
 
                   std::cout << "download complete: "
-                            << (fs::current_path() / pkgbase).string()
-                            << std::endl;
+                            << (fs::current_path() / pkgbase).string() << "\n";
                   return 0;
                 });
           }
@@ -387,7 +383,7 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
       fs::current_path(directory);
     } catch (const fs::filesystem_error& err) {
       std::cerr << "error: failed to change directory to " << directory << ": "
-                << err.code().message() << std::endl;
+                << err.code().message() << "\n";
       return 1;
     }
   }
@@ -417,7 +413,7 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
       &info_request,
       [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
-          std::cerr << "request failed: " << response.error() << std::endl;
+          std::cerr << "request failed: " << response.error() << "\n";
           return 0;
         }
 
@@ -433,16 +429,14 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
               &r, [print_header, pkgbase{arg.pkgbase}](
                       const aur::HttpStatusOr<aur::RawResponse> response) {
                 if (!response.ok()) {
-                  std::cerr << "request failed: " << response.error()
-                            << std::endl;
+                  std::cerr << "request failed: " << response.error() << "\n";
                   return 1;
                 }
 
                 if (print_header) {
-                  std::cout << "### BEGIN " << pkgbase << "/PKGBUILD"
-                            << std::endl;
+                  std::cout << "### BEGIN " << pkgbase << "/PKGBUILD\n";
                 }
-                std::cout << response.value().bytes << std::endl;
+                std::cout << response.value().bytes << "\n";
                 return 0;
               });
         }
@@ -487,7 +481,7 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args) {
       continue;
     }
 
-    std::cout << "BUILD " << p->name << std::endl;
+    std::cout << "BUILD " << p->name << "\n";
   }
 
   return 0;
@@ -507,8 +501,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
   aur_.QueueRpcRequest(
       &info_request, [&](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error()
-                    << std::endl;
+          std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
         }
 
@@ -573,7 +566,7 @@ __attribute__((noreturn)) void usage(void) {
 }
 
 __attribute__((noreturn)) void version(void) {
-  std::cout << "auracle " << PACKAGE_VERSION << std::endl;
+  std::cout << "auracle " << PACKAGE_VERSION << "\n";
   exit(0);
 }
 
@@ -630,7 +623,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         break;
       case 'C':
         if (sv_optarg.empty()) {
-          std::cerr << "error: meaningless option: -C ''" << std::endl;
+          std::cerr << "error: meaningless option: -C ''\n";
           return false;
         }
         flags->directory = optarg;
@@ -642,7 +635,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         flags->search_by = aur::SearchRequest::ParseSearchBy(sv_optarg);
         if (flags->search_by == SearchBy::INVALID) {
           std::cerr << "error: invalid arg to --searchby: " << sv_optarg
-                    << std::endl;
+                    << "\n";
           return false;
         }
         break;
@@ -650,7 +643,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         if (!stoi(sv_optarg, &flags->connect_timeout) ||
             flags->max_connections < 0) {
           std::cerr << "error: invalid value to --connect-timeout: "
-                    << sv_optarg << std::endl;
+                    << sv_optarg << "\n";
           return false;
         }
         break;
@@ -658,7 +651,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         if (!stoi(sv_optarg, &flags->max_connections) ||
             flags->max_connections < 0) {
           std::cerr << "error: invalid value to --max-connections: "
-                    << sv_optarg << std::endl;
+                    << sv_optarg << "\n";
           return false;
         }
         break;
@@ -670,8 +663,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         } else if (sv_optarg == "always") {
           flags->color = terminal::WantColor::YES;
         } else {
-          std::cerr << "error: invalid arg to --color: " << sv_optarg
-                    << std::endl;
+          std::cerr << "error: invalid arg to --color: " << sv_optarg << "\n";
           return false;
         }
         break;
@@ -696,7 +688,7 @@ int main(int argc, char** argv) {
   }
 
   if (argc < 2) {
-    std::cerr << "error: no operation specified (use -h for help)" << std::endl;
+    std::cerr << "error: no operation specified (use -h for help)\n";
     return 1;
   }
 
@@ -705,7 +697,7 @@ int main(int argc, char** argv) {
 
   const auto pacman = dlr::Pacman::NewFromConfig(kPacmanConf);
   if (pacman == nullptr) {
-    std::cerr << "error: failed to parse " << kPacmanConf << std::endl;
+    std::cerr << "error: failed to parse " << kPacmanConf << "\n";
     return 1;
   }
 
@@ -734,7 +726,7 @@ int main(int argc, char** argv) {
     return auracle.Pkgbuild(args);
   }
 
-  std::cerr << "Unknown action " << action << std::endl;
+  std::cerr << "Unknown action " << action << "\n";
   return 1;
 }
 
