@@ -526,6 +526,43 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
   return aur_.Wait();
 }
 
+int Auracle::SendRawRpc(const aur::RpcRequest* request) {
+  aur_.QueueRawRpcRequest(
+      request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+        if (!response.ok()) {
+          std::cerr << "error: request failed: " << response.error() << "\n";
+          return 1;
+        }
+
+        std::cout << response.value().bytes;
+        return 0;
+      });
+
+  return aur_.Wait();
+}
+
+int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
+                       aur::SearchRequest::SearchBy by) {
+  aur::SearchRequest search_request;
+
+  search_request.SetSearchBy(by);
+  for (const auto& arg : args) {
+    search_request.AddArg(arg);
+  }
+
+  return SendRawRpc(&search_request);
+}
+
+int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
+  aur::InfoRequest info_request;
+
+  for (const auto& arg : args) {
+    info_request.AddArg(arg);
+  }
+
+  return SendRawRpc(&info_request);
+}
+
 struct Flags {
   SearchBy search_by = SearchBy::NAME_DESC;
   int max_connections = 20;
@@ -561,7 +598,9 @@ __attribute__((noreturn)) void usage(void) {
       "  info                     Show detailed information\n"
       "  pkgbuild                 Show PKGBUILDs\n"
       "  search                   Search for packages\n"
-      "  sync                     Check for updates for foreign packages\n",
+      "  sync                     Check for updates for foreign packages\n"
+      "  rawinfo                  Dump unformatted JSON for info query\n"
+      "  rawsearch                Dump unformatted JSON for search query\n",
       stdout);
   exit(0);
 }
@@ -725,6 +764,10 @@ int main(int argc, char** argv) {
     return auracle.BuildOrder(args);
   } else if (action == "pkgbuild") {
     return auracle.Pkgbuild(args);
+  } else if (action == "rawinfo") {
+    return auracle.RawInfo(args);
+  } else if (action == "rawsearch") {
+    return auracle.RawSearch(args, flags.search_by);
   }
 
   std::cerr << "Unknown action " << action << "\n";

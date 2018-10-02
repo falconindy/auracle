@@ -43,9 +43,9 @@ _auracle() {
   fi
 
   local -A VERBS=(
-      [AUR_PACKAGES]='buildorder download pkgbuild info'
+      [AUR_PACKAGES]='buildorder download pkgbuild info rawinfo'
     [LOCAL_PACKAGES]='sync'
-              [NONE]='search'
+              [NONE]='search rawsearch'
   )
 
   for ((i=0; i < COMP_CWORD; i++)); do

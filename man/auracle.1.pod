@@ -111,6 +111,14 @@ The resulting output will be the total ordering to build all packages.
 
 Pass one to many arguments to print the PKGBUILDs for the given packages.
 
+=item B<rawsearch> I<PACKAGES>...
+
+Dump the raw JSON response from the AUR for a search request.
+
+=item B<rawinfo> I<PACKAGES>...
+
+Dump the raw JSON response from the AUR for an info request.
+
 =back
 
 =head1 AUTHOR

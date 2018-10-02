@@ -112,6 +112,8 @@ class ResponseHandler {
 
 class RpcResponseHandler : public ResponseHandler {
  public:
+  using CallbackType = Aur::RpcResponseCallback;
+
   RpcResponseHandler(Aur::RpcResponseCallback callback)
       : callback_(std::move(callback)) {}
 
@@ -129,11 +131,13 @@ class RpcResponseHandler : public ResponseHandler {
   }
 
  private:
-  const Aur::RpcResponseCallback callback_;
+  const CallbackType callback_;
 };
 
 class RawResponseHandler : public ResponseHandler {
  public:
+  using CallbackType = Aur::RawResponseCallback;
+
   RawResponseHandler(Aur::RawResponseCallback callback)
       : callback_(std::move(callback)) {}
 
@@ -146,7 +150,7 @@ class RawResponseHandler : public ResponseHandler {
   }
 
  private:
-  const Aur::RawResponseCallback callback_;
+  const CallbackType callback_;
 };
 
 }  // namespace
@@ -253,8 +257,16 @@ int Aur::Wait() {
 struct RpcRequestTraits {
   enum : bool { kNeedHeaders = false };
 
-  using CallbackType = Aur::RpcResponseCallback;
   using ResponseHandlerType = RpcResponseHandler;
+
+  static constexpr char const* kEncoding = "";
+  static constexpr char const* kFilenameHint = nullptr;
+};
+
+struct RawRpcRequestTraits {
+  enum : bool { kNeedHeaders = false };
+
+  using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
   static constexpr char const* kFilenameHint = nullptr;
@@ -263,7 +275,6 @@ struct RpcRequestTraits {
 struct DownloadRequestTraits {
   enum : bool { kNeedHeaders = true };
 
-  using CallbackType = Aur::RawResponseCallback;
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "identity";
@@ -273,7 +284,6 @@ struct DownloadRequestTraits {
 struct PkgbuildRequestTraits {
   enum : bool { kNeedHeaders = false };
 
-  using CallbackType = Aur::RawResponseCallback;
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
@@ -281,8 +291,9 @@ struct PkgbuildRequestTraits {
 };
 
 template <typename RequestType>
-void Aur::QueueRequest(const Request* request,
-                       const typename RequestType::CallbackType& callback) {
+void Aur::QueueRequest(
+    const Request* request,
+    const typename RequestType::ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request->Build(baseurl_)) {
     auto curl = curl_easy_init();
 
@@ -316,6 +327,11 @@ void Aur::QueueRequest(const Request* request,
 
     StartRequest(curl);
   }
+}
+
+void Aur::QueueRawRpcRequest(const RpcRequest* request,
+                             const RawResponseCallback& callback) {
+  QueueRequest<RawRpcRequestTraits>(request, callback);
 }
 
 void Aur::QueueRpcRequest(const RpcRequest* request,

@@ -90,6 +90,10 @@ class Auracle {
   int BuildOrder(const std::vector<PackageOrDependency>& args);
   int Pkgbuild(const std::vector<PackageOrDependency>& args);
 
+  int RawSearch(const std::vector<PackageOrDependency>& args,
+                aur::SearchRequest::SearchBy by);
+  int RawInfo(const std::vector<PackageOrDependency>& args);
+
  private:
   struct PackageIterator {
     explicit PackageIterator(bool recurse, bool download)
@@ -100,6 +104,8 @@ class Auracle {
 
     dlr::InMemoryRepo package_repo;
   };
+
+  int SendRawRpc(const aur::RpcRequest* request);
 
   void IteratePackages(std::vector<PackageOrDependency> args,
                        PackageIterator* state);
