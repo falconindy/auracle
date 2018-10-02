@@ -99,12 +99,15 @@ run_target(
     '-exec', 'clang-format', '-i', '-style=Google', '{}', '+'
   ])
 
-tests = [
-  'src/aur/request_test.cc'
-]
-
 if gtest.found() and gmock.found()
-  foreach input : tests
+  gtest_main = static_library(
+    'gtest_main',
+    'src/test/gtest_main.cc')
+
+  foreach input : [
+    'src/aur/request_test.cc',
+    'src/aur/response_test.cc',
+  ]
     basename = input.split('/')[-1].split('.')[0]
 
     test(
@@ -112,7 +115,7 @@ if gtest.found() and gmock.found()
       executable(
         basename,
         input,
-        link_with : [aurlib],
+        link_with : [aurlib, gtest_main],
         dependencies : [gtest, gmock]))
     endforeach
 endif

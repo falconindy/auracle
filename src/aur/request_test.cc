@@ -1,7 +1,5 @@
 #include "request.hh"
 
-#include <map>
-
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -75,5 +73,3 @@ TEST(RequestTest, BuildsRawRequests) {
 
   EXPECT_EQ(urls[0], std::string(kBaseUrl) + "/foo/bar/baz");
 }
-
-int main(int argc, char** argv) { return RUN_ALL_TESTS(); }
