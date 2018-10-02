@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <locale.h>
 
+#include <charconv>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -379,11 +380,11 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   }
 
   if (!directory.empty()) {
-    try {
-      fs::current_path(directory);
-    } catch (const fs::filesystem_error& err) {
+    std::error_code ec;
+    fs::current_path(directory, ec);
+    if (ec.value() != 0) {
       std::cerr << "error: failed to change directory to " << directory << ": "
-                << err.code().message() << "\n";
+                << ec.message() << "\n";
       return 1;
     }
   }
@@ -637,15 +638,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
   };
 
   const auto stoi = [](std::string_view s, int* i) -> bool {
-    int ii;
-    try {
-      ii = std::stoi(std::string(s));
-    } catch (const std::exception&) {
-      return false;
-    }
-
-    *i = ii;
-    return true;
+    return std::from_chars(s.data(), s.data() + s.size(), *i).ec == std::errc{};
   };
 
   int opt;
