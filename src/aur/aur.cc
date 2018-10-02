@@ -54,7 +54,7 @@ class ResponseHandler {
  public:
   virtual ~ResponseHandler() = default;
 
-  static size_t DataCallback(char* ptr, size_t size, size_t nmemb,
+  static size_t BodyCallback(char* ptr, size_t size, size_t nmemb,
                              void* userdata) {
     auto* handler = static_cast<ResponseHandler*>(userdata);
 
@@ -77,7 +77,11 @@ class ResponseHandler {
     return size * nitems;
   }
 
-  virtual int RunCallback(const std::string& error) const = 0;
+  int RunCallback(const std::string& error) const {
+    int r = Run(error);
+    delete this;
+    return r;
+  }
 
   void set_filename_hint(const std::string& filename_hint) {
     this->filename_hint = filename_hint;
@@ -88,6 +92,8 @@ class ResponseHandler {
   char error_buffer[CURL_ERROR_SIZE]{};
 
  private:
+  virtual int Run(const std::string& error) const = 0;
+
   void FilenameFromHeader(ci_string_view value) {
     constexpr char kFilenameKey[] = "filename=";
 
@@ -117,7 +123,8 @@ class RpcResponseHandler : public ResponseHandler {
   RpcResponseHandler(Aur::RpcResponseCallback callback)
       : callback_(std::move(callback)) {}
 
-  int RunCallback(const std::string& error) const override {
+ private:
+  int Run(const std::string& error) const override {
     if (!error.empty()) {
       return callback_(error);
     }
@@ -130,7 +137,6 @@ class RpcResponseHandler : public ResponseHandler {
     return callback_(std::move(json));
   }
 
- private:
   const CallbackType callback_;
 };
 
@@ -141,7 +147,8 @@ class RawResponseHandler : public ResponseHandler {
   RawResponseHandler(Aur::RawResponseCallback callback)
       : callback_(std::move(callback)) {}
 
-  int RunCallback(const std::string& error) const override {
+ private:
+  int Run(const std::string& error) const override {
     if (!error.empty()) {
       return callback_(error);
     }
@@ -149,7 +156,6 @@ class RawResponseHandler : public ResponseHandler {
     return callback_(RawResponse{std::move(filename_hint), std::move(body)});
   }
 
- private:
   const CallbackType callback_;
 };
 
@@ -174,8 +180,6 @@ void Aur::StartRequest(CURL* curl) {
 int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   ResponseHandler* handler;
   curl_easy_getinfo(curl, CURLINFO_PRIVATE, &handler);
-
-  std::unique_ptr<ResponseHandler> handler_deleter(handler);
 
   long response_code;
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
@@ -272,7 +276,7 @@ struct RawRpcRequestTraits {
   static constexpr char const* kFilenameHint = nullptr;
 };
 
-struct DownloadRequestTraits {
+struct TarballRequestTraits {
   enum : bool { kNeedHeaders = true };
 
   using ResponseHandlerType = RawResponseHandler;
@@ -290,15 +294,15 @@ struct PkgbuildRequestTraits {
   static constexpr char const* kFilenameHint = "PKGBUILD";
 };
 
-template <typename RequestType>
+template <typename RequestTraits>
 void Aur::QueueRequest(
     const Request* request,
-    const typename RequestType::ResponseHandlerType::CallbackType& callback) {
+    const typename RequestTraits::ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request->Build(baseurl_)) {
     auto curl = curl_easy_init();
 
     auto response_handler =
-        new typename RequestType::ResponseHandlerType(callback);
+        new typename RequestTraits::ResponseHandlerType(callback);
 
     if (getenv("AURACLE_DEBUG")) {
       curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
@@ -307,22 +311,22 @@ void Aur::QueueRequest(
     using RH = ResponseHandler;
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
     curl_easy_setopt(curl, CURLOPT_URL, r.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &RH::DataCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &RH::BodyCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, response_handler);
     curl_easy_setopt(curl, CURLOPT_PRIVATE, response_handler);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, response_handler->error_buffer);
-    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestType::kEncoding);
+    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestTraits::kEncoding);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout_);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
 
-    if (RequestType::kNeedHeaders) {
+    if (RequestTraits::kNeedHeaders) {
       curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &RH::HeaderCallback);
       curl_easy_setopt(curl, CURLOPT_HEADERDATA, response_handler);
     }
 
-    if (RequestType::kFilenameHint) {
-      response_handler->set_filename_hint(RequestType::kFilenameHint);
+    if (RequestTraits::kFilenameHint) {
+      response_handler->set_filename_hint(RequestTraits::kFilenameHint);
     }
 
     StartRequest(curl);
@@ -341,7 +345,7 @@ void Aur::QueueRpcRequest(const RpcRequest* request,
 
 void Aur::QueueTarballRequest(const RawRequest* request,
                               const RawResponseCallback& callback) {
-  QueueRequest<DownloadRequestTraits>(request, callback);
+  QueueRequest<TarballRequestTraits>(request, callback);
 }
 
 void Aur::QueuePkgbuildRequest(const RawRequest* request,
