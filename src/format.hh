@@ -43,14 +43,15 @@ struct Long {
 };
 
 struct Update {
-  Update(const dlr::Pacman::Package& from, const aur::Package& to)
-      : from(from), to(to) {}
+  Update(const dlr::Pacman::Package& from, const aur::Package& to, bool ignored)
+      : from(from), to(to), ignored(ignored) {}
 
   friend std::ostream& operator<<(std::ostream& os, const Update& u);
 
  private:
   const dlr::Pacman::Package& from;
   const aur::Package& to;
+  const bool ignored;
 };
 
 // TODO: custom formatting

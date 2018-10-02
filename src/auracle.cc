@@ -514,7 +514,8 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
             if (options_.quiet) {
               std::cout << format::NameOnly(r);
             } else {
-              std::cout << format::Update(*iter, r);
+              std::cout << format::Update(*iter, r,
+                                          pacman_->ShouldIgnorePackage(r.name));
             }
           }
         }
