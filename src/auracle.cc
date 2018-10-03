@@ -527,9 +527,39 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
   return aur_.Wait();
 }
 
-int Auracle::SendRawRpc(const aur::RpcRequest* request) {
+int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
+                       aur::SearchRequest::SearchBy by) {
+  std::vector<aur::SearchRequest> requests;
+
+  for (const auto& arg : args) {
+    auto& request = requests.emplace_back();
+    request.AddArg(arg);
+    request.SetSearchBy(by);
+
+    aur_.QueueRawRpcRequest(
+        &request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+          if (!response.ok()) {
+            std::cerr << "error: request failed: " << response.error() << "\n";
+            return 1;
+          }
+
+          std::cout << response.value().bytes;
+          return 0;
+        });
+  }
+
+  return aur_.Wait();
+}
+
+int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
+  aur::InfoRequest request;
+
+  for (const auto& arg : args) {
+    request.AddArg(arg);
+  }
+
   aur_.QueueRawRpcRequest(
-      request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+      &request, [](aur::HttpStatusOr<aur::RawResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
@@ -540,28 +570,6 @@ int Auracle::SendRawRpc(const aur::RpcRequest* request) {
       });
 
   return aur_.Wait();
-}
-
-int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
-                       aur::SearchRequest::SearchBy by) {
-  aur::SearchRequest search_request;
-
-  search_request.SetSearchBy(by);
-  for (const auto& arg : args) {
-    search_request.AddArg(arg);
-  }
-
-  return SendRawRpc(&search_request);
-}
-
-int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
-  aur::InfoRequest info_request;
-
-  for (const auto& arg : args) {
-    info_request.AddArg(arg);
-  }
-
-  return SendRawRpc(&info_request);
 }
 
 struct Flags {
