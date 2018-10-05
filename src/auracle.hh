@@ -96,12 +96,14 @@ class Auracle {
 
  private:
   struct PackageIterator {
-    explicit PackageIterator(bool recurse, bool download)
-        : recurse(recurse), download(download) {}
+    using PackageCallback = std::function<void(const aur::Package&)>;
+
+    PackageIterator(bool recurse, PackageCallback callback)
+        : recurse(recurse), callback(std::move(callback)) {}
 
     bool recurse;
-    bool download;
 
+    const PackageCallback callback;
     dlr::InMemoryRepo package_repo;
   };
 

@@ -325,28 +325,8 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
             continue;
           }
 
-          if (state->download) {
-            aur::RawRequest request(aur::RawRequest::UrlForTarball(*p));
-            aur_.QueueTarballRequest(
-                &request, [pkgbase{p->pkgbase}](
-                              aur::HttpStatusOr<aur::RawResponse> response) {
-                  if (!response.ok()) {
-                    std::cerr << "error: request failed: " << response.error()
-                              << "\n";
-                    return 1;
-                  }
-
-                  int r = ExtractArchive(response.value().bytes);
-                  if (r != 0) {
-                    std::cerr << "error: failed to extract tarball for "
-                              << pkgbase << ": " << strerror(r) << "\n";
-                    return r;
-                  }
-
-                  std::cout << "download complete: "
-                            << (fs::current_path() / pkgbase).string() << "\n";
-                  return 0;
-                });
+          if (state->callback) {
+            state->callback(*p);
           }
 
           if (state->recurse) {
@@ -389,7 +369,29 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
     }
   }
 
-  PackageIterator iter(recurse, /* download = */ true);
+  PackageIterator iter(recurse, [this](const aur::Package& p) {
+    aur::RawRequest request(aur::RawRequest::UrlForTarball(p));
+    aur_.QueueTarballRequest(
+        &request,
+        [pkgbase{p.pkgbase}](aur::HttpStatusOr<aur::RawResponse> response) {
+          if (!response.ok()) {
+            std::cerr << "error: request failed: " << response.error() << "\n";
+            return 1;
+          }
+
+          int r = ExtractArchive(response.value().bytes);
+          if (r != 0) {
+            std::cerr << "error: failed to extract tarball for " << pkgbase
+                      << ": " << strerror(r) << "\n";
+            return r;
+          }
+
+          std::cout << "download complete: "
+                    << (fs::current_path() / pkgbase).string() << "\n";
+          return 0;
+        });
+  });
+
   IteratePackages(args, &iter);
 
   if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
@@ -459,7 +461,7 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args) {
     return ErrorNotEnoughArgs();
   }
 
-  PackageIterator iter(/* recurse = */ true, /* download = */ false);
+  PackageIterator iter(/* recurse = */ true, nullptr);
   IteratePackages(args, &iter);
 
   if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
