@@ -296,9 +296,9 @@ struct PkgbuildRequestTraits {
 
 template <typename RequestTraits>
 void Aur::QueueRequest(
-    const Request* request,
+    const Request& request,
     const typename RequestTraits::ResponseHandlerType::CallbackType& callback) {
-  for (const auto& r : request->Build(baseurl_)) {
+  for (const auto& r : request.Build(baseurl_)) {
     auto curl = curl_easy_init();
 
     auto response_handler =
@@ -333,22 +333,22 @@ void Aur::QueueRequest(
   }
 }
 
-void Aur::QueueRawRpcRequest(const RpcRequest* request,
+void Aur::QueueRawRpcRequest(const RpcRequest& request,
                              const RawResponseCallback& callback) {
   QueueRequest<RawRpcRequestTraits>(request, callback);
 }
 
-void Aur::QueueRpcRequest(const RpcRequest* request,
+void Aur::QueueRpcRequest(const RpcRequest& request,
                           const RpcResponseCallback& callback) {
   QueueRequest<RpcRequestTraits>(request, callback);
 }
 
-void Aur::QueueTarballRequest(const RawRequest* request,
+void Aur::QueueTarballRequest(const RawRequest& request,
                               const RawResponseCallback& callback) {
   QueueRequest<TarballRequestTraits>(request, callback);
 }
 
-void Aur::QueuePkgbuildRequest(const RawRequest* request,
+void Aur::QueuePkgbuildRequest(const RawRequest& request,
                                const RawResponseCallback& callback) {
   QueueRequest<PkgbuildRequestTraits>(request, callback);
 }

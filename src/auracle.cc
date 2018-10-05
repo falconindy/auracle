@@ -158,15 +158,9 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
     return ErrorNotEnoughArgs();
   }
 
-  aur::InfoRequest request;
-
-  for (const auto& arg : args) {
-    request.AddArg(arg);
-  }
-
   int resultcount = 0;
   aur_.QueueRpcRequest(
-      &request,
+      aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
       [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
@@ -206,25 +200,6 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
     }
   }
 
-  std::vector<aur::SearchRequest> requests(args.size());
-  for (size_t i = 0; i < args.size(); ++i) {
-    auto r = &requests[i];
-
-    r->SetSearchBy(by);
-
-    if (allow_regex_) {
-      auto frag = SearchFragFromRegex(args[i]);
-      if (frag.empty()) {
-        std::cerr << "error: search string '" << std::string(args[i])
-                  << "' insufficient for searching by regular expression.\n";
-        return 1;
-      }
-      r->AddArg(frag);
-    } else {
-      r->AddArg(args[i]);
-    }
-  }
-
   const auto matches = [&patterns, by](const aur::Package& p) -> bool {
     return std::all_of(patterns.begin(), patterns.end(),
                        [&p, by](const std::regex& re) {
@@ -245,9 +220,23 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
 
   std::set<aur::Package, sort::PackageNameLess> packages;
   for (size_t i = 0; i < args.size(); ++i) {
+    aur::SearchRequest r;
+    r.SetSearchBy(by);
+
+    if (allow_regex_) {
+      auto frag = SearchFragFromRegex(args[i]);
+      if (frag.empty()) {
+        std::cerr << "error: search string '" << std::string(args[i])
+                  << "' insufficient for searching by regular expression.\n";
+        return 1;
+      }
+      r.AddArg(frag);
+    } else {
+      r.AddArg(args[i]);
+    }
+
     aur_.QueueRpcRequest(
-        &requests[i],
-        [&, arg{args[i]}](aur::HttpStatusOr<aur::RpcResponse> response) {
+        r, [&, arg{args[i]}](aur::HttpStatusOr<aur::RpcResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed for '" << std::string(arg)
                       << "': " << response.error() << "\n";
@@ -298,8 +287,8 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
   }
 
   aur_.QueueRpcRequest(
-      &info_request, [this, state, want{std::move(args)}](
-                         aur::HttpStatusOr<aur::RpcResponse> response) {
+      info_request, [this, state, want{std::move(args)}](
+                        aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
@@ -370,9 +359,8 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   }
 
   PackageIterator iter(recurse, [this](const aur::Package& p) {
-    aur::RawRequest request(aur::RawRequest::UrlForTarball(p));
     aur_.QueueTarballRequest(
-        &request,
+        aur::RawRequest(aur::RawRequest::UrlForTarball(p)),
         [pkgbase{p.pkgbase}](aur::HttpStatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
@@ -406,14 +394,9 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
     return ErrorNotEnoughArgs();
   }
 
-  aur::InfoRequest info_request;
-  for (const auto& arg : args) {
-    info_request.AddArg(arg);
-  }
-
   int resultcount = 0;
   aur_.QueueRpcRequest(
-      &info_request,
+      aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
       [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "request failed: " << response.error() << "\n";
@@ -424,13 +407,11 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
 
         const bool print_header = response.value().results.size() > 1;
 
-        std::vector<aur::RawRequest> requests;
         for (const auto& arg : response.value().results) {
-          const auto& r =
-              requests.emplace_back(aur::RawRequest::UrlForPkgbuild(arg));
           aur_.QueuePkgbuildRequest(
-              &r, [print_header, pkgbase{arg.pkgbase}](
-                      const aur::HttpStatusOr<aur::RawResponse> response) {
+              aur::RawRequest(aur::RawRequest::UrlForPkgbuild(arg)),
+              [print_header, pkgbase{arg.pkgbase}](
+                  const aur::HttpStatusOr<aur::RawResponse> response) {
                 if (!response.ok()) {
                   std::cerr << "request failed: " << response.error() << "\n";
                   return 1;
@@ -502,7 +483,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
   }
 
   aur_.QueueRpcRequest(
-      &info_request, [&](aur::HttpStatusOr<aur::RpcResponse> response) {
+      info_request, [&](aur::HttpStatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
@@ -531,15 +512,13 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
 
 int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
                        aur::SearchRequest::SearchBy by) {
-  std::vector<aur::SearchRequest> requests;
-
   for (const auto& arg : args) {
-    auto& request = requests.emplace_back();
+    aur::SearchRequest request;
     request.AddArg(arg);
     request.SetSearchBy(by);
 
     aur_.QueueRawRpcRequest(
-        &request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+        request, [](aur::HttpStatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
             return 1;
@@ -561,7 +540,7 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
   }
 
   aur_.QueueRawRpcRequest(
-      &request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+      request, [](aur::HttpStatusOr<aur::RawResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;

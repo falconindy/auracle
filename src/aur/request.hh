@@ -80,6 +80,13 @@ class RpcRequest : public Request {
 
 class InfoRequest : public RpcRequest {
  public:
+  InfoRequest(const std::vector<std::string>& args) : RpcRequest() {
+    AddParam("type", "info");
+    for (const auto& arg : args) {
+      AddArg(arg);
+    }
+  }
+
   InfoRequest() : RpcRequest() { AddParam("type", "info"); }
 
   void AddArg(const std::string& arg) { RpcRequest::AddArg("arg[]", arg); }

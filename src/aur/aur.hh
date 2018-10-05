@@ -38,22 +38,22 @@ class Aur {
 
   // Asynchronously issue an RPC request. The callback will be invoked when the
   // call completes.
-  void QueueRpcRequest(const RpcRequest* request,
+  void QueueRpcRequest(const RpcRequest& request,
                        const RpcResponseCallback& callback);
 
   // Asynchronously issue an RPC request. The callback will be invoked when the
   // call completes.
-  void QueueRawRpcRequest(const RpcRequest* request,
+  void QueueRawRpcRequest(const RpcRequest& request,
                           const RawResponseCallback& callback);
 
   // Asynchronously issue a download request. The callback will be invoked when
   // the call completes.
-  void QueueTarballRequest(const RawRequest* request,
+  void QueueTarballRequest(const RawRequest& request,
                            const RawResponseCallback& callback);
 
   // Asynchronous issue a PKGBUILD request. The callbcak will be invoked when
   // the call complete.
-  void QueuePkgbuildRequest(const RawRequest* request,
+  void QueuePkgbuildRequest(const RawRequest& request,
                             const RawResponseCallback& callback);
 
   // Wait for all pending requests to complete. Returns non-zero if any request
@@ -63,7 +63,7 @@ class Aur {
  private:
   template <typename RequestType>
   void QueueRequest(
-      const Request* request,
+      const Request& request,
       const typename RequestType::ResponseHandlerType::CallbackType& callback);
 
   void StartRequest(CURL* curl);
