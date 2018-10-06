@@ -18,6 +18,7 @@ class Aur {
  public:
   using RpcResponseCallback = std::function<int(StatusOr<RpcResponse>)>;
   using RawResponseCallback = std::function<int(StatusOr<RawResponse>)>;
+  using CloneResponseCallback = std::function<int(StatusOr<CloneResponse>)>;
 
   // Construct a new Aur object, rooted at the given URL, e.g.
   // https://aur.archlinux.org.
@@ -56,6 +57,10 @@ class Aur {
   void QueuePkgbuildRequest(const RawRequest& request,
                             const RawResponseCallback& callback);
 
+  // Clone a git repository.
+  void QueueCloneRequest(const CloneRequest& request,
+                         const CloneResponseCallback& callback);
+
   // Wait for all pending requests to complete. Returns non-zero if any request
   // failed or was cancelled by a callback.
   int Wait();
@@ -72,21 +77,45 @@ class Aur {
   int ProcessDoneEvents();
   void Cancel();
 
+  class ActiveRequests {
+   public:
+    ActiveRequests() {}
+
+    void Add(CURL* curl) { curls_.insert(curl); }
+    void Add(sd_event_source* event_source) {
+      event_sources_.insert(event_source);
+    }
+
+    void Remove(CURL* curl) { curls_.erase(curl); }
+    void Remove(sd_event_source* event_source) {
+      event_sources_.erase(event_source);
+    }
+
+    bool IsEmpty() const { return curls_.empty() && event_sources_.empty(); }
+
+   private:
+    std::unordered_set<CURL*> curls_;
+    std::unordered_set<sd_event_source*> event_sources_;
+  };
+
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
                             void* userdata, void* socketp);
   static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
   static int OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata);
   static int OnTimer(sd_event_source* s, uint64_t usec, void* userdata);
+  static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
+                         void* userdata);
 
   const std::string baseurl_;
 
   long connect_timeout_ = 10;
 
   CURLM* curl_;
-  std::unordered_set<CURL*> active_requests_;
+  ActiveRequests active_requests_;
   std::unordered_map<int, sd_event_source*> active_io_;
   std::unordered_map<int, int> translate_fds_;
 
+  sigset_t saved_ss_;
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
 };

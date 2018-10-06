@@ -2,10 +2,13 @@
 
 #include <fcntl.h>
 #include <string.h>
-
 #include <unistd.h>
+
 #include <chrono>
+#include <filesystem>
 #include <string_view>
+
+namespace fs = std::filesystem;
 
 namespace aur {
 
@@ -58,7 +61,7 @@ class ResponseHandler {
 
   static size_t BodyCallback(char* ptr, size_t size, size_t nmemb,
                              void* userdata) {
-    auto* handler = static_cast<ResponseHandler*>(userdata);
+    auto handler = static_cast<ResponseHandler*>(userdata);
 
     handler->body.append(ptr, size * nmemb);
 
@@ -67,7 +70,7 @@ class ResponseHandler {
 
   static size_t HeaderCallback(char* buffer, size_t size, size_t nitems,
                                void* userdata) {
-    auto* handler = static_cast<ResponseHandler*>(userdata);
+    auto handler = static_cast<ResponseHandler*>(userdata);
 
     // Remove 2 bytes to ignore trailing \r\n
     ci_string_view header(buffer, size * nitems - 2);
@@ -122,8 +125,7 @@ class RpcResponseHandler : public ResponseHandler {
  public:
   using CallbackType = Aur::RpcResponseCallback;
 
-  RpcResponseHandler(Aur::RpcResponseCallback callback)
-      : callback_(std::move(callback)) {}
+  RpcResponseHandler(CallbackType callback) : callback_(std::move(callback)) {}
 
  private:
   int Run(const std::string& error) const override {
@@ -146,8 +148,7 @@ class RawResponseHandler : public ResponseHandler {
  public:
   using CallbackType = Aur::RawResponseCallback;
 
-  RawResponseHandler(Aur::RawResponseCallback callback)
-      : callback_(std::move(callback)) {}
+  RawResponseHandler(CallbackType callback) : callback_(std::move(callback)) {}
 
  private:
   int Run(const std::string& error) const override {
@@ -159,6 +160,33 @@ class RawResponseHandler : public ResponseHandler {
   }
 
   const CallbackType callback_;
+};
+
+class CloneResponseHandler : public ResponseHandler {
+ public:
+  using CallbackType = Aur::CloneResponseCallback;
+
+  CloneResponseHandler(Aur* aur, CallbackType callback)
+      : aur_(aur), callback_(std::move(callback)) {}
+
+  Aur* aur() const { return aur_; }
+
+  void SetOperation(std::string operation) {
+    operation_ = std::move(operation);
+  }
+
+ private:
+  int Run(const std::string& error) const override {
+    if (!error.empty()) {
+      return callback_(error);
+    }
+
+    return callback_(CloneResponse{std::move(operation_)});
+  }
+
+  Aur* aur_;
+  const CallbackType callback_;
+  std::string operation_;
 };
 
 }  // namespace
@@ -175,6 +203,10 @@ Aur::Aur(const std::string& baseurl) : baseurl_(baseurl) {
   curl_multi_setopt(curl_, CURLMOPT_TIMERFUNCTION, &Aur::TimerCallback);
   curl_multi_setopt(curl_, CURLMOPT_TIMERDATA, this);
 
+  sigset_t ss;
+  sigaddset(&ss, SIGCHLD);
+  sigprocmask(SIG_BLOCK, &ss, &saved_ss_);
+
   sd_event_default(&event_);
 }
 
@@ -183,12 +215,14 @@ Aur::~Aur() {
   curl_global_cleanup();
 
   sd_event_unref(event_);
+
+  sigprocmask(SIG_SETMASK, &saved_ss_, nullptr);
 }
 
 // static
 int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
                         void* userdata, void*) {
-  Aur* aur = static_cast<Aur*>(userdata);
+  auto aur = static_cast<Aur*>(userdata);
 
   auto iter = aur->active_io_.find(s);
   sd_event_source* io = iter != aur->active_io_.end() ? iter->second : nullptr;
@@ -255,7 +289,7 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
 
 // static
 int Aur::OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata) {
-  Aur* aur = static_cast<Aur*>(userdata);
+  auto aur = static_cast<Aur*>(userdata);
   int action, k = 0;
 
   // Throwing an exception here would indicate a bug in Aur::SocketCallback.
@@ -275,13 +309,12 @@ int Aur::OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata) {
     return -EINVAL;
   }
 
-  aur->ProcessDoneEvents();
-  return 0;
+  return aur->ProcessDoneEvents();
 }
 
 // static
 int Aur::OnTimer(sd_event_source* s, uint64_t usec, void* userdata) {
-  Aur* aur = static_cast<Aur*>(userdata);
+  auto aur = static_cast<Aur*>(userdata);
   int k = 0;
 
   if (curl_multi_socket_action(aur->curl_, CURL_SOCKET_TIMEOUT, 0, &k) !=
@@ -289,13 +322,12 @@ int Aur::OnTimer(sd_event_source* s, uint64_t usec, void* userdata) {
     return -EINVAL;
   }
 
-  aur->ProcessDoneEvents();
-  return 0;
+  return aur->ProcessDoneEvents();
 }
 
 // static
 int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
-  Aur* aur = static_cast<Aur*>(userdata);
+  auto aur = static_cast<Aur*>(userdata);
 
   if (timeout_ms < 0) {
     if (aur->timer_) {
@@ -332,7 +364,7 @@ int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
 
 void Aur::StartRequest(CURL* curl) {
   curl_multi_add_handle(curl_, curl);
-  active_requests_.insert(curl);
+  active_requests_.Add(curl);
 }
 
 int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
@@ -354,7 +386,7 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
 
   auto r = dispatch_callback ? handler->RunCallback(error) : 0;
 
-  active_requests_.erase(curl);
+  active_requests_.Remove(curl);
   curl_multi_remove_handle(curl_, curl);
   curl_easy_cleanup(curl);
 
@@ -383,16 +415,11 @@ int Aur::ProcessDoneEvents() {
   return 0;
 }
 
-void Aur::Cancel() {
-  while (!active_requests_.empty()) {
-    FinishRequest(*active_requests_.begin(), CURLE_ABORTED_BY_CALLBACK,
-                  /* dispatch_callback = */ false);
-  }
-}
-
 int Aur::Wait() {
-  while (!active_requests_.empty()) {
-    sd_event_run(event_, 0);
+  while (!active_requests_.IsEmpty()) {
+    if (sd_event_run(event_, 0) < 0) {
+      break;
+    }
   }
 
   return 0;
@@ -471,6 +498,77 @@ void Aur::QueueRequest(
 
     StartRequest(curl);
   }
+}
+
+// static
+int Aur::OnCloneExit(sd_event_source* s, const siginfo_t* si, void* userdata) {
+  auto handler = static_cast<CloneResponseHandler*>(userdata);
+
+  handler->aur()->active_requests_.Remove(s);
+  sd_event_source_unref(s);
+
+  std::string error;
+  if (si->si_status != 0) {
+    error.assign("TODO: useful error message for non-zero exit status: " +
+                 std::to_string(si->si_status));
+  }
+
+  return handler->RunCallback(error);
+}
+
+void Aur::QueueCloneRequest(const CloneRequest& request,
+                            const CloneResponseCallback& callback) {
+  auto response_handler = new CloneResponseHandler(this, callback);
+
+  const bool update = fs::exists(fs::path(request.reponame()) / ".git");
+  if (update) {
+    response_handler->SetOperation("update");
+  } else {
+    response_handler->SetOperation("clone");
+  }
+
+  int pid = fork();
+  if (pid < 0) {
+    response_handler->RunCallback(std::string(strerror(errno)));
+    return;
+  }
+
+  if (pid == 0) {
+    auto url = request.Build(baseurl_)[0];
+
+    const char* cmd[] = {
+        NULL,  // git
+        NULL,  // if pulling, -C
+        NULL,  // if pulling, arg to -C
+        NULL,  // 'clone' or 'pull'
+        NULL,  // --quiet
+        NULL,  // --ff-only (if pulling), URL if cloning
+        NULL,
+    };
+    int idx = 0;
+
+    cmd[idx++] = "git";
+    if (update) {
+      cmd[idx++] = "-C";
+      cmd[idx++] = request.reponame().c_str();
+      cmd[idx++] = "pull";
+      cmd[idx++] = "--quiet";
+      cmd[idx++] = "--ff-only";
+    } else {
+      cmd[idx++] = "clone";
+      cmd[idx++] = "--quiet";
+      cmd[idx++] = url.c_str();
+    }
+
+    execvp(cmd[0], const_cast<char* const*>(cmd));
+    _exit(127);
+  }
+
+  sd_event_source* child;
+  sd_event_add_child(event_, &child, pid, WEXITED, &Aur::OnCloneExit,
+                     response_handler);
+
+  active_requests_.Add(child);
 }
 
 void Aur::QueueRawRpcRequest(const RpcRequest& request,

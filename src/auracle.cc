@@ -342,20 +342,64 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
       });
 }
 
+bool ChdirIfNeeded(const fs::path target) {
+  if (target.empty()) {
+    return true;
+  }
+
+  std::error_code ec;
+  fs::current_path(target, ec);
+  if (ec.value() != 0) {
+    std::cerr << "error: failed to change directory to " << target << ": "
+              << ec.message() << "\n";
+    return false;
+  }
+
+  return true;
+}
+
+int Auracle::Clone(const std::vector<PackageOrDependency>& args, bool recurse,
+                   const fs::path& directory) {
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
+
+  if (!ChdirIfNeeded(directory)) {
+    return 1;
+  }
+
+  int ret = 0;
+  PackageIterator iter(recurse, [this, &ret](const aur::Package& p) {
+    aur_.QueueCloneRequest(
+        aur::CloneRequest(p.pkgbase),
+        [&ret, pkgbase{p.pkgbase}](aur::StatusOr<aur::CloneResponse> response) {
+          if (response.ok()) {
+            std::cout << response.value().operation << " complete: "
+                      << (fs::current_path() / pkgbase).string() << "\n";
+          } else {
+            ret = 1;
+          }
+          return 0;
+        });
+  });
+
+  IteratePackages(args, &iter);
+
+  if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
+    return 1;
+  }
+
+  return ret;
+}
+
 int Auracle::Download(const std::vector<PackageOrDependency>& args,
                       bool recurse, const fs::path& directory) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
 
-  if (!directory.empty()) {
-    std::error_code ec;
-    fs::current_path(directory, ec);
-    if (ec.value() != 0) {
-      std::cerr << "error: failed to change directory to " << directory << ": "
-                << ec.message() << "\n";
-      return 1;
-    }
+  if (!ChdirIfNeeded(directory)) {
+    return 1;
   }
 
   PackageIterator iter(recurse, [this](const aur::Package& p) {
@@ -584,6 +628,7 @@ __attribute__((noreturn)) void usage(void) {
       "\n"
       "Commands:\n"
       "  buildorder               Show build order\n"
+      "  clone                    Clone or update git repos for packages\n"
       "  download                 Download tarball snapshots\n"
       "  info                     Show detailed information\n"
       "  pkgbuild                 Show PKGBUILDs\n"
@@ -740,6 +785,8 @@ int main(int argc, char** argv) {
     return auracle.Info(args);
   } else if (action == "download") {
     return auracle.Download(args, flags.recurse, flags.directory);
+  } else if (action == "clone") {
+    return auracle.Clone(args, flags.recurse, flags.directory);
   } else if (action == "sync") {
     return auracle.Sync(args);
   } else if (action == "buildorder") {

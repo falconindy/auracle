@@ -62,6 +62,18 @@ class RawRequest : public Request {
   const std::string urlpath_;
 };
 
+class CloneRequest : public Request {
+ public:
+  CloneRequest(std::string reponame) : reponame_(std::move(reponame)) {}
+
+  const std::string& reponame() const { return reponame_; }
+
+  std::vector<std::string> Build(const std::string& baseurl) const override;
+
+ private:
+  const std::string reponame_;
+};
+
 // A base class describing a GET request to the RPC endpoint of the AUR.
 class RpcRequest : public Request {
  public:

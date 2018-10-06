@@ -1,0 +1,40 @@
+#!/bin/bash
+
+find_build_directory() {
+  local build_dirs=(*/.ninja_log)
+
+  if [[ ! -e ${build_dirs[0]} ]]; then
+    echo "error: No build directory found. Have you run 'meson build' yet?" >&2
+    return 1
+  elif (( ${#build_dirs[*]} > 1 )); then
+    echo "error: Multiple build directories found. Unable to proceed." >&2
+    return 1
+  fi
+
+  printf '%s\n' "${build_dirs[0]%/*}"
+}
+
+assert_directory_exists() {
+  if [[ ! -d $1 ]]; then
+    printf 'FAIL: expected "%s", but not found\n' "$1" >&2
+    exit 1
+  fi
+}
+
+assert_file_exists() {
+  if [[ ! -f $1 ]]; then
+    printf 'FAIL: expected "%s", but not found\n' "$1" >&2
+    exit 1
+  fi
+}
+
+auracle() {
+  "$AURACLE_BIN" -C "$TEST_TMPDIR" "$@" 2>/dev/null
+}
+
+BUILD_DIR=$(find_build_directory) || exit 1
+AURACLE_BIN=$BUILD_DIR/auracle
+
+TEST_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TEST_TMPDIR"' EXIT
+

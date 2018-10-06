@@ -126,4 +126,12 @@ std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
   return {ss.str()};
 }
 
+std::vector<std::string> CloneRequest::Build(const std::string& baseurl) const {
+  std::stringstream ss;
+
+  ss << baseurl << "/" << reponame_;
+
+  return {ss.str()};
+}
+
 }  // namespace aur

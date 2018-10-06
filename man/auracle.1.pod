@@ -102,6 +102,13 @@ input to this operation.
 Pass one to many arguments to download packages. Use the B<--recurse> flag
 to download dependencies of packages.
 
+=item B<clone> I<PACKAGES>...
+
+Pass one to many arguments to clone package git repositories. Use the
+B<--recurse> flag to clone dependencies of packages. If the git repository
+already exists, the repository will instead be updated via a fast-forward only
+git pull .
+
 =item B<buildorder> I<PACKAGES>...
 
 Pass one to many arguments to print a build order for the given packages.

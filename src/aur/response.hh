@@ -19,6 +19,10 @@ class StatusOr : public std::variant<std::string, Value> {
   const Value& value() const { return std::get<Value>(*this); }
 };
 
+struct CloneResponse {
+  std::string operation;
+};
+
 struct RpcResponse {
   std::string type;
   std::string error;

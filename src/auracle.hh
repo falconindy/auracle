@@ -86,6 +86,8 @@ class Auracle {
              aur::SearchRequest::SearchBy by);
   int Download(const std::vector<PackageOrDependency>& args, bool recurse,
                const std::filesystem::path& directory);
+  int Clone(const std::vector<PackageOrDependency>& args, bool recurse,
+            const std::filesystem::path& directory);
   int Sync(const std::vector<PackageOrDependency>& args);
   int BuildOrder(const std::vector<PackageOrDependency>& args);
   int Pkgbuild(const std::vector<PackageOrDependency>& args);

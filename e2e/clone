@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# shellcheck disable=SC1090
+source "${0%/*}/common"
+
+# should clone
+if ! auracle clone auracle-git; then
+  echo "FAIL: expected 0 exit status, got non-zero" >&2
+  exit 1
+fi
+
+# should do nothing (update)
+if ! auracle clone auracle-git; then
+  echo "FAIL: expected 0 exit status, got non-zero" >&2
+  exit 1
+fi
+
+assert_file_exists "$TEST_TMPDIR/auracle-git/PKGBUILD"
+assert_directory_exists "$TEST_TMPDIR/auracle-git/.git"
