@@ -1,18 +1,20 @@
 #include "aur.hh"
 
-#include <assert.h>
-
-#include <iostream>
-#include <memory>
-#include <string_view>
-
-#include <errno.h>
-#include <stdlib.h>
+#include <fcntl.h>
 #include <string.h>
+
+#include <unistd.h>
+#include <chrono>
+#include <string_view>
 
 namespace aur {
 
 namespace {
+
+template <typename TimeRes, typename ClockType>
+auto TimepointTo(std::chrono::time_point<ClockType> tp) {
+  return std::chrono::time_point_cast<TimeRes>(tp).time_since_epoch().count();
+}
 
 struct ci_char_traits : public std::char_traits<char> {
   static bool eq(char c1, char c2) { return toupper(c1) == toupper(c2); }
@@ -163,17 +165,173 @@ class RawResponseHandler : public ResponseHandler {
 
 Aur::Aur(const std::string& baseurl) : baseurl_(baseurl) {
   curl_global_init(CURL_GLOBAL_SSL);
-  curl_multi_ = curl_multi_init();
-  curl_multi_setopt(curl_multi_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+  curl_ = curl_multi_init();
+
+  curl_multi_setopt(curl_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+
+  curl_multi_setopt(curl_, CURLMOPT_SOCKETFUNCTION, &Aur::SocketCallback);
+  curl_multi_setopt(curl_, CURLMOPT_SOCKETDATA, this);
+
+  curl_multi_setopt(curl_, CURLMOPT_TIMERFUNCTION, &Aur::TimerCallback);
+  curl_multi_setopt(curl_, CURLMOPT_TIMERDATA, this);
+
+  sd_event_default(&event_);
 }
 
 Aur::~Aur() {
-  curl_multi_cleanup(curl_multi_);
+  curl_multi_cleanup(curl_);
   curl_global_cleanup();
+
+  sd_event_unref(event_);
+}
+
+// static
+int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
+                        void* userdata, void*) {
+  Aur* aur = static_cast<Aur*>(userdata);
+
+  auto iter = aur->active_io_.find(s);
+  sd_event_source* io = iter != aur->active_io_.end() ? iter->second : nullptr;
+
+  if (action == CURL_POLL_REMOVE) {
+    if (io) {
+      int fd;
+
+      fd = sd_event_source_get_io_fd(io);
+
+      sd_event_source_set_enabled(io, SD_EVENT_OFF);
+      sd_event_source_unref(io);
+
+      aur->active_io_.erase(iter);
+      aur->translate_fds_.erase(fd);
+
+      close(fd);
+    }
+  }
+
+  std::uint32_t events;
+  if (action == CURL_POLL_IN) {
+    events = EPOLLIN;
+  } else if (action == CURL_POLL_OUT) {
+    events = EPOLLOUT;
+  } else if (action == CURL_POLL_INOUT) {
+    events = EPOLLIN | EPOLLOUT;
+  }
+
+  if (iter != aur->active_io_.end()) {
+    if (sd_event_source_set_io_events(io, events) < 0) {
+      return -1;
+    }
+
+    if (sd_event_source_set_enabled(io, SD_EVENT_ON) < 0) {
+      return -1;
+    }
+  } else {
+    int fd;
+
+    /* When curl needs to remove an fd from us it closes
+     * the fd first, and only then calls into us. This is
+     * nasty, since we cannot pass the fd on to epoll()
+     * anymore. Hence, duplicate the fds here, and keep a
+     * copy for epoll which we control after use. */
+
+    fd = fcntl(s, F_DUPFD_CLOEXEC, 3);
+    if (fd < 0) {
+      return -1;
+    }
+
+    if (sd_event_add_io(aur->event_, &io, fd, events, &Aur::OnIO, aur) < 0) {
+      return -1;
+    }
+
+    sd_event_source_set_description(io, "curl-io");
+
+    aur->active_io_.emplace(s, io);
+    aur->translate_fds_.emplace(fd, s);
+  }
+
+  return 0;
+}
+
+// static
+int Aur::OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata) {
+  Aur* aur = static_cast<Aur*>(userdata);
+  int action, k = 0;
+
+  // Throwing an exception here would indicate a bug in Aur::SocketCallback.
+  auto translated_fd = aur->translate_fds_[fd];
+
+  if ((revents & (EPOLLIN | EPOLLOUT)) == (EPOLLIN | EPOLLOUT)) {
+    action = CURL_POLL_INOUT;
+  } else if (revents & EPOLLIN) {
+    action = CURL_POLL_IN;
+  } else if (revents & EPOLLOUT) {
+    action = CURL_POLL_OUT;
+  } else {
+    action = 0;
+  }
+
+  if (curl_multi_socket_action(aur->curl_, translated_fd, action, &k) < 0) {
+    return -EINVAL;
+  }
+
+  aur->ProcessDoneEvents();
+  return 0;
+}
+
+// static
+int Aur::OnTimer(sd_event_source* s, uint64_t usec, void* userdata) {
+  Aur* aur = static_cast<Aur*>(userdata);
+  int k = 0;
+
+  if (curl_multi_socket_action(aur->curl_, CURL_SOCKET_TIMEOUT, 0, &k) !=
+      CURLM_OK) {
+    return -EINVAL;
+  }
+
+  aur->ProcessDoneEvents();
+  return 0;
+}
+
+// static
+int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
+  Aur* aur = static_cast<Aur*>(userdata);
+
+  if (timeout_ms < 0) {
+    if (aur->timer_) {
+      if (sd_event_source_set_enabled(aur->timer_, SD_EVENT_OFF) < 0) {
+        return -1;
+      }
+    }
+
+    return 0;
+  }
+
+  auto usec = TimepointTo<std::chrono::microseconds>(
+      std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms));
+
+  if (aur->timer_) {
+    if (sd_event_source_set_time(aur->timer_, usec) < 0) {
+      return -1;
+    }
+
+    if (sd_event_source_set_enabled(aur->timer_, SD_EVENT_ONESHOT) < 0) {
+      return -1;
+    }
+  } else {
+    if (sd_event_add_time(aur->event_, &aur->timer_, CLOCK_MONOTONIC, usec, 0,
+                          &Aur::OnTimer, aur) < 0) {
+      return -1;
+    }
+
+    sd_event_source_set_description(aur->timer_, "curl-timer");
+  }
+
+  return 0;
 }
 
 void Aur::StartRequest(CURL* curl) {
-  curl_multi_add_handle(curl_multi_, curl);
+  curl_multi_add_handle(curl_, curl);
   active_requests_.insert(curl);
 }
 
@@ -197,7 +355,7 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   auto r = dispatch_callback ? handler->RunCallback(error) : 0;
 
   active_requests_.erase(curl);
-  curl_multi_remove_handle(curl_multi_, curl);
+  curl_multi_remove_handle(curl_, curl);
   curl_easy_cleanup(curl);
 
   return r;
@@ -206,7 +364,7 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
 int Aur::ProcessDoneEvents() {
   for (;;) {
     int msgs_left;
-    auto msg = curl_multi_info_read(curl_multi_, &msgs_left);
+    auto msg = curl_multi_info_read(curl_, &msgs_left);
     if (msg == NULL) {
       break;
     }
@@ -226,7 +384,7 @@ int Aur::ProcessDoneEvents() {
 }
 
 void Aur::Cancel() {
-  while (active_requests_.size() > 0) {
+  while (!active_requests_.empty()) {
     FinishRequest(*active_requests_.begin(), CURLE_ABORTED_BY_CALLBACK,
                   /* dispatch_callback = */ false);
   }
@@ -234,25 +392,7 @@ void Aur::Cancel() {
 
 int Aur::Wait() {
   while (!active_requests_.empty()) {
-    int active;
-    auto rc = curl_multi_perform(curl_multi_, &active);
-    if (rc != CURLM_OK) {
-      fprintf(stderr, "error: curl_multi_perform failed (%d)\n", rc);
-      return 1;
-    }
-
-    int nfd;
-    rc = curl_multi_wait(curl_multi_, NULL, 0, 1000, &nfd);
-    if (rc != CURLM_OK) {
-      fprintf(stderr, "error: curl_multi_wait failed (%d)\n", rc);
-      return 1;
-    }
-
-    auto r = ProcessDoneEvents();
-    if (r != 0) {
-      Cancel();
-      return r;
-    }
+    sd_event_run(event_, 0);
   }
 
   return 0;
@@ -356,7 +496,7 @@ void Aur::QueuePkgbuildRequest(const RawRequest& request,
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }
 
 void Aur::SetMaxConnections(long connections) {
-  curl_multi_setopt(curl_multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, connections);
+  curl_multi_setopt(curl_, CURLMOPT_MAX_TOTAL_CONNECTIONS, connections);
 }
 
 }  // namespace aur

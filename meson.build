@@ -33,6 +33,7 @@ add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags)
 libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
+libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
 stdcppfs = cpp.find_library('stdc++fs')
@@ -54,7 +55,7 @@ aurlib = static_library(
         include_directories('src'),
         include_directories('/usr/include/nlohmann')
     ],
-    dependencies : [libcurl])
+    dependencies : [libcurl, libsystemd])
 
 auracle_sources = '''
   src/auracle.cc src/auracle.hh

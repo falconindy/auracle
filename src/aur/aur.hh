@@ -2,12 +2,12 @@
 #define AUR_HH
 
 #include <functional>
-#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 #include <curl/curl.h>
+#include <systemd/sd-event.h>
 
 #include "request.hh"
 #include "response.hh"
@@ -72,12 +72,23 @@ class Aur {
   int ProcessDoneEvents();
   void Cancel();
 
+  static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
+                            void* userdata, void* socketp);
+  static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
+  static int OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata);
+  static int OnTimer(sd_event_source* s, uint64_t usec, void* userdata);
+
   const std::string baseurl_;
 
   long connect_timeout_ = 10;
 
-  CURLM* curl_multi_;
+  CURLM* curl_;
   std::unordered_set<CURL*> active_requests_;
+  std::unordered_map<int, sd_event_source*> active_io_;
+  std::unordered_map<int, int> translate_fds_;
+
+  sd_event* event_ = nullptr;
+  sd_event_source* timer_ = nullptr;
 };
 
 }  // namespace aur
