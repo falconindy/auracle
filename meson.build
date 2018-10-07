@@ -66,7 +66,7 @@ auracle_sources = '''
   src/inmemory_repo.cc src/inmemory_repo.hh
 '''.split()
 
-executable(
+auracle = executable(
     'auracle',
     auracle_sources,
     link_with : [aurlib],
@@ -117,6 +117,21 @@ if gtest.found() and gmock.found()
         basename,
         input,
         link_with : [aurlib, gtest_main],
-        dependencies : [gtest, gmock]))
+        dependencies : [gtest, gmock]),
+      suite : ['hermetic'])
     endforeach
 endif
+
+bash = find_program('bash')
+foreach input : [
+  'e2e/clone',
+  'e2e/download',
+  'e2e/rawquery',
+]
+  basename = input.split('/')[-1].split('.')[0]
+  test(
+    'e2e_@0@'.format(basename),
+    bash,
+    args : [join_paths(meson.source_root(), input)],
+    suite : ['e2e'])
+endforeach
