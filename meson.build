@@ -122,16 +122,18 @@ if gtest.found() and gmock.found()
     endforeach
 endif
 
-bash = find_program('bash')
+python = find_program('python')
 foreach input : [
-  'e2e/clone',
-  'e2e/download',
-  'e2e/rawquery',
+  'e2e/clone.py',
+  'e2e/download.py',
+  'e2e/raw_query.py',
+  'e2e/regex_search.py',
 ]
   basename = input.split('/')[-1].split('.')[0]
   test(
     'e2e_@0@'.format(basename),
-    bash,
+    python,
     args : [join_paths(meson.source_root(), input)],
+    env : ['PYTHONDONTWRITEBYTECODE=1'],
     suite : ['e2e'])
 endforeach
