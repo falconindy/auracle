@@ -153,7 +153,8 @@ std::string SearchFragFromRegex(const std::string& s) {
   return std::string(argstr, span);
 }
 
-int Auracle::Info(const std::vector<PackageOrDependency>& args) {
+int Auracle::Info(const std::vector<PackageOrDependency>& args,
+                  const CommandOptions&) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
@@ -184,7 +185,8 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
   return 0;
 }
 
-int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
+int Auracle::Search(const std::vector<PackageOrDependency>& args,
+                    const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
@@ -200,10 +202,10 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
     }
   }
 
-  const auto matches = [&patterns, by](const aur::Package& p) -> bool {
+  const auto matches = [&patterns, &options](const aur::Package& p) -> bool {
     return std::all_of(patterns.begin(), patterns.end(),
-                       [&p, by](const std::regex& re) {
-                         switch (by) {
+                       [&p, &options](const std::regex& re) {
+                         switch (options.search_by) {
                            case SearchBy::NAME:
                              return std::regex_search(p.name, re);
                            case SearchBy::NAME_DESC:
@@ -221,9 +223,9 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
   std::set<aur::Package, sort::PackageNameLess> packages;
   for (size_t i = 0; i < args.size(); ++i) {
     aur::SearchRequest r;
-    r.SetSearchBy(by);
+    r.SetSearchBy(options.search_by);
 
-    if (allow_regex_) {
+    if (options.allow_regex) {
       auto frag = SearchFragFromRegex(args[i]);
       if (frag.empty()) {
         std::cerr << "error: search string '" << std::string(args[i])
@@ -256,7 +258,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
   }
 
   // TODO: implement custom sorting
-  if (options_.quiet) {
+  if (options.quiet) {
     FormatNameOnly(std::cout, packages);
   } else {
     FormatShort(std::cout, packages);
@@ -358,18 +360,18 @@ bool ChdirIfNeeded(const fs::path target) {
   return true;
 }
 
-int Auracle::Clone(const std::vector<PackageOrDependency>& args, bool recurse,
-                   const fs::path& directory) {
+int Auracle::Clone(const std::vector<PackageOrDependency>& args,
+                   const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
 
-  if (!ChdirIfNeeded(directory)) {
+  if (!ChdirIfNeeded(options.directory)) {
     return 1;
   }
 
   int ret = 0;
-  PackageIterator iter(recurse, [this, &ret](const aur::Package& p) {
+  PackageIterator iter(options.recurse, [this, &ret](const aur::Package& p) {
     aur_.QueueCloneRequest(
         aur::CloneRequest(p.pkgbase),
         [&ret, pkgbase{p.pkgbase}](aur::StatusOr<aur::CloneResponse> response) {
@@ -393,16 +395,16 @@ int Auracle::Clone(const std::vector<PackageOrDependency>& args, bool recurse,
 }
 
 int Auracle::Download(const std::vector<PackageOrDependency>& args,
-                      bool recurse, const fs::path& directory) {
+                      const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
 
-  if (!ChdirIfNeeded(directory)) {
+  if (!ChdirIfNeeded(options.directory)) {
     return 1;
   }
 
-  PackageIterator iter(recurse, [this](const aur::Package& p) {
+  PackageIterator iter(options.recurse, [this](const aur::Package& p) {
     aur_.QueueTarballRequest(
         aur::RawRequest(aur::RawRequest::UrlForTarball(p)),
         [pkgbase{p.pkgbase}](aur::StatusOr<aur::RawResponse> response) {
@@ -433,7 +435,8 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   return 0;
 }
 
-int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
+int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args,
+                      const CommandOptions&) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
@@ -481,7 +484,8 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
   return 0;
 }
 
-int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args) {
+int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args,
+                        const CommandOptions&) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
@@ -515,7 +519,8 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args) {
   return 0;
 }
 
-int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
+int Auracle::Sync(const std::vector<PackageOrDependency>& args,
+                  const CommandOptions& options) {
   aur::InfoRequest info_request;
 
   const auto foreign_pkgs = pacman_->ForeignPackages();
@@ -539,7 +544,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
                                      return p.pkgname == r.name;
                                    });
           if (dlr::Pacman::Vercmp(r.version, iter->pkgver) > 0) {
-            if (options_.quiet) {
+            if (options.quiet) {
               std::cout << format::NameOnly(r);
             } else {
               std::cout << format::Update(*iter, r,
@@ -555,11 +560,11 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
 }
 
 int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
-                       aur::SearchRequest::SearchBy by) {
+                       const CommandOptions& options) {
   for (const auto& arg : args) {
     aur::SearchRequest request;
     request.AddArg(arg);
-    request.SetSearchBy(by);
+    request.SetSearchBy(options.search_by);
 
     aur_.QueueRawRpcRequest(
         request, [](aur::StatusOr<aur::RawResponse> response) {
@@ -576,7 +581,8 @@ int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
   return aur_.Wait();
 }
 
-int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
+int Auracle::RawInfo(const std::vector<PackageOrDependency>& args,
+                     const CommandOptions&) {
   aur::InfoRequest request;
 
   for (const auto& arg : args) {
@@ -598,14 +604,11 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
 }
 
 struct Flags {
-  SearchBy search_by = SearchBy::NAME_DESC;
   int max_connections = 20;
   int connect_timeout = 10;
-  bool recurse = false;
-  bool allow_regex = true;
-  bool quiet = false;
   terminal::WantColor color = terminal::WantColor::AUTO;
-  fs::path directory;
+
+  Auracle::CommandOptions command_options;
 };
 
 __attribute__((noreturn)) void usage(void) {
@@ -683,24 +686,25 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       case 'h':
         usage();
       case 'q':
-        flags->quiet = true;
+        flags->command_options.quiet = true;
         break;
       case 'r':
-        flags->recurse = true;
+        flags->command_options.recurse = true;
         break;
       case 'C':
         if (sv_optarg.empty()) {
           std::cerr << "error: meaningless option: -C ''\n";
           return false;
         }
-        flags->directory = optarg;
+        flags->command_options.directory = optarg;
         break;
       case LITERAL:
-        flags->allow_regex = false;
+        flags->command_options.allow_regex = false;
         break;
       case SEARCHBY:
-        flags->search_by = aur::SearchRequest::ParseSearchBy(sv_optarg);
-        if (flags->search_by == SearchBy::INVALID) {
+        flags->command_options.search_by =
+            aur::SearchRequest::ParseSearchBy(sv_optarg);
+        if (flags->command_options.search_by == SearchBy::INVALID) {
           std::cerr << "error: invalid arg to --searchby: " << sv_optarg
                     << "\n";
           return false;
@@ -771,36 +775,34 @@ int main(int argc, char** argv) {
   Auracle auracle(Auracle::Options()
                       .set_aur_baseurl(kAurBaseurl)
                       .set_pacman(pacman.get())
-                      .set_quiet(flags.quiet)
-                      .set_allow_regex(flags.allow_regex)
                       .set_connection_timeout(flags.connect_timeout)
                       .set_max_connections(flags.max_connections));
 
   std::string_view action(argv[1]);
   std::vector<PackageOrDependency> args(argv + 2, argv + argc);
 
-  if (action == "search") {
-    return auracle.Search(args, flags.search_by);
-  } else if (action == "info") {
-    return auracle.Info(args);
-  } else if (action == "download") {
-    return auracle.Download(args, flags.recurse, flags.directory);
-  } else if (action == "clone") {
-    return auracle.Clone(args, flags.recurse, flags.directory);
-  } else if (action == "sync") {
-    return auracle.Sync(args);
-  } else if (action == "buildorder") {
-    return auracle.BuildOrder(args);
-  } else if (action == "pkgbuild") {
-    return auracle.Pkgbuild(args);
-  } else if (action == "rawinfo") {
-    return auracle.RawInfo(args);
-  } else if (action == "rawsearch") {
-    return auracle.RawSearch(args, flags.search_by);
-  }
+  std::unordered_map<std::string_view,
+                     int (Auracle::*)(
+                         const std::vector<PackageOrDependency>& args,
+                         const Auracle::CommandOptions& options)>
+      cmds{
+          {"buildorder", &Auracle::BuildOrder},
+          {"clone", &Auracle::Clone},
+          {"download", &Auracle::Download},
+          {"info", &Auracle::Info},
+          {"pkgbuild", &Auracle::Pkgbuild},
+          {"rawinfo", &Auracle::RawInfo},
+          {"rawsearch", &Auracle::RawSearch},
+          {"search", &Auracle::Search},
+          {"sync", &Auracle::Sync},
+      };
 
-  std::cerr << "Unknown action " << action << "\n";
-  return 1;
+  if (auto iter = cmds.find(action); iter != cmds.end()) {
+    return (auracle.*iter->second)(args, flags.command_options);
+  } else {
+    std::cerr << "Unknown action " << action << "\n";
+    return 1;
+  }
 }
 
 /* vim: set et ts=2 sw=2: */

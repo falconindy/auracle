@@ -50,11 +50,6 @@ class Auracle {
       return *this;
     }
 
-    Options& set_allow_regex(bool allow_regex) {
-      this->allow_regex = allow_regex;
-      return *this;
-    }
-
     Options& set_quiet(bool quiet) {
       this->quiet = quiet;
       return *this;
@@ -62,39 +57,48 @@ class Auracle {
 
     std::string aur_baseurl;
     dlr::Pacman* pacman;
-    bool allow_regex = true;
     bool quiet = false;
     int max_connections = 0;
     int connection_timeout = 0;
   };
 
   explicit Auracle(Options options)
-      : options_(std::move(options)),
-        aur_(options_.aur_baseurl),
-        allow_regex_(options_.allow_regex),
-        pacman_(options_.pacman) {
-    aur_.SetMaxConnections(options_.max_connections);
-    aur_.SetConnectTimeout(options_.connection_timeout);
+      : aur_(options.aur_baseurl), pacman_(options.pacman) {
+    aur_.SetMaxConnections(options.max_connections);
+    aur_.SetConnectTimeout(options.connection_timeout);
   }
 
   ~Auracle() = default;
   Auracle(const Auracle&) = delete;
   Auracle& operator=(const Auracle&) = delete;
 
-  int Info(const std::vector<PackageOrDependency>& args);
-  int Search(const std::vector<PackageOrDependency>& args,
-             aur::SearchRequest::SearchBy by);
-  int Download(const std::vector<PackageOrDependency>& args, bool recurse,
-               const std::filesystem::path& directory);
-  int Clone(const std::vector<PackageOrDependency>& args, bool recurse,
-            const std::filesystem::path& directory);
-  int Sync(const std::vector<PackageOrDependency>& args);
-  int BuildOrder(const std::vector<PackageOrDependency>& args);
-  int Pkgbuild(const std::vector<PackageOrDependency>& args);
+  struct CommandOptions {
+    aur::SearchRequest::SearchBy search_by =
+        aur::SearchRequest::SearchBy::NAME_DESC;
+    std::filesystem::path directory;
+    bool recurse = false;
+    bool allow_regex = true;
+    bool quiet = false;
+  };
 
+  int BuildOrder(const std::vector<PackageOrDependency>& args,
+                 const CommandOptions& options);
+  int Clone(const std::vector<PackageOrDependency>& args,
+            const CommandOptions& options);
+  int Download(const std::vector<PackageOrDependency>& args,
+               const CommandOptions& options);
+  int Info(const std::vector<PackageOrDependency>& args,
+           const CommandOptions& options);
+  int Pkgbuild(const std::vector<PackageOrDependency>& args,
+               const CommandOptions& options);
+  int RawInfo(const std::vector<PackageOrDependency>& args,
+              const CommandOptions& options);
   int RawSearch(const std::vector<PackageOrDependency>& args,
-                aur::SearchRequest::SearchBy by);
-  int RawInfo(const std::vector<PackageOrDependency>& args);
+                const CommandOptions& options);
+  int Search(const std::vector<PackageOrDependency>& args,
+             const CommandOptions& options);
+  int Sync(const std::vector<PackageOrDependency>& args,
+           const CommandOptions& options);
 
  private:
   struct PackageIterator {
@@ -114,9 +118,7 @@ class Auracle {
   void IteratePackages(std::vector<PackageOrDependency> args,
                        PackageIterator* state);
 
-  const Options options_;
   aur::Aur aur_;
-  bool allow_regex_;
   dlr::Pacman* const pacman_;
 };
 
