@@ -73,3 +73,17 @@ TEST(RequestTest, BuildsRawRequests) {
 
   EXPECT_EQ(urls[0], std::string(kBaseUrl) + "/foo/bar/baz");
 }
+
+TEST(RequestTest, BuildsCloneRequests) {
+  const std::string kReponame = "auracle-git";
+
+  aur::CloneRequest request(kReponame);
+
+  ASSERT_EQ(request.reponame(), kReponame);
+
+  const auto urls = request.Build(kBaseUrl);
+  ASSERT_EQ(urls.size(), 1);
+
+  const auto& url = urls[0];
+  EXPECT_EQ(url, std::string(kBaseUrl) + "/" + kReponame);
+}
