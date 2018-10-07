@@ -8,7 +8,7 @@
 namespace aur {
 
 template <typename Value>
-class HttpStatusOr : public std::variant<std::string, Value> {
+class StatusOr : public std::variant<std::string, Value> {
  public:
   using std::variant<std::string, Value>::variant;
 

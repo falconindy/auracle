@@ -161,7 +161,7 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args) {
   int resultcount = 0;
   aur_.QueueRpcRequest(
       aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
-      [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
+      [this, &resultcount](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
         } else {
@@ -236,7 +236,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args, SearchBy by) {
     }
 
     aur_.QueueRpcRequest(
-        r, [&, arg{args[i]}](aur::HttpStatusOr<aur::RpcResponse> response) {
+        r, [&, arg{args[i]}](aur::StatusOr<aur::RpcResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed for '" << std::string(arg)
                       << "': " << response.error() << "\n";
@@ -288,7 +288,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
 
   aur_.QueueRpcRequest(
       info_request, [this, state, want{std::move(args)}](
-                        aur::HttpStatusOr<aur::RpcResponse> response) {
+                        aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
@@ -361,7 +361,7 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   PackageIterator iter(recurse, [this](const aur::Package& p) {
     aur_.QueueTarballRequest(
         aur::RawRequest(aur::RawRequest::UrlForTarball(p)),
-        [pkgbase{p.pkgbase}](aur::HttpStatusOr<aur::RawResponse> response) {
+        [pkgbase{p.pkgbase}](aur::StatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
             return 1;
@@ -397,7 +397,7 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
   int resultcount = 0;
   aur_.QueueRpcRequest(
       aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
-      [this, &resultcount](aur::HttpStatusOr<aur::RpcResponse> response) {
+      [this, &resultcount](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "request failed: " << response.error() << "\n";
           return 0;
@@ -411,7 +411,7 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args) {
           aur_.QueuePkgbuildRequest(
               aur::RawRequest(aur::RawRequest::UrlForPkgbuild(arg)),
               [print_header, pkgbase{arg.pkgbase}](
-                  const aur::HttpStatusOr<aur::RawResponse> response) {
+                  const aur::StatusOr<aur::RawResponse> response) {
                 if (!response.ok()) {
                   std::cerr << "request failed: " << response.error() << "\n";
                   return 1;
@@ -483,7 +483,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args) {
   }
 
   aur_.QueueRpcRequest(
-      info_request, [&](aur::HttpStatusOr<aur::RpcResponse> response) {
+      info_request, [&](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;
@@ -518,7 +518,7 @@ int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
     request.SetSearchBy(by);
 
     aur_.QueueRawRpcRequest(
-        request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+        request, [](aur::StatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
             return 1;
@@ -540,7 +540,7 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args) {
   }
 
   aur_.QueueRawRpcRequest(
-      request, [](aur::HttpStatusOr<aur::RawResponse> response) {
+      request, [](aur::StatusOr<aur::RawResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 1;

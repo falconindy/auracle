@@ -16,8 +16,8 @@ namespace aur {
 
 class Aur {
  public:
-  using RpcResponseCallback = std::function<int(HttpStatusOr<RpcResponse>)>;
-  using RawResponseCallback = std::function<int(HttpStatusOr<RawResponse>)>;
+  using RpcResponseCallback = std::function<int(StatusOr<RpcResponse>)>;
+  using RawResponseCallback = std::function<int(StatusOr<RawResponse>)>;
 
   // Construct a new Aur object, rooted at the given URL, e.g.
   // https://aur.archlinux.org.
