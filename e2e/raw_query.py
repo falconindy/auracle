@@ -33,6 +33,19 @@ class TestE2ERawQuery(auracle_e2e_test.TestCase):
         self.assertCountEqual(self.request_uris,
                 ['/rpc?by=name-desc&type=search&v=5&arg=aura'])
 
+    def testMultipleRawSearch(self):
+        p = self.Auracle(['rawsearch', 'aura', 'systemd'])
+        self.assertEqual(p.returncode, 0)
+
+        for line in p.stdout.splitlines():
+            parsed = json.loads(line)
+            self.assertGreater(parsed['resultcount'], 1)
+
+        self.assertCountEqual(self.request_uris, [
+            '/rpc?by=name-desc&type=search&v=5&arg=aura',
+            '/rpc?by=name-desc&type=search&v=5&arg=systemd',
+        ])
+
 
     def testRawSearchBy(self):
         p = self.Auracle(

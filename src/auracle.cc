@@ -573,7 +573,7 @@ int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
             return 1;
           }
 
-          std::cout << response.value().bytes;
+          std::cout << response.value().bytes << "\n";
           return 0;
         });
   }
@@ -596,7 +596,7 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args,
           return 1;
         }
 
-        std::cout << response.value().bytes;
+        std::cout << response.value().bytes << "\n";
         return 0;
       });
 
