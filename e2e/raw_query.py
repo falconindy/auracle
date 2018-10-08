@@ -16,6 +16,9 @@ class TestE2ERawQuery(auracle_e2e_test.TestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
+        self.assertCountEqual(self.requests_made,
+                ['/rpc?type=info&v=5&arg[]=auracle-git'])
+
 
     def testRawSearch(self):
         p = self.Auracle(['rawsearch', 'aura'])
@@ -26,6 +29,9 @@ class TestE2ERawQuery(auracle_e2e_test.TestCase):
 
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
+
+        self.assertCountEqual(self.requests_made,
+                ['/rpc?by=name-desc&type=search&v=5&arg=aura'])
 
 
     def testRawSearchBy(self):
@@ -38,6 +44,9 @@ class TestE2ERawQuery(auracle_e2e_test.TestCase):
 
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
+
+        self.assertCountEqual(self.requests_made,
+                ['/rpc?by=maintainer&type=search&v=5&arg=falconindy'])
 
 
 if __name__ == '__main__':
