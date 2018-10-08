@@ -19,34 +19,22 @@ auto TimepointTo(std::chrono::time_point<ClockType> tp) {
   return std::chrono::time_point_cast<TimeRes>(tp).time_since_epoch().count();
 }
 
-struct ci_char_traits : public std::char_traits<char> {
-  static bool eq(char c1, char c2) { return toupper(c1) == toupper(c2); }
-  static bool ne(char c1, char c2) { return toupper(c1) != toupper(c2); }
-  static bool lt(char c1, char c2) { return toupper(c1) < toupper(c2); }
-  static int compare(const char* s1, const char* s2, size_t n) {
-    while (n-- != 0) {
-      if (toupper(*s1) < toupper(*s2)) {
-        return -1;
-      }
-      if (toupper(*s1) > toupper(*s2)) {
-        return 1;
-      }
-      ++s1;
-      ++s2;
-    }
-    return 0;
+bool ConsumePrefixCase(std::string_view* view, std::string_view prefix) {
+  if (prefix.size() > view->size()) {
+    return false;
   }
-  static const char* find(const char* s, int n, char a) {
-    while (n-- > 0 && toupper(*s) != toupper(a)) {
-      ++s;
+
+  for (std::string_view::size_type i = 0; i < prefix.size(); ++i) {
+    if (tolower((*view)[i]) != tolower(prefix[i])) {
+      return false;
     }
-    return s;
   }
-};
 
-using ci_string_view = std::basic_string_view<char, ci_char_traits>;
+  view->remove_prefix(prefix.size());
+  return true;
+}
 
-bool ConsumePrefix(ci_string_view* view, ci_string_view prefix) {
+bool ConsumePrefix(std::string_view* view, std::string_view prefix) {
   if (view->find(prefix) != 0) {
     return false;
   }
@@ -73,13 +61,34 @@ class ResponseHandler {
     auto handler = static_cast<ResponseHandler*>(userdata);
 
     // Remove 2 bytes to ignore trailing \r\n
-    ci_string_view header(buffer, size * nitems - 2);
+    std::string_view header(buffer, size * nitems - 2);
 
-    if (ConsumePrefix(&header, "Content-Disposition:")) {
+    if (ConsumePrefixCase(&header, "content-disposition:")) {
       handler->FilenameFromHeader(header);
     }
 
     return size * nitems;
+  }
+
+  static int DebugCallback(CURL* handle, curl_infotype type, char* data,
+                           size_t size, void* userdata) {
+    auto stream = static_cast<std::ofstream*>(userdata);
+
+    if (type != CURLINFO_HEADER_OUT) {
+      return 0;
+    }
+
+    std::string_view header(data, size);
+    if (!ConsumePrefix(&header, std::string_view("GET "))) {
+      return 0;
+    }
+
+    const auto header_end = header.find_first_of(' ');
+    header.remove_suffix(header.size() - header_end);
+
+    stream->write(header.data(), header.size()) << "\n";
+
+    return 0;
   }
 
   int RunCallback(const std::string& error) const {
@@ -92,6 +101,8 @@ class ResponseHandler {
     this->filename_hint = filename_hint;
   }
 
+  void EnableDebugging() {}
+
   std::string body;
   std::string filename_hint;
   char error_buffer[CURL_ERROR_SIZE]{};
@@ -99,7 +110,7 @@ class ResponseHandler {
  private:
   virtual int Run(const std::string& error) const = 0;
 
-  void FilenameFromHeader(ci_string_view value) {
+  void FilenameFromHeader(std::string_view value) {
     constexpr char kFilenameKey[] = "filename=";
 
     const auto pos = value.find(kFilenameKey);
@@ -208,6 +219,14 @@ Aur::Aur(const std::string& baseurl) : baseurl_(baseurl) {
   sigprocmask(SIG_BLOCK, &ss, &saved_ss_);
 
   sd_event_default(&event_);
+
+  std::string_view debug(getenv("AURACLE_DEBUG"));
+  if (ConsumePrefix(&debug, "requests:")) {
+    debug_level_ = DEBUG_REQUESTS;
+    debug_stream_.open(std::string(debug), std::ofstream::trunc);
+  } else if (!debug.empty()) {
+    debug_level_ = DEBUG_VERBOSE_STDERR;
+  }
 }
 
 Aur::~Aur() {
@@ -217,6 +236,10 @@ Aur::~Aur() {
   sd_event_unref(event_);
 
   sigprocmask(SIG_SETMASK, &saved_ss_, nullptr);
+
+  if (debug_stream_.is_open()) {
+    debug_stream_.close();
+  }
 }
 
 // static
@@ -471,10 +494,6 @@ void Aur::QueueRequest(
     auto response_handler =
         new typename RequestTraits::ResponseHandlerType(callback);
 
-    if (getenv("AURACLE_DEBUG")) {
-      curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    }
-
     using RH = ResponseHandler;
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
     curl_easy_setopt(curl, CURLOPT_URL, r.c_str());
@@ -494,6 +513,18 @@ void Aur::QueueRequest(
 
     if (RequestTraits::kFilenameHint) {
       response_handler->set_filename_hint(RequestTraits::kFilenameHint);
+    }
+
+    switch (debug_level_) {
+      case DEBUG_NONE:
+        break;
+      case DEBUG_REQUESTS:
+        curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &RH::DebugCallback);
+        curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_stream_);
+        [[fallthrough]];
+      case DEBUG_VERBOSE_STDERR:
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        break;
     }
 
     StartRequest(curl);

@@ -1,7 +1,9 @@
 #ifndef AUR_HH
 #define AUR_HH
 
+#include <fstream>
 #include <functional>
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -98,6 +100,17 @@ class Aur {
     std::unordered_set<sd_event_source*> event_sources_;
   };
 
+  enum DebugLevel {
+    // No debugging.
+    DEBUG_NONE,
+
+    // Enable Curl's verbose output to stderr
+    DEBUG_VERBOSE_STDERR,
+
+    // Enable Curl debug handler, write outbound requests made to a file
+    DEBUG_REQUESTS,
+  };
+
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
                             void* userdata, void* socketp);
   static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
@@ -118,6 +131,9 @@ class Aur {
   sigset_t saved_ss_;
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
+
+  DebugLevel debug_level_ = DEBUG_NONE;
+  std::ofstream debug_stream_;
 };
 
 }  // namespace aur

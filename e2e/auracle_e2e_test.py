@@ -24,24 +24,35 @@ def FindMesonBuildDir():
 class TestCase(unittest.TestCase):
 
     def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
         self.build_dir = FindMesonBuildDir()
 
+        self.tempdir = tempfile.mkdtemp()
+
+        tmpfile = tempfile.mkstemp(dir=self.tempdir)
+        os.close(tmpfile[0])
+        self.requests_file = tmpfile[1]
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
 
-    def Auracle(self, args, debug=False):
-        env = {}
-        if debug:
-            env['AURACLE_DEBUG'] = '1'
+    def Auracle(self, args):
+        env = {
+            'AURACLE_DEBUG': 'requests:{}'.format(self.requests_file)
+        }
 
-        return subprocess.run([
+        cmdline = [
             os.path.join(self.build_dir, 'auracle'),
             '--color=never',
             '--chdir', self.tempdir,
-        ] + list(args), env=env, capture_output=True)
+        ] + list(args)
+
+        p = subprocess.run(cmdline, env=env, capture_output=True)
+
+        with open(self.requests_file) as f:
+            self.requests_made = f.read().splitlines()
+
+        return p
 
 
     def assertPkgbuildExists(self, pkgname, git=False):
