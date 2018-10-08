@@ -19,21 +19,6 @@ auto TimepointTo(std::chrono::time_point<ClockType> tp) {
   return std::chrono::time_point_cast<TimeRes>(tp).time_since_epoch().count();
 }
 
-bool ConsumePrefixCase(std::string_view* view, std::string_view prefix) {
-  if (prefix.size() > view->size()) {
-    return false;
-  }
-
-  for (std::string_view::size_type i = 0; i < prefix.size(); ++i) {
-    if (tolower((*view)[i]) != tolower(prefix[i])) {
-      return false;
-    }
-  }
-
-  view->remove_prefix(prefix.size());
-  return true;
-}
-
 bool ConsumePrefix(std::string_view* view, std::string_view prefix) {
   if (view->find(prefix) != 0) {
     return false;
@@ -52,22 +37,7 @@ class ResponseHandler {
     auto handler = static_cast<ResponseHandler*>(userdata);
 
     handler->body.append(ptr, size * nmemb);
-
     return size * nmemb;
-  }
-
-  static size_t HeaderCallback(char* buffer, size_t size, size_t nitems,
-                               void* userdata) {
-    auto handler = static_cast<ResponseHandler*>(userdata);
-
-    // Remove 2 bytes to ignore trailing \r\n
-    std::string_view header(buffer, size * nitems - 2);
-
-    if (ConsumePrefixCase(&header, "content-disposition:")) {
-      handler->FilenameFromHeader(header);
-    }
-
-    return size * nitems;
   }
 
   static int DebugCallback(CURL* handle, curl_infotype type, char* data,
@@ -440,8 +410,6 @@ int Aur::Wait() {
 }
 
 struct RpcRequestTraits {
-  enum : bool { kNeedHeaders = false };
-
   using ResponseHandlerType = RpcResponseHandler;
 
   static constexpr char const* kEncoding = "";
@@ -449,8 +417,6 @@ struct RpcRequestTraits {
 };
 
 struct RawRpcRequestTraits {
-  enum : bool { kNeedHeaders = false };
-
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
@@ -458,8 +424,6 @@ struct RawRpcRequestTraits {
 };
 
 struct TarballRequestTraits {
-  enum : bool { kNeedHeaders = true };
-
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "identity";
@@ -467,8 +431,6 @@ struct TarballRequestTraits {
 };
 
 struct PkgbuildRequestTraits {
-  enum : bool { kNeedHeaders = false };
-
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
@@ -496,11 +458,6 @@ void Aur::QueueRequest(
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout_);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
-
-    if (RequestTraits::kNeedHeaders) {
-      curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, &RH::HeaderCallback);
-      curl_easy_setopt(curl, CURLOPT_HEADERDATA, response_handler);
-    }
 
     if (RequestTraits::kFilenameHint) {
       response_handler->set_filename_hint(RequestTraits::kFilenameHint);
