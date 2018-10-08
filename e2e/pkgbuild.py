@@ -12,7 +12,7 @@ class TestE2EPkgbuild(auracle_e2e_test.TestCase):
 
         self.assertIn('pkgname=auracle-git', pkgbuild)
 
-        self.assertCountEqual(self.requests_made, [
+        self.assertCountEqual(self.request_uris, [
             '/rpc?type=info&v=5&arg[]=auracle-git',
             '/cgit/aur.git/plain/PKGBUILD?h=auracle-git'
         ])
@@ -22,7 +22,7 @@ class TestE2EPkgbuild(auracle_e2e_test.TestCase):
         p = self.Auracle(['pkgbuild', 'totesnotfoundpackage'])
         self.assertNotEqual(p.returncode, 0)
 
-        self.assertCountEqual(self.requests_made, [
+        self.assertCountEqual(self.request_uris, [
             '/rpc?type=info&v=5&arg[]=totesnotfoundpackage',
         ])
 

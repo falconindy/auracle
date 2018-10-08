@@ -78,16 +78,7 @@ class ResponseHandler {
       return 0;
     }
 
-    std::string_view header(data, size);
-    if (!ConsumePrefix(&header, std::string_view("GET "))) {
-      return 0;
-    }
-
-    const auto header_end = header.find_first_of(' ');
-    header.remove_suffix(header.size() - header_end);
-
-    stream->write(header.data(), header.size()) << "\n";
-
+    stream->write(data, size);
     return 0;
   }
 

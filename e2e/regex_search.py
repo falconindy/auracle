@@ -19,7 +19,7 @@ class TestE2ERegexSearch(auracle_e2e_test.TestCase):
         self.assertEqual(p.returncode, 0)
         self.assertEqual('auracle-git', p.stdout.decode().strip())
 
-        self.assertCountEqual(self.requests_made, [
+        self.assertCountEqual(self.request_uris, [
             '/rpc?by=name-desc&type=search&v=5&arg=aurac',
             '/rpc?by=name-desc&type=search&v=5&arg=le-git',
             '/rpc?by=name-desc&type=search&v=5&arg=auracle',

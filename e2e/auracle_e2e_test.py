@@ -21,6 +21,19 @@ def FindMesonBuildDir():
     return os.path.dirname(paths[0])
 
 
+class HTTPRequest(object):
+
+    def __init__(self, request):
+        self.requestline = request.pop(0)
+        self.command, self.path, self.request_version = self.requestline.split()
+
+        self.headers = {}
+        for line in request:
+            if line:
+                k, v = line.split(':', 1)
+                self.headers[k.lower()] = v.strip()
+
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
@@ -32,8 +45,23 @@ class TestCase(unittest.TestCase):
         os.close(tmpfile[0])
         self.requests_file = tmpfile[1]
 
+
     def tearDown(self):
         shutil.rmtree(self.tempdir)
+
+
+    def ProcessDebugOutput(self):
+        self.requests_sent = []
+        with open(self.requests_file) as f:
+            header_text = []
+            for line in f.read().splitlines():
+                if not line:
+                    self.requests_sent.append(HTTPRequest(header_text))
+                    header_text = []
+                else:
+                    header_text.append(line)
+
+        self.request_uris = [r.path for r in self.requests_sent]
 
 
     def Auracle(self, args):
@@ -49,8 +77,7 @@ class TestCase(unittest.TestCase):
 
         p = subprocess.run(cmdline, env=env, capture_output=True)
 
-        with open(self.requests_file) as f:
-            self.requests_made = f.read().splitlines()
+        self.ProcessDebugOutput()
 
         return p
 
@@ -61,6 +88,16 @@ class TestCase(unittest.TestCase):
         if git:
             self.assertTrue(
                     os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+
+
+    def assertHeader(self, request, expected_headers):
+        actual_headers = {}
+
+        for key in expected_headers.keys():
+            self.assertIn(key, request.headers.keys())
+            actual_headers[key] = request.headers[key]
+
+        self.assertDictEqual(expected_headers, actual_headers)
 
 
 def main():

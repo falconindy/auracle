@@ -10,7 +10,7 @@ class TestE2EClone(auracle_e2e_test.TestCase):
         self.assertEqual(p.returncode, 0)
         self.assertPkgbuildExists('auracle-git', git=True)
 
-        self.assertCountEqual(self.requests_made, [
+        self.assertCountEqual(self.request_uris, [
             '/rpc?type=info&v=5&arg[]=auracle-git'
         ])
 
@@ -21,7 +21,7 @@ class TestE2EClone(auracle_e2e_test.TestCase):
         self.assertPkgbuildExists('auracle-git', git=True)
         self.assertPkgbuildExists('pkgfile-git', git=True)
 
-        self.assertCountEqual(self.requests_made, [
+        self.assertCountEqual(self.request_uris, [
             '/rpc?type=info&v=5&arg[]=auracle-git&arg[]=pkgfile-git'
         ])
 
@@ -32,9 +32,9 @@ class TestE2EClone(auracle_e2e_test.TestCase):
         self.assertPkgbuildExists('auracle-git', git=True)
         self.assertPkgbuildExists('nlohmann-json', git=True)
 
-        self.assertGreater(len(self.requests_made), 1)
+        self.assertGreater(len(self.request_uris), 1)
         self.assertIn('/rpc?type=info&v=5&arg[]=auracle-git',
-                self.requests_made)
+                self.request_uris)
 
 
 if __name__ == '__main__':
