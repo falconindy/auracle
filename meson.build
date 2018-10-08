@@ -126,6 +126,7 @@ python = find_program('python')
 foreach input : [
   'e2e/clone.py',
   'e2e/download.py',
+  'e2e/pkgbuild.py',
   'e2e/raw_query.py',
   'e2e/regex_search.py',
 ]
