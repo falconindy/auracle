@@ -34,7 +34,7 @@ namespace {
 
 int ErrorNotEnoughArgs() {
   std::cerr << "error: not enough arguments.\n";
-  return 1;
+  return -EINVAL;
 }
 
 template <typename Container>
@@ -179,7 +179,7 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args,
   }
 
   if (resultcount == 0) {
-    return 1;
+    return -ENOENT;
   }
 
   return 0;
@@ -198,7 +198,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
                             std::regex::icase | std::regex::optimize);
     } catch (const std::regex_error& e) {
       std::cerr << "error: invalid regex: " << std::string(arg) << "\n";
-      return 1;
+      return -EINVAL;
     }
   }
 
@@ -230,7 +230,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
       if (frag.empty()) {
         std::cerr << "error: search string '" << std::string(args[i])
                   << "' insufficient for searching by regular expression.\n";
-        return 1;
+        return -EINVAL;
       }
       r.AddArg(frag);
     } else {
@@ -242,7 +242,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
           if (!response.ok()) {
             std::cerr << "error: request failed for '" << std::string(arg)
                       << "': " << response.error() << "\n";
-            return 1;
+            return -EIO;
           } else {
             const auto& results = response.value().results;
             std::copy_if(std::make_move_iterator(results.begin()),
@@ -253,8 +253,9 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
         });
   }
 
-  if (aur_.Wait() != 0) {
-    return 1;
+  int r = aur_.Wait();
+  if (r < 0) {
+    return r;
   }
 
   // TODO: implement custom sorting
@@ -293,7 +294,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                         aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
-          return 1;
+          return -EIO;
         }
 
         const auto& results = response.value().results;
@@ -367,7 +368,7 @@ int Auracle::Clone(const std::vector<PackageOrDependency>& args,
   }
 
   if (!ChdirIfNeeded(options.directory)) {
-    return 1;
+    return -EINVAL;
   }
 
   int ret = 0;
@@ -387,8 +388,13 @@ int Auracle::Clone(const std::vector<PackageOrDependency>& args,
 
   IteratePackages(args, &iter);
 
-  if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
-    return 1;
+  int r = aur_.Wait();
+  if (r < 0) {
+    return r;
+  }
+
+  if (iter.package_repo.size() == 0) {
+    return -ENOENT;
   }
 
   return ret;
@@ -401,7 +407,7 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   }
 
   if (!ChdirIfNeeded(options.directory)) {
-    return 1;
+    return -EINVAL;
   }
 
   PackageIterator iter(options.recurse, [this](const aur::Package& p) {
@@ -428,8 +434,13 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
 
   IteratePackages(args, &iter);
 
-  if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
-    return 1;
+  int r = aur_.Wait();
+  if (r < 0) {
+    return r;
+  }
+
+  if (iter.package_repo.size() == 0) {
+    return -ENOENT;
   }
 
   return 0;
@@ -475,10 +486,13 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args,
         return 0;
       });
 
-  aur_.Wait();
+  int r = aur_.Wait();
+  if (r < 0) {
+    return r;
+  }
 
   if (resultcount == 0) {
-    return 1;
+    return -ENOENT;
   }
 
   return 0;
@@ -493,8 +507,13 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args,
   PackageIterator iter(/* recurse = */ true, nullptr);
   IteratePackages(args, &iter);
 
-  if (aur_.Wait() != 0 || iter.package_repo.size() == 0) {
-    return 1;
+  int r = aur_.Wait();
+  if (r < 0) {
+    return r;
+  }
+
+  if (iter.package_repo.size() == 0) {
+    return -ENOENT;
   }
 
   std::vector<const aur::Package*> total_ordering;
@@ -535,7 +554,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args,
       info_request, [&](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
-          return 1;
+          return -EIO;
         }
 
         for (const auto& r : response.value().results) {
@@ -570,7 +589,7 @@ int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
         request, [](aur::StatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
-            return 1;
+            return -EIO;
           }
 
           std::cout << response.value().bytes << "\n";
@@ -593,7 +612,7 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args,
       request, [](aur::StatusOr<aur::RawResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
-          return 1;
+          return -EIO;
         }
 
         std::cout << response.value().bytes << "\n";
@@ -798,7 +817,7 @@ int main(int argc, char** argv) {
       };
 
   if (auto iter = cmds.find(action); iter != cmds.end()) {
-    return (auracle.*iter->second)(args, flags.command_options);
+    return (auracle.*iter->second)(args, flags.command_options) < 0 ? 1 : 0;
   } else {
     std::cerr << "Unknown action " << action << "\n";
     return 1;

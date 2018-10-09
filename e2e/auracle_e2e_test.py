@@ -38,19 +38,17 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.build_dir = FindMesonBuildDir()
-
         self.tempdir = tempfile.mkdtemp()
 
-        tmpfile = tempfile.mkstemp(dir=self.tempdir)
-        os.close(tmpfile[0])
-        self.requests_file = tmpfile[1]
+        fd, self.requests_file = tempfile.mkstemp(dir=self.tempdir)
+        os.close(fd)
 
 
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
 
-    def ProcessDebugOutput(self):
+    def _ProcessDebugOutput(self):
         self.requests_sent = []
         with open(self.requests_file) as f:
             header_text = []
@@ -77,7 +75,7 @@ class TestCase(unittest.TestCase):
 
         p = subprocess.run(cmdline, env=env, capture_output=True)
 
-        self.ProcessDebugOutput()
+        self._ProcessDebugOutput()
 
         return p
 

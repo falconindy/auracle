@@ -203,6 +203,11 @@ Aur::~Aur() {
   }
 }
 
+void Aur::Cancel() {
+  active_requests_.CancelInflight(curl_);
+  sd_event_exit(event_, 1);
+}
+
 // static
 int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
                         void* userdata, void*) {
@@ -391,7 +396,8 @@ int Aur::ProcessDoneEvents() {
 
     auto r = FinishRequest(msg->easy_handle, msg->data.result,
                            /* dispatch_callback = */ true);
-    if (r != 0) {
+    if (r < 0) {
+      Cancel();
       return r;
     }
   }
@@ -406,7 +412,10 @@ int Aur::Wait() {
     }
   }
 
-  return 0;
+  int r = 0;
+  sd_event_get_exit_code(event_, &r);
+
+  return -r;
 }
 
 struct RpcRequestTraits {
