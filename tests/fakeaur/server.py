@@ -155,6 +155,7 @@ class AurServer(http.server.HTTPServer):
 
 def Serve(queue=None, port=0):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind(('', port))
 
     serve = AurServer(sock, sock.getsockname(), FakeAurHandler)
