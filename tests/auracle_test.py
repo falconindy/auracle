@@ -43,15 +43,15 @@ class TestCase(unittest.TestCase):
         self.build_dir = FindMesonBuildDir()
         self.tempdir = tempfile.mkdtemp()
 
-        fd, self.requests_file = tempfile.mkstemp(dir=self.tempdir)
-        os.close(fd)
+        self.requests_file = tempfile.NamedTemporaryFile(
+                dir=self.tempdir, prefix='requests-').name
 
         q = multiprocessing.Queue()
         self.server = multiprocessing.Process(
                 target=fakeaur.server.Serve, args=(q,))
         self.server.start()
-
         port = q.get()
+
         self.baseurl = 'http://localhost:{}'.format(port)
 
 
