@@ -17,8 +17,18 @@ class TestE2EDownload(auracle_test.TestCase):
             '/cgit/aur.git/snapshot/auracle-git.tar.gz'
         ])
 
-        expected_headers = {'accept-encoding': 'identity'}
-        self.assertHeader(self.requests_sent[1], expected_headers)
+
+    def testSendsDifferentAcceptEncodingHeaders(self):
+        p = self.Auracle(['download', 'auracle-git'])
+        self.assertEqual(p.returncode, 0)
+        self.assertPkgbuildExists('auracle-git')
+
+        accept_encoding = self.requests_sent[0].headers['accept-encoding']
+        self.assertIn('deflate', accept_encoding)
+        self.assertIn('gzip', accept_encoding)
+
+        accept_encoding = self.requests_sent[1].headers['accept-encoding']
+        self.assertEqual(accept_encoding, 'identity')
 
 
     def testDownloadMultiple(self):

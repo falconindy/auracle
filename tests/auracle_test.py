@@ -104,15 +104,5 @@ class TestCase(unittest.TestCase):
                     os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
 
-    def assertHeader(self, request, expected_headers):
-        actual_headers = {}
-
-        for key in expected_headers.keys():
-            self.assertIn(key, request.headers.keys())
-            actual_headers[key] = request.headers[key]
-
-        self.assertDictEqual(expected_headers, actual_headers)
-
-
 def main():
     unittest.main()
