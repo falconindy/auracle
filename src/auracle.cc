@@ -623,6 +623,7 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args,
 }
 
 struct Flags {
+  std::string baseurl = kAurBaseurl;
   int max_connections = 20;
   int connect_timeout = 10;
   terminal::WantColor color = terminal::WantColor::AUTO;
@@ -675,6 +676,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
     MAX_CONNECTIONS,
     SEARCHBY,
     VERSION,
+    BASEURL,
   };
 
   static constexpr struct option opts[] = {
@@ -690,6 +692,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "max-connections",   required_argument, 0, MAX_CONNECTIONS },
       { "searchby",          required_argument, 0, SEARCHBY },
       { "version",           no_argument,       0, VERSION },
+      { "baseurl",           required_argument, 0, BASEURL },
       // clang-format on
   };
 
@@ -757,6 +760,9 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
           return false;
         }
         break;
+      case BASEURL:
+        flags->baseurl = std::string(sv_optarg);
+        break;
       case VERSION:
         version();
         break;
@@ -792,7 +798,7 @@ int main(int argc, char** argv) {
   }
 
   Auracle auracle(Auracle::Options()
-                      .set_aur_baseurl(kAurBaseurl)
+                      .set_aur_baseurl(flags.baseurl)
                       .set_pacman(pacman.get())
                       .set_connection_timeout(flags.connect_timeout)
                       .set_max_connections(flags.max_connections));
