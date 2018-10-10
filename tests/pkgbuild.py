@@ -2,7 +2,7 @@
 import auracle_test
 
 
-class TestE2EPkgbuild(auracle_test.HermeticTestCase):
+class TestE2EPkgbuild(auracle_test.TestCase):
 
     def testSinglePkgbuild(self):
         p = self.Auracle(['pkgbuild', 'auracle-git'])

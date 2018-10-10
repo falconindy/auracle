@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 
+
 def FindMesonBuildDir():
     if os.path.exists('.ninja_log'):
         return os.path.curdir
@@ -45,8 +46,17 @@ class TestCase(unittest.TestCase):
         fd, self.requests_file = tempfile.mkstemp(dir=self.tempdir)
         os.close(fd)
 
+        q = multiprocessing.Queue()
+        self.server = multiprocessing.Process(
+                target=fakeaur.server.Serve, args=(q,))
+        self.server.start()
+
+        port = q.get()
+        self.baseurl = 'http://localhost:{}'.format(port)
+
 
     def tearDown(self):
+        self.server.terminate()
         shutil.rmtree(self.tempdir)
 
 
@@ -74,6 +84,7 @@ class TestCase(unittest.TestCase):
 
         cmdline = [
             os.path.join(self.build_dir, 'auracle'),
+            '--baseurl', self.baseurl,
             '--color=never',
             '--chdir', self.tempdir,
         ] + list(args)
@@ -101,30 +112,6 @@ class TestCase(unittest.TestCase):
             actual_headers[key] = request.headers[key]
 
         self.assertDictEqual(expected_headers, actual_headers)
-
-
-class HermeticTestCase(TestCase):
-
-    def setUp(self):
-        TestCase.setUp(self)
-        q = multiprocessing.Queue()
-        self.server = multiprocessing.Process(
-                target=fakeaur.server.Serve, args=(q,))
-        self.server.start()
-
-        port = q.get()
-        self.baseurl = 'http://localhost:{}'.format(port)
-
-
-    def tearDown(self):
-        self.server.terminate()
-        TestCase.tearDown(self)
-
-
-    def Auracle(self, args):
-        args.insert(0, '--baseurl={}'.format(self.baseurl))
-
-        return TestCase.Auracle(self, args)
 
 
 def main():
