@@ -16,8 +16,9 @@ class TestE2ERawQuery(auracle_test.HermeticTestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
-        self.assertCountEqual(self.request_uris,
-                ['/rpc?type=info&v=5&arg[]=auracle-git'])
+        self.assertCountEqual(self.request_uris, [
+            '/rpc?type=info&v=5&arg[]=auracle-git'
+        ])
 
 
     def testRawSearch(self):
@@ -30,8 +31,9 @@ class TestE2ERawQuery(auracle_test.HermeticTestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
-        self.assertCountEqual(self.request_uris,
-                ['/rpc?by=name-desc&type=search&v=5&arg=aura'])
+        self.assertCountEqual(self.request_uris, [
+            '/rpc?by=name-desc&type=search&v=5&arg=aura'
+        ])
 
 
     def testMultipleRawSearch(self):
@@ -49,8 +51,7 @@ class TestE2ERawQuery(auracle_test.HermeticTestCase):
 
 
     def testRawSearchBy(self):
-        p = self.Auracle(
-                ['rawsearch', '--searchby=maintainer', 'falconindy'])
+        p = self.Auracle(['rawsearch', '--searchby=maintainer', 'falconindy'])
         self.assertEqual(p.returncode, 0)
 
         parsed = json.loads(p.stdout)
@@ -59,8 +60,18 @@ class TestE2ERawQuery(auracle_test.HermeticTestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
-        self.assertCountEqual(self.request_uris,
-                ['/rpc?by=maintainer&type=search&v=5&arg=falconindy'])
+        self.assertCountEqual(self.request_uris, [
+            '/rpc?by=maintainer&type=search&v=5&arg=falconindy'
+        ])
+
+
+    def testLiteralSearch(self):
+        p = self.Auracle(['rawsearch', '--literal', '^aurac.+'])
+        self.assertEqual(p.returncode, 0)
+
+        self.assertListEqual(self.request_uris, [
+            '/rpc?by=name-desc&type=search&v=5&arg=%5Eaurac.%2B',
+        ])
 
 
 if __name__ == '__main__':
