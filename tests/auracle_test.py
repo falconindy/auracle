@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+import fakeaur.server
 import glob
+import multiprocessing
 import os.path
 import shutil
 import subprocess
@@ -64,7 +66,10 @@ class TestCase(unittest.TestCase):
 
     def Auracle(self, args):
         env = {
-            'AURACLE_DEBUG': 'requests:{}'.format(self.requests_file)
+            'PATH': '{}/fakeaur:{}'.format(
+                os.path.dirname(os.path.realpath(__file__)), os.getenv('PATH')),
+            'AURACLE_TEST_TMPDIR': self.tempdir,
+            'AURACLE_DEBUG': 'requests:{}'.format(self.requests_file),
         }
 
         cmdline = [
@@ -96,6 +101,30 @@ class TestCase(unittest.TestCase):
             actual_headers[key] = request.headers[key]
 
         self.assertDictEqual(expected_headers, actual_headers)
+
+
+class HermeticTestCase(TestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        q = multiprocessing.Queue()
+        self.server = multiprocessing.Process(
+                target=fakeaur.server.Serve, args=(q,))
+        self.server.start()
+
+        port = q.get()
+        self.baseurl = 'http://localhost:{}'.format(port)
+
+
+    def tearDown(self):
+        self.server.terminate()
+        TestCase.tearDown(self)
+
+
+    def Auracle(self, args):
+        args.insert(0, '--baseurl={}'.format(self.baseurl))
+
+        return TestCase.Auracle(self, args)
 
 
 def main():

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import auracle_e2e_test
+import auracle_test
 
 
-class TestE2EClone(auracle_e2e_test.TestCase):
+class TestE2EClone(auracle_test.HermeticTestCase):
 
     def testCloneSingle(self):
         p = self.Auracle(['clone', 'auracle-git'])
@@ -38,4 +38,4 @@ class TestE2EClone(auracle_e2e_test.TestCase):
 
 
 if __name__ == '__main__':
-    auracle_e2e_test.main()
+    auracle_test.main()

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import auracle_e2e_test
+import auracle_test
 import json
 
 
-class TestE2ERawQuery(auracle_e2e_test.TestCase):
+class TestE2ERawQuery(auracle_test.HermeticTestCase):
 
     def testRawInfo(self):
         p = self.Auracle(['rawinfo', 'auracle-git'])
@@ -63,4 +63,4 @@ class TestE2ERawQuery(auracle_e2e_test.TestCase):
 
 
 if __name__ == '__main__':
-    auracle_e2e_test.main()
+    auracle_test.main()

@@ -1,8 +1,8 @@
 
-import auracle_e2e_test
+import auracle_test
 
 
-class TestE2EPkgbuild(auracle_e2e_test.TestCase):
+class TestE2EPkgbuild(auracle_test.HermeticTestCase):
 
     def testSinglePkgbuild(self):
         p = self.Auracle(['pkgbuild', 'auracle-git'])
@@ -28,4 +28,4 @@ class TestE2EPkgbuild(auracle_e2e_test.TestCase):
 
 
 if __name__ == '__main__':
-    auracle_e2e_test.main()
+    auracle_test.main()

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import auracle_e2e_test
+import auracle_test
 
 
-class TestE2ERegexSearch(auracle_e2e_test.TestCase):
+class TestE2ERegexSearch(auracle_test.HermeticTestCase):
 
     def testFragmentTooShort(self):
         p = self.Auracle(
@@ -27,4 +27,4 @@ class TestE2ERegexSearch(auracle_e2e_test.TestCase):
 
 
 if __name__ == '__main__':
-    auracle_e2e_test.main()
+    auracle_test.main()

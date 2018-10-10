@@ -345,7 +345,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
       });
 }
 
-bool ChdirIfNeeded(const fs::path target) {
+bool ChdirIfNeeded(const fs::path& target) {
   if (target.empty()) {
     return true;
   }

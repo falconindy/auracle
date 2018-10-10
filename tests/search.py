@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-import auracle_e2e_test
+import auracle_test
 import json
 
 
-class TestE2ESearch(auracle_e2e_test.TestCase):
+class TestE2ESearch(auracle_test.HermeticTestCase):
 
     def testExitSuccessOnNoResults(self):
         p = self.Auracle(['search', 'wontfindanypackages'])
@@ -18,5 +18,5 @@ class TestE2ESearch(auracle_e2e_test.TestCase):
 
 
 if __name__ == '__main__':
-    auracle_e2e_test.main()
+    auracle_test.main()
 

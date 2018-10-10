@@ -117,26 +117,24 @@ if gtest.found() and gmock.found()
         basename,
         input,
         link_with : [aurlib, gtest_main],
-        dependencies : [gtest, gmock]),
-      suite : ['hermetic'])
+        dependencies : [gtest, gmock]))
     endforeach
 endif
 
 python = find_program('python')
 foreach input : [
-  'e2e/clone.py',
-  'e2e/download.py',
-  'e2e/info.py',
-  'e2e/pkgbuild.py',
-  'e2e/raw_query.py',
-  'e2e/regex_search.py',
-  'e2e/search.py',
+  'tests/clone.py',
+  'tests/download.py',
+  'tests/info.py',
+  'tests/pkgbuild.py',
+  'tests/raw_query.py',
+  'tests/regex_search.py',
+  'tests/search.py',
 ]
   basename = input.split('/')[-1].split('.')[0]
   test(
-    'e2e_@0@'.format(basename),
+    'test_@0@'.format(basename),
     python,
     args : [join_paths(meson.source_root(), input)],
-    env : ['PYTHONDONTWRITEBYTECODE=1'],
-    suite : ['e2e'])
+    env : ['PYTHONDONTWRITEBYTECODE=1'])
 endforeach

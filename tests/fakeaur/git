@@ -1,0 +1,21 @@
+#!/bin/bash
+
+non_option_argv=()
+
+for arg; do
+  case $arg in
+    -*)
+      ;;
+    *)
+      non_option_argv+=("$arg")
+      ;;
+  esac
+done
+
+# non_option_argv should be 2 elements, the action and the URL
+declare -p non_option_argv
+
+pkgname=${non_option_argv[-1]##*/}
+
+mkdir -vp "$AURACLE_TEST_TMPDIR/$pkgname/.git"
+touch "$AURACLE_TEST_TMPDIR/$pkgname/PKGBUILD"

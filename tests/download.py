@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import auracle_e2e_test
+import auracle_test
 
 
-class TestE2EDownload(auracle_e2e_test.TestCase):
+class TestE2EDownload(auracle_test.HermeticTestCase):
 
     def testDownloadSingle(self):
         p = self.Auracle(['download', 'auracle-git'])
@@ -48,4 +48,4 @@ class TestE2EDownload(auracle_e2e_test.TestCase):
 
 
 if __name__ == '__main__':
-    auracle_e2e_test.main()
+    auracle_test.main()
