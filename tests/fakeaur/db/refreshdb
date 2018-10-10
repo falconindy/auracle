@@ -1,3 +1,33 @@
 #!/bin/bash
 
-echo 'TODO: implement me'
+update_info() {
+  local r res
+
+  for res in "$1"/*; do
+    r=${res##*/}
+
+    auracle rawinfo "$r" >"$res"
+  done
+}
+
+update_search() {
+  local r res by
+
+  for res in "$1"/*; do
+    IFS='|' read -r by r <<<"${res##*/}"
+
+    auracle rawsearch --searchby="$by" "$r" >"$res"
+  done
+}
+
+update_all() {
+  local d db dbdir=$1
+
+  for d in "$dbdir"/*/; do
+    db=${d%/} db=${db##*/}
+
+    "update_$db" "$d"
+  done
+}
+
+update_all "${0%/*}"
