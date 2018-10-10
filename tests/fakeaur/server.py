@@ -53,6 +53,11 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         }).encode()
 
 
+    def make_pkgbuild(self, pkgname):
+        return 'pkgname={}\npkgver=1.2.3\n'.format(pkgname).encode()
+
+
+
     def lookup_canned_response(self, querytype, fragment):
         f = os.path.join(DBROOT, querytype, fragment)
         if not os.path.exists(f):
@@ -98,18 +103,13 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
     def handle_download(self, url):
         pkgname = os.path.basename(url.path).split('.')[0]
 
-        bytes_io = io.BytesIO()
-
         with tempfile.NamedTemporaryFile() as f:
             with tarfile.open(f.name, mode='w') as tar:
-
-                b = b'hello PKGBUILD'
+                b = self.make_pkgbuild(pkgname)
 
                 t = tarfile.TarInfo('{}/PKGBUILD'.format(pkgname))
                 t.size = len(b)
                 tar.addfile(t, io.BytesIO(b))
-
-            f.flush()
 
             headers = [
                     (
@@ -124,8 +124,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
     def handle_pkgbuild(self, url):
         queryparams = urllib.parse.parse_qs(url.query)
         pkgname = self.collapse_params(queryparams.get('h'))
-        self.respond(response='pkgname={}\npkgver=1.2.3'.format(
-            pkgname).encode())
+        self.respond(response=self.make_pkgbuild(pkgname))
 
 
     def respond(self, status_code=200, headers=[], response=None):

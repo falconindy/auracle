@@ -100,6 +100,7 @@ run_target(
     '-exec', 'clang-format', '-i', '-style=Google', '{}', '+'
   ])
 
+# unit tests
 if gtest.found() and gmock.found()
   gtest_main = static_library(
     'gtest_main',
@@ -121,6 +122,7 @@ if gtest.found() and gmock.found()
     endforeach
 endif
 
+# integration tests
 python = find_program('python')
 foreach input : [
   'tests/clone.py',
@@ -133,7 +135,7 @@ foreach input : [
 ]
   basename = input.split('/')[-1].split('.')[0]
   test(
-    'test_@0@'.format(basename),
+    '@0@_integration_test'.format(basename),
     python,
     args : [join_paths(meson.source_root(), input)],
     env : ['PYTHONDONTWRITEBYTECODE=1'])
