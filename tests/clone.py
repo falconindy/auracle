@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import auracle_test
+import os
 
 
 class TestE2EClone(auracle_test.HermeticTestCase):
@@ -35,6 +36,18 @@ class TestE2EClone(auracle_test.HermeticTestCase):
         self.assertGreater(len(self.request_uris), 1)
         self.assertIn('/rpc?type=info&v=5&arg[]=auracle-git',
                 self.request_uris)
+
+
+    def testCloneUpdatesExistingCheckouts(self):
+        # Package doesn't initially exist, expect a clone.
+        p = self.Auracle(['clone', 'auracle-git'])
+        self.assertTrue(os.path.exists(
+            os.path.join(self.tempdir, 'auracle-git', 'clone')))
+
+        # Package now exists, expect a pull
+        p = self.Auracle(['clone', 'auracle-git'])
+        self.assertTrue(os.path.exists(
+            os.path.join(self.tempdir, 'auracle-git', 'pull')))
 
 
 if __name__ == '__main__':

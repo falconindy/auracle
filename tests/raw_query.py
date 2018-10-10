@@ -33,6 +33,7 @@ class TestE2ERawQuery(auracle_test.HermeticTestCase):
         self.assertCountEqual(self.request_uris,
                 ['/rpc?by=name-desc&type=search&v=5&arg=aura'])
 
+
     def testMultipleRawSearch(self):
         p = self.Auracle(['rawsearch', 'aura', 'systemd'])
         self.assertEqual(p.returncode, 0)

@@ -6,16 +6,21 @@ for arg; do
   case $arg in
     -*)
       ;;
+    pull|clone)
+      action=$arg
+      ;;
     *)
+      # not strictly true because we don't implement a full parser for git(1).
+      # For example, this grabs the directory name from "-C somedir" as a
+      # non-option arg. Doesn't matter too much for our purposes.
       non_option_argv+=("$arg")
       ;;
   esac
 done
 
-# non_option_argv should be 2 elements, the action and the URL
-declare -p non_option_argv
-
 pkgname=${non_option_argv[-1]##*/}
 
 mkdir -vp "$AURACLE_TEST_TMPDIR/$pkgname/.git"
-touch "$AURACLE_TEST_TMPDIR/$pkgname/PKGBUILD"
+touch \
+    "$AURACLE_TEST_TMPDIR/$pkgname/PKGBUILD" \
+    "$AURACLE_TEST_TMPDIR/$pkgname/$action"
