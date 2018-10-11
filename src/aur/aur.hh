@@ -95,10 +95,9 @@ class Aur {
 
     bool IsEmpty() const { return curls_.empty() && event_sources_.empty(); }
 
-    void CancelInflight(CURLM* multi) {
-      for (auto* curl : curls_) {
-        curl_multi_remove_handle(multi, curl);
-      }
+    std::pair<std::unordered_set<CURL*>, std::unordered_set<sd_event_source*>>
+    DrainForCancellation() {
+      return {std::move(curls_), std::move(event_sources_)};
     }
 
    private:

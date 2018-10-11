@@ -204,7 +204,19 @@ Aur::~Aur() {
 }
 
 void Aur::Cancel() {
-  active_requests_.CancelInflight(curl_);
+  auto requests = active_requests_.DrainForCancellation();
+  while (!requests.first.empty()) {
+    FinishRequest(*requests.first.begin(), CURLE_ABORTED_BY_CALLBACK,
+                  /* dispatch_callback = */ false);
+  }
+
+  while (!requests.second.empty()) {
+    auto iter = requests.second.begin();
+
+    sd_event_source_unref(*iter);
+    requests.second.erase(iter);
+  }
+
   sd_event_exit(event_, 1);
 }
 
