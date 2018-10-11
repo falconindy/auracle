@@ -38,6 +38,10 @@ gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
 stdcppfs = cpp.find_library('stdc++fs')
 
+if not cpp.has_header('nlohmann/json.hpp')
+  error('Header dependency "nlohmann/json.hpp" not found')
+endif
+
 pod2man = find_program('pod2man')
 
 aurlib_sources = '''
@@ -53,7 +57,6 @@ aurlib = static_library(
     aurlib_sources,
     include_directories : [
         include_directories('src'),
-        include_directories('/usr/include/nlohmann')
     ],
     dependencies : [libcurl, libsystemd])
 

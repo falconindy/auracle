@@ -1,7 +1,7 @@
 #ifndef JSON_INTERNAL_HH
 #define JSON_INTERNAL_HH
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "package.hh"
 #include "response.hh"
