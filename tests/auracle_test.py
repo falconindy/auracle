@@ -44,7 +44,7 @@ class TestCase(unittest.TestCase):
         self.tempdir = tempfile.mkdtemp()
 
         self.requests_file = tempfile.NamedTemporaryFile(
-                dir=self.tempdir, prefix='requests-').name
+                dir=self.tempdir, prefix='requests-', delete=False).name
 
         q = multiprocessing.Queue()
         self.server = multiprocessing.Process(
@@ -62,6 +62,7 @@ class TestCase(unittest.TestCase):
 
     def _ProcessDebugOutput(self):
         self.requests_sent = []
+
         with open(self.requests_file) as f:
             header_text = []
             for line in f.read().splitlines():
