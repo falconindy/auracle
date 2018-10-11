@@ -57,5 +57,33 @@ class TestE2EDownload(auracle_test.TestCase):
                 self.request_uris)
 
 
+    def testRecurseMany(self):
+        p = self.Auracle(['download', '-r', 'google-drive-ocamlfuse'])
+        self.assertEqual(p.returncode, 0)
+
+        expected_packages = [
+            'camlidl',
+            'gapi-ocaml',
+            'google-drive-ocamlfuse',
+            'ocaml-base',
+            'ocaml-configurator',
+            'ocaml-cryptokit',
+            'ocaml-curl',
+            'ocaml-extlib',
+            'ocaml-ounit',
+            'ocaml-pcre',
+            'ocaml-sexplib0',
+            'ocaml-sqlite3',
+            'ocaml-stdio',
+            'ocaml-xmlm',
+            'ocaml-zarith',
+            'ocamlfuse',
+            'ocamlnet'
+        ]
+
+        for pkg in expected_packages:
+            self.assertPkgbuildExists(pkg)
+
+
 if __name__ == '__main__':
     auracle_test.main()
