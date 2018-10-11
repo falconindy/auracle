@@ -380,7 +380,7 @@ int Auracle::Clone(const std::vector<PackageOrDependency>& args,
             std::cout << response.value().operation << " complete: "
                       << (fs::current_path() / pkgbase).string() << "\n";
           } else {
-            ret = 1;
+            ret = -EIO;
           }
           return 0;
         });

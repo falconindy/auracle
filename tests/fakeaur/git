@@ -20,6 +20,13 @@ done
 
 pkgname=${non_option_argv[-1]##*/}
 
+case $pkgname in
+  yaourt)
+    echo "error: git clone failed" >&2
+    exit 1
+    ;;
+esac
+
 mkdir -vp "$AURACLE_TEST_TMPDIR/$pkgname/.git"
 touch \
     "$AURACLE_TEST_TMPDIR/$pkgname/PKGBUILD" \

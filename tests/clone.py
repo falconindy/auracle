@@ -50,5 +50,12 @@ class TestE2EClone(auracle_test.TestCase):
             os.path.join(self.tempdir, 'auracle-git', 'pull')))
 
 
+    def testCloneFailureReportsError(self):
+        p = self.Auracle(['clone', 'yaourt'])
+        self.assertNotEqual(p.returncode, 0)
+        self.assertEqual(p.stderr.decode().strip(), 'error: git clone failed')
+
+
+
 if __name__ == '__main__':
     auracle_test.main()
