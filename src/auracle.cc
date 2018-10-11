@@ -73,13 +73,13 @@ int ExtractArchive(const std::string& archive_bytes) {
 
   if (archive_read_open_memory(archive, archive_bytes.data(),
                                archive_bytes.size()) != ARCHIVE_OK) {
-    return 1;
+    return -archive_errno(archive);
   }
 
   while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
     r = archive_read_extract(archive, entry, archive_flags);
     if (r == ARCHIVE_FATAL || r == ARCHIVE_WARN) {
-      r = archive_errno(archive);
+      r = -archive_errno(archive);
       break;
     } else if (r == ARCHIVE_EOF) {
       r = 0;
@@ -416,13 +416,13 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
         [pkgbase{p.pkgbase}](aur::StatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
-            return 1;
+            return -EIO;
           }
 
           int r = ExtractArchive(response.value().bytes);
-          if (r != 0) {
+          if (r < 0) {
             std::cerr << "error: failed to extract tarball for " << pkgbase
-                      << ": " << strerror(r) << "\n";
+                      << ": " << strerror(-r) << "\n";
             return r;
           }
 

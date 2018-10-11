@@ -57,7 +57,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         return 'pkgname={}\npkgver=1.2.3\n'.format(pkgname).encode()
 
 
-
     def lookup_canned_response(self, querytype, fragment):
         f = os.path.join(DBROOT, querytype, fragment)
         if not os.path.exists(f):
@@ -102,6 +101,11 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
     def handle_download(self, url):
         pkgname = os.path.basename(url.path).split('.')[0]
+
+        # error injection for specific package name
+        if pkgname == 'yaourt':
+            self.respond(response=b'you should use a better AUR helper')
+            return
 
         with tempfile.NamedTemporaryFile() as f:
             with tarfile.open(f.name, mode='w') as tar:
@@ -164,7 +168,7 @@ def Serve(queue=None, port=0):
     if queue:
         queue.put(port)
     else:
-        print('serving on localhost:{}'.format(port))
+        print('serving on http://localhost:{}'.format(port))
 
     try:
         serve.serve_forever()

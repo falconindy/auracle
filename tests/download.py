@@ -85,5 +85,11 @@ class TestE2EDownload(auracle_test.TestCase):
             self.assertPkgbuildExists(pkg)
 
 
+    def testBadTarball(self):
+        p = self.Auracle(['download', 'yaourt'])
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('failed to extract tarball', p.stderr.decode())
+
+
 if __name__ == '__main__':
     auracle_test.main()
