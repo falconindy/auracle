@@ -126,7 +126,7 @@ if gtest.found() and gmock.found()
 endif
 
 # integration tests
-python = find_program('python')
+python = import('python').find_installation('python3')
 foreach input : [
   'tests/clone.py',
   'tests/download.py',
@@ -138,6 +138,7 @@ foreach input : [
   'tests/sort.py',
 ]
   basename = input.split('/')[-1].split('.')[0]
+
   test(
     '@0@_integration_test'.format(basename),
     python,
