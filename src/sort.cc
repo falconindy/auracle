@@ -8,12 +8,12 @@ template <typename T>
 Sorter MakePackageSorter(T aur::Package::*field, OrderBy order_by) {
   switch (order_by) {
     case OrderBy::ORDER_ASC:
-      return [=](const aur::Package* a, const aur::Package* b) {
-        return (a->*field < b->*field) && !(a->*field > b->*field);
+      return [=](const aur::Package& a, const aur::Package& b) {
+        return (a.*field < b.*field) && !(a.*field > b.*field);
       };
     case OrderBy::ORDER_DESC:
-      return [=](const aur::Package* a, const aur::Package* b) {
-        return (a->*field > b->*field) && !(a->*field < b->*field);
+      return [=](const aur::Package& a, const aur::Package& b) {
+        return (a.*field > b.*field) && !(a.*field < b.*field);
       };
   }
 

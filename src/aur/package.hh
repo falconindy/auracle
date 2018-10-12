@@ -53,12 +53,8 @@ struct Package {
   std::vector<Dependency> checkdepends;
 };
 
-struct PackageHasher {
-  size_t operator()(const Package& p) const { return p.package_id; }
-};
-
 inline bool operator==(const Package& a, const Package& b) {
-  return a.package_id == b.package_id;
+  return a.package_id == b.package_id && a.pkgbase_id == b.pkgbase_id;
 }
 
 }  // namespace aur

@@ -4,11 +4,15 @@
 #include <getopt.h>
 #include <locale.h>
 
+#include <archive.h>
+#include <archive_entry.h>
+
 #include <charconv>
 #include <filesystem>
 #include <functional>
 #include <memory>
 #include <regex>
+#include <string>
 #include <string_view>
 
 #include "aur/response.hh"
@@ -16,12 +20,6 @@
 #include "pacman.hh"
 #include "sort.hh"
 #include "terminal.hh"
-
-#include <set>
-#include <string>
-
-#include <archive.h>
-#include <archive_entry.h>
 
 constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
 constexpr char kPacmanConf[] = "/etc/pacman.conf";
@@ -37,28 +35,34 @@ int ErrorNotEnoughArgs() {
   return -EINVAL;
 }
 
-void FormatLong(std::ostream& os,
-                const std::vector<const aur::Package*>& packages,
+void FormatLong(std::ostream& os, const std::vector<aur::Package>& packages,
                 const dlr::Pacman* pacman) {
   for (const auto& p : packages) {
-    auto local_pkg = pacman->GetLocalPackage(p->name);
-    os << format::Long(*p, std::get_if<dlr::Pacman::Package>(&local_pkg))
+    auto local_pkg = pacman->GetLocalPackage(p.name);
+    os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg))
        << "\n";
   }
 }
 
 void FormatNameOnly(std::ostream& os,
-                    const std::vector<const aur::Package*>& packages) {
+                    const std::vector<aur::Package>& packages) {
   for (const auto& p : packages) {
-    os << format::NameOnly(*p);
+    os << format::NameOnly(p);
   }
 }
 
-void FormatShort(std::ostream& os,
-                 const std::vector<const aur::Package*>& packages) {
+void FormatShort(std::ostream& os, const std::vector<aur::Package>& packages) {
   for (const auto& p : packages) {
-    os << format::Short(*p);
+    os << format::Short(p);
   }
+}
+
+void SortUnique(std::vector<aur::Package>* packages,
+                const sort::Sorter& sorter) {
+  std::sort(packages->begin(), packages->end(), sorter);
+
+  auto iter = std::unique(packages->begin(), packages->end());
+  packages->resize(iter - packages->begin());
 }
 
 int ExtractArchive(const std::string& archive_bytes) {
@@ -166,7 +170,10 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args,
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
         } else {
-          packages = std::move(response.value().results);
+          auto& results = response.value().results;
+          std::copy(std::make_move_iterator(results.begin()),
+                    std::make_move_iterator(results.end()),
+                    std::back_inserter(packages));
         }
         return 0;
       });
@@ -180,17 +187,11 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args,
     return -ENOENT;
   }
 
-  std::vector<const aur::Package*> sorted_packages;
-  sorted_packages.reserve(packages.size());
-  for (const auto& package : packages) {
-    sorted_packages.emplace_back(&package);
-  }
+  // It's unlikely, but still possible that the results may not be unique when
+  // our query is large enough that it needs to be split into multiple requests.
+  SortUnique(&packages, options.sorter);
 
-  if (options.sorter) {
-    std::sort(sorted_packages.begin(), sorted_packages.end(), options.sorter);
-  }
-
-  FormatLong(std::cout, sorted_packages, pacman_);
+  FormatLong(std::cout, packages, pacman_);
 
   return 0;
 }
@@ -230,7 +231,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
                        });
   };
 
-  std::unordered_set<aur::Package, aur::PackageHasher> packages;
+  std::vector<aur::Package> packages;
   for (size_t i = 0; i < args.size(); ++i) {
     aur::SearchRequest r;
     r.SetSearchBy(options.search_by);
@@ -257,7 +258,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
             const auto& results = response.value().results;
             std::copy_if(std::make_move_iterator(results.begin()),
                          std::make_move_iterator(results.end()),
-                         std::inserter(packages, packages.end()), matches);
+                         std::back_inserter(packages), matches);
           }
           return 0;
         });
@@ -268,20 +269,12 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
     return r;
   }
 
-  std::vector<const aur::Package*> sorted_packages;
-  sorted_packages.reserve(packages.size());
-  for (const auto& package : packages) {
-    sorted_packages.emplace_back(&package);
-  }
-
-  if (options.sorter) {
-    std::sort(sorted_packages.begin(), sorted_packages.end(), options.sorter);
-  }
+  SortUnique(&packages, options.sorter);
 
   if (options.quiet) {
-    FormatNameOnly(std::cout, sorted_packages);
+    FormatNameOnly(std::cout, packages);
   } else {
-    FormatShort(std::cout, sorted_packages);
+    FormatShort(std::cout, packages);
   }
 
   return 0;

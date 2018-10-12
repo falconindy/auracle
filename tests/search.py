@@ -41,5 +41,21 @@ class TestSearch(auracle_test.TestCase):
         self.assertNotEqual(p.returncode, 0)
 
 
+    def testResultsAreUnique(self):
+        # search once to get the expected count
+        p = self.Auracle(['search', '--quiet', 'aura'])
+        packagecount = len(p.stdout.decode().splitlines())
+        self.assertGreater(packagecount, 0)
+
+        # search again with the term duplicated. two requests are made, but the
+        # resultcount is the same as the results are deduped.
+        p2 = self.Auracle(['search', '--quiet', 'aura', 'aura'])
+        self.assertCountEqual(self.request_uris, [
+            '/rpc?by=name-desc&type=search&v=5&arg=aura',
+            '/rpc?by=name-desc&type=search&v=5&arg=aura',
+        ])
+        self.assertEqual(packagecount, len(p2.stdout.decode().splitlines()))
+
+
 if __name__ == '__main__':
     auracle_test.main()
