@@ -3,7 +3,7 @@
 import auracle_test
 
 
-class TestE2EDownload(auracle_test.TestCase):
+class TestDownload(auracle_test.TestCase):
 
     def testDownloadSingle(self):
         p = self.Auracle(['download', 'auracle-git'])

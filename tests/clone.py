@@ -4,7 +4,7 @@ import auracle_test
 import os
 
 
-class TestE2EClone(auracle_test.TestCase):
+class TestClone(auracle_test.TestCase):
 
     def testCloneSingle(self):
         p = self.Auracle(['clone', 'auracle-git'])

@@ -4,7 +4,7 @@ import auracle_test
 import json
 
 
-class TestE2ERawQuery(auracle_test.TestCase):
+class TestRawQuery(auracle_test.TestCase):
 
     def testRawInfo(self):
         p = self.Auracle(['rawinfo', 'auracle-git'])

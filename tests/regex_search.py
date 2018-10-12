@@ -3,7 +3,7 @@
 import auracle_test
 
 
-class TestE2ERegexSearch(auracle_test.TestCase):
+class TestRegexSearch(auracle_test.TestCase):
 
     def testFragmentTooShort(self):
         p = self.Auracle(['search', 'f'])

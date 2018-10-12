@@ -4,7 +4,7 @@ import auracle_test
 import json
 
 
-class TestE2ESearch(auracle_test.TestCase):
+class TestSearch(auracle_test.TestCase):
 
     def testExitSuccessOnNoResults(self):
         p = self.Auracle(['search', 'wontfindanypackages'])
