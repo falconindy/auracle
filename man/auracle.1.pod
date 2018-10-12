@@ -66,7 +66,7 @@ I<depends>, I<makedepends>, I<optdepends>, or I<checkdepends>.
 
 This option defaults to I<name-desc>.
 
-=item B<--sort=>I<KEY>, B<--sort=>I<KEY>
+=item B<--sort=>I<KEY>, B<--rsort=>I<KEY>
 
 For search and info queries, sorts the results in ascending and descending
 order, respectively. I<KEY> must be one of: B<name>, B<popularity>, B<votes>,
