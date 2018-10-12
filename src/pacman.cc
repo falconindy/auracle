@@ -86,6 +86,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     key = trim(key);
 
     auto value = line.substr(equals + 1);
+    value = trim(value);
 
     if (state->section == "options") {
       if (key == "IgnorePkg") {
