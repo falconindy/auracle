@@ -659,6 +659,8 @@ __attribute__((noreturn)) void usage(void) {
       "      --connect-timeout=N  Set connection timeout in seconds\n"
       "      --max-connections=N  Limit active connections\n"
       "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
+      "      --sort=KEY           Sort results in ascending order by KEY\n"
+      "      --rsort=KEY          Sort results in descending order by KEY\n"
       "  -C DIR, --chdir=DIR      Change directory to DIR before downloading\n"
       "\n"
       "Commands:\n"
