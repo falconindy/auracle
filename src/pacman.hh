@@ -25,11 +25,6 @@ class Pacman {
   ~Pacman();
 
   static int Vercmp(const std::string& a, const std::string& b);
-  struct VersionLess {
-    bool operator()(const std::string& a, const std::string& b) {
-      return Pacman::Vercmp(a, b) < 0;
-    }
-  };
 
   // Returns true if the package is ignored.
   bool ShouldIgnorePackage(const std::string& package) const;
