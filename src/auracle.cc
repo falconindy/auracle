@@ -37,27 +37,27 @@ int ErrorNotEnoughArgs() {
   return -EINVAL;
 }
 
-template <typename Container>
-void FormatLong(std::ostream& os, const Container& packages,
+void FormatLong(std::ostream& os,
+                const std::vector<const aur::Package*>& packages,
                 const dlr::Pacman* pacman) {
   for (const auto& p : packages) {
-    auto local_pkg = pacman->GetLocalPackage(p.name);
-    os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg))
+    auto local_pkg = pacman->GetLocalPackage(p->name);
+    os << format::Long(*p, std::get_if<dlr::Pacman::Package>(&local_pkg))
        << "\n";
   }
 }
 
-template <typename Container>
-void FormatNameOnly(std::ostream& os, const Container& packages) {
+void FormatNameOnly(std::ostream& os,
+                    const std::vector<const aur::Package*>& packages) {
   for (const auto& p : packages) {
-    os << format::NameOnly(p);
+    os << format::NameOnly(*p);
   }
 }
 
-template <typename Container>
-void FormatShort(std::ostream& os, const Container& packages) {
+void FormatShort(std::ostream& os,
+                 const std::vector<const aur::Package*>& packages) {
   for (const auto& p : packages) {
-    os << format::Short(p);
+    os << format::Short(*p);
   }
 }
 
@@ -154,21 +154,19 @@ std::string SearchFragFromRegex(const std::string& s) {
 }
 
 int Auracle::Info(const std::vector<PackageOrDependency>& args,
-                  const CommandOptions&) {
+                  const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
   }
 
-  int resultcount = 0;
+  std::vector<aur::Package> packages;
   aur_.QueueRpcRequest(
       aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
-      [this, &resultcount](aur::StatusOr<aur::RpcResponse> response) {
+      [&](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
         } else {
-          const auto& result = response.value();
-          FormatLong(std::cout, result.results, pacman_);
-          resultcount = result.resultcount;
+          packages = std::move(response.value().results);
         }
         return 0;
       });
@@ -178,9 +176,21 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args,
     return r;
   }
 
-  if (resultcount == 0) {
+  if (packages.size() == 0) {
     return -ENOENT;
   }
+
+  std::vector<const aur::Package*> sorted_packages;
+  sorted_packages.reserve(packages.size());
+  for (const auto& package : packages) {
+    sorted_packages.emplace_back(&package);
+  }
+
+  if (options.sorter) {
+    std::sort(sorted_packages.begin(), sorted_packages.end(), options.sorter);
+  }
+
+  FormatLong(std::cout, sorted_packages, pacman_);
 
   return 0;
 }
@@ -220,7 +230,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
                        });
   };
 
-  std::set<aur::Package, sort::PackageNameLess> packages;
+  std::unordered_set<aur::Package, aur::PackageHasher> packages;
   for (size_t i = 0; i < args.size(); ++i) {
     aur::SearchRequest r;
     r.SetSearchBy(options.search_by);
@@ -258,11 +268,20 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
     return r;
   }
 
-  // TODO: implement custom sorting
+  std::vector<const aur::Package*> sorted_packages;
+  sorted_packages.reserve(packages.size());
+  for (const auto& package : packages) {
+    sorted_packages.emplace_back(&package);
+  }
+
+  if (options.sorter) {
+    std::sort(sorted_packages.begin(), sorted_packages.end(), options.sorter);
+  }
+
   if (options.quiet) {
-    FormatNameOnly(std::cout, packages);
+    FormatNameOnly(std::cout, sorted_packages);
   } else {
-    FormatShort(std::cout, packages);
+    FormatShort(std::cout, sorted_packages);
   }
 
   return 0;
@@ -677,6 +696,8 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
     SEARCHBY,
     VERSION,
     BASEURL,
+    SORT,
+    RSORT,
   };
 
   static constexpr struct option opts[] = {
@@ -690,7 +711,9 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "connect-timeout",   required_argument, 0, CONNECT_TIMEOUT },
       { "literal",           no_argument,       0, LITERAL },
       { "max-connections",   required_argument, 0, MAX_CONNECTIONS },
+      { "rsort",             required_argument, 0, RSORT },
       { "searchby",          required_argument, 0, SEARCHBY },
+      { "sort",              required_argument, 0, SORT },
       { "version",           no_argument,       0, VERSION },
       { "baseurl",           required_argument, 0, BASEURL },
       // clang-format on
@@ -758,6 +781,20 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         } else {
           std::cerr << "error: invalid arg to --color: " << sv_optarg << "\n";
           return false;
+        }
+        break;
+      case SORT:
+        flags->command_options.sorter =
+            sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_ASC);
+        if (flags->command_options.sorter == nullptr) {
+          std::cerr << "error: invalid arg to --sort: " << sv_optarg << "\n";
+        }
+        break;
+      case RSORT:
+        flags->command_options.sorter =
+            sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_DESC);
+        if (flags->command_options.sorter == nullptr) {
+          std::cerr << "error: invalid arg to --rsort: " << sv_optarg << "\n";
         }
         break;
       case BASEURL:

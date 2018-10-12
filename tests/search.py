@@ -43,4 +43,3 @@ class TestSearch(auracle_test.TestCase):
 
 if __name__ == '__main__':
     auracle_test.main()
-

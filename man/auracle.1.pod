@@ -66,6 +66,14 @@ I<depends>, I<makedepends>, I<optdepends>, or I<checkdepends>.
 
 This option defaults to I<name-desc>.
 
+=item B<--sort=>I<KEY>, B<--sort=>I<KEY>
+
+For search and info queries, sorts the results in ascending and descending
+order, respectively. I<KEY> must be one of: B<name>, B<popularity>, B<votes>,
+B<firstsubmitted>, or B<lastmodified>.
+
+This option defaults to sorting by B<name> in ascending order.
+
 =item B<-C >I<DIR>, B<--chdir=>I<DIR>
 
 Change directory to I<DIR> before downloading and extracting tarballs.

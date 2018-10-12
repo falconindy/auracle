@@ -8,6 +8,7 @@
 #include "aur/aur.hh"
 #include "inmemory_repo.hh"
 #include "pacman.hh"
+#include "sort.hh"
 
 class PackageOrDependency : public std::variant<std::string, aur::Dependency> {
  public:
@@ -79,6 +80,8 @@ class Auracle {
     bool recurse = false;
     bool allow_regex = true;
     bool quiet = false;
+    sort::Sorter sorter =
+        sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
   };
 
   int BuildOrder(const std::vector<PackageOrDependency>& args,

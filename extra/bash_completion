@@ -16,7 +16,8 @@ _auracle() {
 
   local -A OPTS=(
          [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
-                [ARG]='-C --chdir --searchby --connect-timeout --max-connections --color'
+                [ARG]='-C --chdir --searchby --connect-timeout --max-connections --color
+                       --sort --rsort'
   )
 
   if __contains_word "$prev" ${OPTS[ARG]}; then
@@ -26,6 +27,9 @@ _auracle() {
         ;;
       '--searchby')
         comps='name name-desc maintainer depends makedepends optdepends checkdepends'
+        ;;
+      '--sort'|'--rsort')
+        comps="name votes popularity firstsubmitted lastmodified"
         ;;
       '-C'|'--chdir')
         comps=$(compgen -A directory -- "$cur" )

@@ -63,7 +63,7 @@ aurlib = static_library(
 auracle_sources = '''
   src/auracle.cc src/auracle.hh
   src/format.cc src/format.hh
-  src/sort.hh
+  src/sort.cc src/sort.hh
   src/pacman.cc src/pacman.hh
   src/terminal.cc src/terminal.hh
   src/inmemory_repo.cc src/inmemory_repo.hh
@@ -135,6 +135,7 @@ foreach input : [
   'tests/raw_query.py',
   'tests/regex_search.py',
   'tests/search.py',
+  'tests/sort.py',
 ]
   basename = input.split('/')[-1].split('.')[0]
   test(
