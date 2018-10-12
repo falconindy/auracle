@@ -54,30 +54,6 @@ struct Update {
   const bool ignored;
 };
 
-// TODO: custom formatting
-// Instead of printf crap, use something closer to python formatting, e.g.
-//
-// aur/{pkgname} ({votes:%d})\n    {description}
-//
-// look into Ragel for format compilation.
-struct Custom {
-  struct CompiledFormat {
-    using FieldRef = std::function<std::string(const aur::Package&)>;
-    using Token = std::variant<std::string, FieldRef>;
-
-    std::vector<Token> tokens;
-  };
-
-  static CompiledFormat CompileFormat(const std::string& format);
-
-  Custom(const aur::Package& package, const CompiledFormat& format);
-  ~Custom() = default;
-
- private:
-  const aur::Package& package;
-  const CompiledFormat& format;
-};
-
 }  // namespace format
 
 #endif  // FORMAT_HH
