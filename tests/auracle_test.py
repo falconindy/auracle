@@ -7,6 +7,7 @@ import os.path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 
@@ -35,6 +36,19 @@ class HTTPRequest(object):
             if line:
                 k, v = line.split(':', 1)
                 self.headers[k.lower()] = v.strip()
+
+
+class TimeLoggingTestResult(unittest.runner.TextTestResult):
+
+    def startTest(self, test):
+        self._started_at = time.time()
+        super().startTest(test)
+
+
+    def addSuccess(self, test):
+        elapsed = time.time() - self._started_at
+        self.stream.write('\n{} ({:.03}s)'.format(
+            self.getDescription(test), elapsed))
 
 
 class TestCase(unittest.TestCase):
@@ -106,4 +120,5 @@ class TestCase(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    test_runner = unittest.TextTestRunner(resultclass=TimeLoggingTestResult)
+    unittest.main(testRunner=test_runner)
