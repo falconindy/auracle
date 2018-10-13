@@ -52,13 +52,36 @@ through it's C++ implementation and adoption of Curl's multi API.
 This code is all subject to change until a tag is pushed. If you have opinions,
 feature requests, or bug reports, please file issues.
 
-### Building
+### Building and Testing
 
-auracle uses the [meson](http://mesonbuild.com/) build system. To configure,
-build, and install the project:
+Building auracle requires:
+
+* A C++17 capable compiler
+* meson
+* nlohmann-json
+* libsystemd
+* libalpm
+* libarchive
+* libcurl
+
+Testing additionally depends on:
+
+* gmock
+* gtest
+* python3
+
+You're probably building this from the AUR, though, so just go use the
+[PKGBUILD](https://aur.archlinux.org/packages/auracle-git).
+
+If you're hacking on auracle, you can do this manually:
 
 ```sh
-$ meson build -D buildtype=release
+$ meson build
 $ ninja -C build
-$ sudo ninja -C build install
+```
+
+And running the tests is simply a matter of:
+
+```sh
+$ meson test -C build
 ```
