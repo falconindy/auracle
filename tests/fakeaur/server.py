@@ -5,7 +5,6 @@ import http.server
 import io
 import json
 import os.path
-import socket
 import sys
 import tarfile
 import tempfile
@@ -14,6 +13,7 @@ import urllib.parse
 
 
 DBROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'db')
+
 
 class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
@@ -142,40 +142,20 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(response)
 
 
-class AurServer(http.server.HTTPServer):
-
-    def __init__(self, socket, server_address, handler_cls):
-        http.server.HTTPServer.__init__(
-                self, server_address, handler_cls, bind_and_activate=False)
-
-        # Due to inheritance, we end up with an extra socket via
-        # socketserver.TCPServer. I don't feel like fixing this properly, so
-        # let's just close the extra socket that we end up with.
-        self.socket.close()
-
-        self.socket = socket
-        self.socket.listen()
-
-
 def Serve(queue=None, port=0):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(('', port))
-
-    serve = AurServer(sock, sock.getsockname(), FakeAurHandler)
-    port = sock.getsockname()[1]
+    serve = http.server.HTTPServer(('localhost', port), FakeAurHandler)
+    host, port = serve.socket.getsockname()
 
     if queue:
         queue.put(port)
     else:
-        print('serving on http://localhost:{}'.format(port))
+        print('serving on http://{}:{}'.format(host, port))
 
     try:
         serve.serve_forever()
     except KeyboardInterrupt:
         pass
     serve.server_close()
-    sock.close()
 
 
 if __name__ == '__main__':
