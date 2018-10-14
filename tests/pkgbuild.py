@@ -18,6 +18,16 @@ class TestPkgbuild(auracle_test.TestCase):
         ])
 
 
+    def testMultiplePkgbuilds(self):
+        p = self.Auracle(['pkgbuild', 'auracle-git', 'pkgfile-git'])
+        self.assertEqual(p.returncode, 0)
+
+        pkgbuilds = p.stdout.decode()
+
+        self.assertIn('### BEGIN auracle-git/PKGBUILD', pkgbuilds)
+        self.assertIn('### BEGIN pkgfile-git/PKGBUILD', pkgbuilds)
+
+
     def testPkgbuildNotFound(self):
         p = self.Auracle(['pkgbuild', 'totesnotfoundpackage'])
         self.assertNotEqual(p.returncode, 0)
