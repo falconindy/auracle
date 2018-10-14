@@ -101,6 +101,7 @@ class TestCase(unittest.TestCase):
             os.path.join(self.build_dir, 'auracle'),
             '--baseurl', self.baseurl,
             '--color=never',
+            '--pacmanconfig=/dev/null',
             '--chdir', self.tempdir,
         ] + list(args)
 

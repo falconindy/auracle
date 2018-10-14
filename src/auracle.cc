@@ -636,6 +636,7 @@ int Auracle::RawInfo(const std::vector<PackageOrDependency>& args,
 
 struct Flags {
   std::string baseurl = kAurBaseurl;
+  std::string pacman_config = kPacmanConf;
   int max_connections = 20;
   int connect_timeout = 10;
   terminal::WantColor color = terminal::WantColor::AUTO;
@@ -693,6 +694,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
     BASEURL,
     SORT,
     RSORT,
+    PACMAN_CONFIG,
   };
 
   static constexpr struct option opts[] = {
@@ -711,6 +713,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "sort",              required_argument, 0, SORT },
       { "version",           no_argument,       0, VERSION },
       { "baseurl",           required_argument, 0, BASEURL },
+      { "pacmanconfig",      required_argument, 0, PACMAN_CONFIG },
       // clang-format on
   };
 
@@ -795,6 +798,9 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       case BASEURL:
         flags->baseurl = std::string(sv_optarg);
         break;
+      case PACMAN_CONFIG:
+        flags->pacman_config = std::string(sv_optarg);
+        break;
       case VERSION:
         version();
         break;
@@ -823,9 +829,9 @@ int main(int argc, char** argv) {
   setlocale(LC_ALL, "");
   terminal::Init(flags.color);
 
-  const auto pacman = dlr::Pacman::NewFromConfig(kPacmanConf);
+  const auto pacman = dlr::Pacman::NewFromConfig(flags.pacman_config);
   if (pacman == nullptr) {
-    std::cerr << "error: failed to parse " << kPacmanConf << "\n";
+    std::cerr << "error: failed to parse " << flags.pacman_config << "\n";
     return 1;
   }
 
