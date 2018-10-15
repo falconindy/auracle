@@ -57,5 +57,14 @@ class TestSearch(auracle_test.TestCase):
         self.assertEqual(packagecount, len(p2.stdout.decode().splitlines()))
 
 
+    def testLiteralSearch(self):
+        p = self.Auracle(['search', '--literal', '^aurac.+'])
+        self.assertEqual(p.returncode, 0)
+
+        self.assertListEqual(self.request_uris, [
+            '/rpc?by=name-desc&type=search&v=5&arg=%5Eaurac.%2B',
+        ])
+
+
 if __name__ == '__main__':
     auracle_test.main()
