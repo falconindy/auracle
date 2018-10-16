@@ -55,9 +55,12 @@ Pacman::~Pacman() { alpm_release(alpm_); }
 
 struct ParseState {
   alpm_handle_t* alpm;
+  std::string dbpath = "/var/lib/pacman";
+  std::string rootdir = "/";
 
   std::string section;
   std::vector<std::string> ignorepkgs;
+  std::vector<std::string> repos;
 };
 
 bool ParseOneFile(const std::string& path, ParseState* state) {
@@ -94,10 +97,13 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
         std::copy(std::istream_iterator<std::string>(iss),
                   std::istream_iterator<std::string>(),
                   std::back_inserter(state->ignorepkgs));
+      } else if (key == "DBPath") {
+        state->dbpath = value;
+      } else if (key == "RootDir") {
+        state->rootdir = value;
       }
     } else {
-      alpm_register_syncdb(state->alpm, state->section.c_str(),
-                           static_cast<alpm_siglevel_t>(0));
+      state->repos.emplace_back(state->section);
     }
 
     if (key == "Include") {
@@ -124,14 +130,19 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
 std::unique_ptr<Pacman> Pacman::NewFromConfig(const std::string& config_file) {
   ParseState state;
 
+  if (!ParseOneFile(config_file, &state)) {
+    return nullptr;
+  }
+
   alpm_errno_t err;
-  state.alpm = alpm_initialize("/", "/var/lib/pacman", &err);
+  state.alpm = alpm_initialize("/", state.dbpath.c_str(), &err);
   if (state.alpm == nullptr) {
     return nullptr;
   }
 
-  if (!ParseOneFile(config_file, &state)) {
-    return nullptr;
+  for (const auto& repo : state.repos) {
+    alpm_register_syncdb(state.alpm, repo.c_str(),
+                         static_cast<alpm_siglevel_t>(0));
   }
 
   return std::unique_ptr<Pacman>(
