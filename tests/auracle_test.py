@@ -68,6 +68,8 @@ class TestCase(unittest.TestCase):
 
         self.baseurl = 'http://localhost:{}'.format(port)
 
+        self._WritePacmanConf()
+
 
     def tearDown(self):
         self.server.terminate()
@@ -89,6 +91,12 @@ class TestCase(unittest.TestCase):
         self.request_uris = [r.path for r in self.requests_sent]
 
 
+    def _WritePacmanConf(self):
+        with open(os.path.join(self.tempdir, 'pacman.conf'), 'w') as f:
+            f.write('[options]\nDBPath = {}/fakepacman'.format(
+                os.path.dirname(os.path.realpath(__file__))))
+
+
     def Auracle(self, args):
         env = {
             'PATH': '{}/fakeaur:{}'.format(
@@ -101,7 +109,7 @@ class TestCase(unittest.TestCase):
             os.path.join(self.build_dir, 'auracle'),
             '--baseurl', self.baseurl,
             '--color=never',
-            '--pacmanconfig=/dev/null',
+            '--pacmanconfig={}/pacman.conf'.format(self.tempdir),
             '--chdir', self.tempdir,
         ] + list(args)
 

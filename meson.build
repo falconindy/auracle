@@ -136,6 +136,7 @@ foreach input : [
   'tests/regex_search.py',
   'tests/search.py',
   'tests/sort.py',
+  'tests/sync.py',
 ]
   basename = input.split('/')[-1].split('.')[0]
 
