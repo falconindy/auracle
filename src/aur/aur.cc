@@ -218,8 +218,8 @@ void Aur::Cancel(const ActiveRequests::value_type& request) {
                                         /*dispatch_callback=*/false);
                         },
                         [this](sd_event_source* source) {
-                          sd_event_source_unref(source);
                           active_requests_.erase(source);
+                          sd_event_source_unref(source);
                         }},
              request);
 }
