@@ -714,6 +714,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "version",           no_argument,       0, VERSION },
       { "baseurl",           required_argument, 0, BASEURL },
       { "pacmanconfig",      required_argument, 0, PACMAN_CONFIG },
+      {},
       // clang-format on
   };
 
