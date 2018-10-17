@@ -14,6 +14,14 @@ namespace aur {
 
 namespace {
 
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+
+template <class... Ts>
+overloaded(Ts...)->overloaded<Ts...>;
+
 template <typename TimeRes, typename ClockType>
 auto TimepointTo(std::chrono::time_point<ClockType> tp) {
   return std::chrono::time_point_cast<TimeRes>(tp).time_since_epoch().count();
@@ -204,18 +212,21 @@ Aur::~Aur() {
   }
 }
 
-void Aur::Cancel() {
-  auto requests = active_requests_.DrainForCancellation();
-  while (!requests.first.empty()) {
-    FinishRequest(*requests.first.begin(), CURLE_ABORTED_BY_CALLBACK,
-                  /* dispatch_callback = */ false);
-  }
+void Aur::Cancel(const ActiveRequests::value_type& request) {
+  std::visit(overloaded{[this](CURL* curl) {
+                          FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
+                                        /*dispatch_callback=*/false);
+                        },
+                        [this](sd_event_source* source) {
+                          sd_event_source_unref(source);
+                          active_requests_.erase(source);
+                        }},
+             request);
+}
 
-  while (!requests.second.empty()) {
-    auto iter = requests.second.begin();
-
-    sd_event_source_unref(*iter);
-    requests.second.erase(iter);
+void Aur::CancelAll() {
+  while (!active_requests_.empty()) {
+    Cancel(*active_requests_.begin());
   }
 
   sd_event_exit(event_, 1);
@@ -366,7 +377,7 @@ int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
 
 void Aur::StartRequest(CURL* curl) {
   curl_multi_add_handle(curl_, curl);
-  active_requests_.Add(curl);
+  active_requests_.emplace(curl);
 }
 
 int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
@@ -388,7 +399,7 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
 
   auto r = dispatch_callback ? handler->RunCallback(error) : 0;
 
-  active_requests_.Remove(curl);
+  active_requests_.erase(curl);
   curl_multi_remove_handle(curl_, curl);
   curl_easy_cleanup(curl);
 
@@ -410,7 +421,7 @@ int Aur::ProcessDoneEvents() {
     auto r = FinishRequest(msg->easy_handle, msg->data.result,
                            /* dispatch_callback = */ true);
     if (r < 0) {
-      Cancel();
+      CancelAll();
       return r;
     }
   }
@@ -419,7 +430,7 @@ int Aur::ProcessDoneEvents() {
 }
 
 int Aur::Wait() {
-  while (!active_requests_.IsEmpty()) {
+  while (!active_requests_.empty()) {
     if (sd_event_run(event_, 0) < 0) {
       break;
     }
@@ -505,7 +516,7 @@ void Aur::QueueRequest(
 int Aur::OnCloneExit(sd_event_source* s, const siginfo_t* si, void* userdata) {
   auto handler = static_cast<CloneResponseHandler*>(userdata);
 
-  handler->aur()->active_requests_.Remove(s);
+  handler->aur()->active_requests_.erase(s);
   sd_event_source_unref(s);
 
   std::string error;
@@ -569,7 +580,7 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   sd_event_add_child(event_, &child, pid, WEXITED, &Aur::OnCloneExit,
                      response_handler);
 
-  active_requests_.Add(child);
+  active_requests_.emplace(child);
 }
 
 void Aur::QueueRawRpcRequest(const RpcRequest& request,

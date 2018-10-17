@@ -68,6 +68,9 @@ class Aur {
   int Wait();
 
  private:
+  using ActiveRequests =
+      std::unordered_set<std::variant<CURL*, sd_event_source*>>;
+
   template <typename RequestType>
   void QueueRequest(
       const Request& request,
@@ -77,33 +80,8 @@ class Aur {
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
 
   int ProcessDoneEvents();
-  void Cancel();
-
-  class ActiveRequests {
-   public:
-    ActiveRequests() {}
-
-    void Add(CURL* curl) { curls_.insert(curl); }
-    void Add(sd_event_source* event_source) {
-      event_sources_.insert(event_source);
-    }
-
-    void Remove(CURL* curl) { curls_.erase(curl); }
-    void Remove(sd_event_source* event_source) {
-      event_sources_.erase(event_source);
-    }
-
-    bool IsEmpty() const { return curls_.empty() && event_sources_.empty(); }
-
-    std::pair<std::unordered_set<CURL*>, std::unordered_set<sd_event_source*>>
-    DrainForCancellation() {
-      return {std::move(curls_), std::move(event_sources_)};
-    }
-
-   private:
-    std::unordered_set<CURL*> curls_;
-    std::unordered_set<sd_event_source*> event_sources_;
-  };
+  void CancelAll();
+  void Cancel(const ActiveRequests::value_type& value);
 
   enum DebugLevel {
     // No debugging.
