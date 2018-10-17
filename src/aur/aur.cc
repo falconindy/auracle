@@ -175,7 +175,7 @@ Aur::Aur(const std::string& baseurl) : baseurl_(baseurl) {
   curl_multi_setopt(curl_, CURLMOPT_TIMERFUNCTION, &Aur::TimerCallback);
   curl_multi_setopt(curl_, CURLMOPT_TIMERDATA, this);
 
-  sigset_t ss;
+  sigset_t ss{};
   sigaddset(&ss, SIGCHLD);
   sigprocmask(SIG_BLOCK, &ss, &saved_ss_);
 
@@ -194,6 +194,7 @@ Aur::~Aur() {
   curl_multi_cleanup(curl_);
   curl_global_cleanup();
 
+  sd_event_source_unref(timer_);
   sd_event_unref(event_);
 
   sigprocmask(SIG_SETMASK, &saved_ss_, nullptr);

@@ -18,10 +18,14 @@ class EncodedParam {
   EncodedParam(const QueryParam& kv) : kv_(kv) {}
 
   friend std::ostream& operator<<(std::ostream& os, const EncodedParam& param) {
-    std::unique_ptr<char> escaped(curl_easy_escape(
-        nullptr, param.kv_.second.data(), param.kv_.second.size()));
+    char* escaped = curl_easy_escape(nullptr, param.kv_.second.data(),
+                                     param.kv_.second.size());
 
-    return os << param.kv_.first << '=' << escaped.get();
+    os << param.kv_.first << '=' << escaped;
+
+    free(escaped);
+
+    return os;
   }
 
  private:

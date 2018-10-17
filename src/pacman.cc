@@ -14,7 +14,10 @@ namespace std {
 
 template <>
 struct default_delete<glob_t> {
-  void operator()(glob_t* globbuf) { globfree(globbuf); }
+  void operator()(glob_t* globbuf) {
+    globfree(globbuf);
+    delete globbuf;
+  }
 };
 
 }  // namespace std
