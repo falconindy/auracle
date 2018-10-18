@@ -97,9 +97,9 @@ int ExtractArchive(const std::string& archive_bytes) {
   return r;
 }
 
-std::vector<std::string> NotFoundPackages(
-    const std::vector<PackageOrDependency>& want,
-    const std::vector<aur::Package>& got, const dlr::InMemoryRepo& repo) {
+std::vector<std::string> NotFoundPackages(const std::vector<std::string>& want,
+                                          const std::vector<aur::Package>& got,
+                                          const dlr::InMemoryRepo& repo) {
   std::vector<std::string> missing;
 
   for (const auto& p : want) {
@@ -157,7 +157,7 @@ std::string SearchFragFromRegex(const std::string& s) {
   return std::string(argstr, span);
 }
 
-int Auracle::Info(const std::vector<PackageOrDependency>& args,
+int Auracle::Info(const std::vector<std::string>& args,
                   const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
@@ -165,8 +165,7 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args,
 
   std::vector<aur::Package> packages;
   aur_.QueueRpcRequest(
-      aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
-      [&](aur::StatusOr<aur::RpcResponse> response) {
+      aur::InfoRequest(args), [&](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
         } else {
@@ -196,7 +195,7 @@ int Auracle::Info(const std::vector<PackageOrDependency>& args,
   return 0;
 }
 
-int Auracle::Search(const std::vector<PackageOrDependency>& args,
+int Auracle::Search(const std::vector<std::string>& args,
                     const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
@@ -205,10 +204,9 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
   std::vector<std::regex> patterns;
   for (const auto& arg : args) {
     try {
-      patterns.emplace_back(std::string(arg),
-                            std::regex::icase | std::regex::optimize);
+      patterns.emplace_back(arg, std::regex::icase | std::regex::optimize);
     } catch (const std::regex_error& e) {
-      std::cerr << "error: invalid regex: " << std::string(arg) << "\n";
+      std::cerr << "error: invalid regex: " << arg << "\n";
       return -EINVAL;
     }
   }
@@ -239,7 +237,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
     if (options.allow_regex) {
       auto frag = SearchFragFromRegex(args[i]);
       if (frag.empty()) {
-        std::cerr << "error: search string '" << std::string(args[i])
+        std::cerr << "error: search string '" << args[i]
                   << "' insufficient for searching by regular expression.\n";
         return -EINVAL;
       }
@@ -251,7 +249,7 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
     aur_.QueueRpcRequest(
         r, [&, arg{args[i]}](aur::StatusOr<aur::RpcResponse> response) {
           if (!response.ok()) {
-            std::cerr << "error: request failed for '" << std::string(arg)
+            std::cerr << "error: request failed for '" << arg
                       << "': " << response.error() << "\n";
             return -EIO;
           } else {
@@ -280,25 +278,27 @@ int Auracle::Search(const std::vector<PackageOrDependency>& args,
   return 0;
 }
 
-void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
+void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
   aur::InfoRequest info_request;
 
   for (const auto& arg : args) {
-    if (pacman_->ShouldIgnorePackage(arg)) {
+    const std::string name = arg;
+
+    if (pacman_->ShouldIgnorePackage(name)) {
       continue;
     }
 
-    if (state->package_repo.LookupByPkgname(arg) != nullptr) {
+    if (state->package_repo.LookupByPkgname(name) != nullptr) {
       continue;
     }
 
-    if (const auto repo = pacman_->RepoForPackage(arg); !repo.empty()) {
-      std::cout << std::string(arg) << " is available in " << repo << "\n";
+    if (const auto repo = pacman_->RepoForPackage(name); !repo.empty()) {
+      std::cout << name << " is available in " << repo << "\n";
       continue;
     }
 
-    info_request.AddArg(arg);
+    info_request.AddArg(name);
   }
 
   aur_.QueueRpcRequest(
@@ -334,7 +334,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
           }
 
           if (state->recurse) {
-            std::vector<PackageOrDependency> alldeps;
+            std::vector<std::string> alldeps;
             alldeps.reserve(p->depends.size() + p->makedepends.size() +
                             p->checkdepends.size());
 
@@ -345,7 +345,7 @@ void Auracle::IteratePackages(std::vector<PackageOrDependency> args,
                   continue;
                 }
 
-                alldeps.push_back(dep);
+                alldeps.push_back(dep.name);
               }
             }
 
@@ -373,7 +373,7 @@ bool ChdirIfNeeded(const fs::path& target) {
   return true;
 }
 
-int Auracle::Clone(const std::vector<PackageOrDependency>& args,
+int Auracle::Clone(const std::vector<std::string>& args,
                    const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
@@ -412,7 +412,7 @@ int Auracle::Clone(const std::vector<PackageOrDependency>& args,
   return ret;
 }
 
-int Auracle::Download(const std::vector<PackageOrDependency>& args,
+int Auracle::Download(const std::vector<std::string>& args,
                       const CommandOptions& options) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
@@ -458,7 +458,7 @@ int Auracle::Download(const std::vector<PackageOrDependency>& args,
   return 0;
 }
 
-int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args,
+int Auracle::Pkgbuild(const std::vector<std::string>& args,
                       const CommandOptions&) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
@@ -466,7 +466,7 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args,
 
   int resultcount = 0;
   aur_.QueueRpcRequest(
-      aur::InfoRequest(std::vector<std::string>(args.begin(), args.end())),
+      aur::InfoRequest(args),
       [this, &resultcount](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "request failed: " << response.error() << "\n";
@@ -475,12 +475,12 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args,
 
         resultcount = response.value().resultcount;
 
-        const bool print_header = response.value().results.size() > 1;
+        const bool print_header = resultcount > 1;
 
-        for (const auto& arg : response.value().results) {
+        for (const auto& pkg : response.value().results) {
           aur_.QueuePkgbuildRequest(
-              aur::RawRequest(aur::RawRequest::UrlForPkgbuild(arg)),
-              [print_header, pkgbase{arg.pkgbase}](
+              aur::RawRequest(aur::RawRequest::UrlForPkgbuild(pkg)),
+              [print_header, pkgbase{pkg.pkgbase}](
                   const aur::StatusOr<aur::RawResponse> response) {
                 if (!response.ok()) {
                   std::cerr << "request failed: " << response.error() << "\n";
@@ -510,7 +510,7 @@ int Auracle::Pkgbuild(const std::vector<PackageOrDependency>& args,
   return 0;
 }
 
-int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args,
+int Auracle::BuildOrder(const std::vector<std::string>& args,
                         const CommandOptions&) {
   if (args.size() == 0) {
     return ErrorNotEnoughArgs();
@@ -530,10 +530,8 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args,
 
   std::vector<const aur::Package*> total_ordering;
   for (const auto& arg : args) {
-    const auto name = std::string(arg);
-
     iter.package_repo.WalkDependencies(
-        name, [&total_ordering](const aur::Package* package) {
+        arg, [&total_ordering](const aur::Package* package) {
           total_ordering.push_back(package);
         });
   }
@@ -550,7 +548,7 @@ int Auracle::BuildOrder(const std::vector<PackageOrDependency>& args,
   return 0;
 }
 
-int Auracle::Sync(const std::vector<PackageOrDependency>& args,
+int Auracle::Sync(const std::vector<std::string>& args,
                   const CommandOptions& options) {
   aur::InfoRequest info_request;
 
@@ -590,7 +588,7 @@ int Auracle::Sync(const std::vector<PackageOrDependency>& args,
   return aur_.Wait();
 }
 
-int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
+int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
     aur::SearchRequest request;
@@ -612,7 +610,7 @@ int Auracle::RawSearch(const std::vector<PackageOrDependency>& args,
   return aur_.Wait();
 }
 
-int Auracle::RawInfo(const std::vector<PackageOrDependency>& args,
+int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
   aur::InfoRequest request;
 
@@ -843,12 +841,11 @@ int main(int argc, char** argv) {
                       .set_max_connections(flags.max_connections));
 
   std::string_view action(argv[1]);
-  std::vector<PackageOrDependency> args(argv + 2, argv + argc);
+  std::vector<std::string> args(argv + 2, argv + argc);
 
   std::unordered_map<std::string_view,
-                     int (Auracle::*)(
-                         const std::vector<PackageOrDependency>& args,
-                         const Auracle::CommandOptions& options)>
+                     int (Auracle::*)(const std::vector<std::string>& args,
+                                      const Auracle::CommandOptions& options)>
       cmds{
           {"buildorder", &Auracle::BuildOrder},
           {"clone", &Auracle::Clone},

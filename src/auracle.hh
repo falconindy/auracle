@@ -10,24 +10,6 @@
 #include "pacman.hh"
 #include "sort.hh"
 
-class PackageOrDependency : public std::variant<std::string, aur::Dependency> {
- public:
-  using std::variant<std::string, aur::Dependency>::variant;
-
-  operator std::string() const {
-    auto pval = std::get_if<std::string>(this);
-    if (pval != nullptr) {
-      return *pval;
-    } else {
-      return std::get_if<aur::Dependency>(this)->name;
-    }
-  }
-
-  bool operator==(const std::string& other) const {
-    return std::string(*this) == other;
-  }
-};
-
 class Auracle {
  public:
   struct Options {
@@ -84,24 +66,22 @@ class Auracle {
         sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
   };
 
-  int BuildOrder(const std::vector<PackageOrDependency>& args,
+  int BuildOrder(const std::vector<std::string>& args,
                  const CommandOptions& options);
-  int Clone(const std::vector<PackageOrDependency>& args,
+  int Clone(const std::vector<std::string>& args,
             const CommandOptions& options);
-  int Download(const std::vector<PackageOrDependency>& args,
+  int Download(const std::vector<std::string>& args,
                const CommandOptions& options);
-  int Info(const std::vector<PackageOrDependency>& args,
-           const CommandOptions& options);
-  int Pkgbuild(const std::vector<PackageOrDependency>& args,
+  int Info(const std::vector<std::string>& args, const CommandOptions& options);
+  int Pkgbuild(const std::vector<std::string>& args,
                const CommandOptions& options);
-  int RawInfo(const std::vector<PackageOrDependency>& args,
+  int RawInfo(const std::vector<std::string>& args,
               const CommandOptions& options);
-  int RawSearch(const std::vector<PackageOrDependency>& args,
+  int RawSearch(const std::vector<std::string>& args,
                 const CommandOptions& options);
-  int Search(const std::vector<PackageOrDependency>& args,
+  int Search(const std::vector<std::string>& args,
              const CommandOptions& options);
-  int Sync(const std::vector<PackageOrDependency>& args,
-           const CommandOptions& options);
+  int Sync(const std::vector<std::string>& args, const CommandOptions& options);
 
  private:
   struct PackageIterator {
@@ -118,8 +98,7 @@ class Auracle {
 
   int SendRawRpc(const aur::RpcRequest* request);
 
-  void IteratePackages(std::vector<PackageOrDependency> args,
-                       PackageIterator* state);
+  void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
   aur::Aur aur_;
   dlr::Pacman* const pacman_;
