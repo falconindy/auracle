@@ -1,7 +1,6 @@
 #ifndef AURACLE_HH
 #define AURACLE_HH
 
-#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -58,7 +57,7 @@ class Auracle {
   struct CommandOptions {
     aur::SearchRequest::SearchBy search_by =
         aur::SearchRequest::SearchBy::NAME_DESC;
-    std::filesystem::path directory;
+    std::string directory;
     bool recurse = false;
     bool allow_regex = true;
     bool quiet = false;
