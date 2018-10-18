@@ -52,8 +52,8 @@ void SortUnique(std::vector<aur::Package>* packages,
                 const sort::Sorter& sorter) {
   std::sort(packages->begin(), packages->end(), sorter);
 
-  auto iter = std::unique(packages->begin(), packages->end());
-  packages->resize(iter - packages->begin());
+  packages->resize(std::unique(packages->begin(), packages->end()) -
+                   packages->begin());
 }
 
 int ExtractArchive(const std::string& archive_bytes) {
@@ -76,7 +76,9 @@ int ExtractArchive(const std::string& archive_bytes) {
     if (r == ARCHIVE_FATAL || r == ARCHIVE_WARN) {
       r = -archive_errno(archive);
       break;
-    } else if (r == ARCHIVE_EOF) {
+    }
+
+    if (r == ARCHIVE_EOF) {
       r = 0;
       break;
     }
@@ -113,11 +115,9 @@ std::vector<std::string> NotFoundPackages(const std::vector<std::string>& want,
 std::string SearchFragFromRegex(const std::string& s) {
   static constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
 
-  const char* arg = s.data();
-
   int span = 0;
   const char* argstr;
-  for (argstr = arg; *argstr; argstr++) {
+  for (argstr = s.data(); *argstr != '\0'; argstr++) {
     span = strcspn(argstr, kRegexChars);
 
     /* given 'cow?', we can't include w in the search */
@@ -126,10 +126,10 @@ std::string SearchFragFromRegex(const std::string& s) {
     }
 
     /* a string inside [] or {} cannot be a valid span */
-    if (strchr("[{", *argstr)) {
+    if (strchr("[{", *argstr) != nullptr) {
       argstr = strpbrk(argstr + span, "]}");
-      if (!argstr) {
-        return "";
+      if (argstr == nullptr) {
+        return std::string();
       }
       continue;
     }
@@ -140,7 +140,7 @@ std::string SearchFragFromRegex(const std::string& s) {
   }
 
   if (span < 2) {
-    return "";
+    return std::string();
   }
 
   return std::string(argstr, span);
@@ -171,22 +171,20 @@ void Auracle::IteratePackages(std::vector<std::string> args,
   aur::InfoRequest info_request;
 
   for (const auto& arg : args) {
-    const std::string name = arg;
-
-    if (pacman_->ShouldIgnorePackage(name)) {
+    if (pacman_->ShouldIgnorePackage(arg)) {
       continue;
     }
 
-    if (state->package_repo.LookupByPkgname(name) != nullptr) {
+    if (state->package_repo.LookupByPkgname(arg) != nullptr) {
       continue;
     }
 
-    if (const auto repo = pacman_->RepoForPackage(name); !repo.empty()) {
-      std::cout << name << " is available in " << repo << "\n";
+    if (const auto repo = pacman_->RepoForPackage(arg); !repo.empty()) {
+      std::cout << arg << " is available in " << repo << "\n";
       continue;
     }
 
-    info_request.AddArg(name);
+    info_request.AddArg(arg);
   }
 
   aur_.QueueRpcRequest(
@@ -247,7 +245,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
 
 int Auracle::Info(const std::vector<std::string>& args,
                   const CommandOptions& options) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
@@ -266,11 +264,11 @@ int Auracle::Info(const std::vector<std::string>& args,
       });
 
   auto r = aur_.Wait();
-  if (r) {
+  if (r < 0) {
     return r;
   }
 
-  if (packages.size() == 0) {
+  if (packages.empty()) {
     return -ENOENT;
   }
 
@@ -285,7 +283,7 @@ int Auracle::Info(const std::vector<std::string>& args,
 
 int Auracle::Search(const std::vector<std::string>& args,
                     const CommandOptions& options) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
@@ -318,36 +316,35 @@ int Auracle::Search(const std::vector<std::string>& args,
   };
 
   std::vector<aur::Package> packages;
-  for (size_t i = 0; i < args.size(); ++i) {
+  for (const auto& arg : args) {
     aur::SearchRequest r;
     r.SetSearchBy(options.search_by);
 
     if (options.allow_regex) {
-      auto frag = SearchFragFromRegex(args[i]);
+      auto frag = SearchFragFromRegex(arg);
       if (frag.empty()) {
-        std::cerr << "error: search string '" << args[i]
+        std::cerr << "error: search string '" << arg
                   << "' insufficient for searching by regular expression.\n";
         return -EINVAL;
       }
       r.AddArg(frag);
     } else {
-      r.AddArg(args[i]);
+      r.AddArg(arg);
     }
 
-    aur_.QueueRpcRequest(
-        r, [&, arg{args[i]}](aur::StatusOr<aur::RpcResponse> response) {
-          if (!response.ok()) {
-            std::cerr << "error: request failed for '" << arg
-                      << "': " << response.error() << "\n";
-            return -EIO;
-          } else {
-            const auto& results = response.value().results;
-            std::copy_if(std::make_move_iterator(results.begin()),
-                         std::make_move_iterator(results.end()),
-                         std::back_inserter(packages), matches);
-          }
-          return 0;
-        });
+    aur_.QueueRpcRequest(r, [&](aur::StatusOr<aur::RpcResponse> response) {
+      if (!response.ok()) {
+        std::cerr << "error: request failed for '" << arg
+                  << "': " << response.error() << "\n";
+        return -EIO;
+      }
+
+      auto& results = response.value().results;
+      std::copy_if(std::make_move_iterator(results.begin()),
+                   std::make_move_iterator(results.end()),
+                   std::back_inserter(packages), matches);
+      return 0;
+    });
   }
 
   int r = aur_.Wait();
@@ -368,7 +365,7 @@ int Auracle::Search(const std::vector<std::string>& args,
 
 int Auracle::Clone(const std::vector<std::string>& args,
                    const CommandOptions& options) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
@@ -398,7 +395,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
     return r;
   }
 
-  if (iter.package_repo.size() == 0) {
+  if (iter.package_repo.empty()) {
     return -ENOENT;
   }
 
@@ -407,7 +404,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
 
 int Auracle::Download(const std::vector<std::string>& args,
                       const CommandOptions& options) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
@@ -444,7 +441,7 @@ int Auracle::Download(const std::vector<std::string>& args,
     return r;
   }
 
-  if (iter.package_repo.size() == 0) {
+  if (iter.package_repo.empty()) {
     return -ENOENT;
   }
 
@@ -453,7 +450,7 @@ int Auracle::Download(const std::vector<std::string>& args,
 
 int Auracle::Pkgbuild(const std::vector<std::string>& args,
                       const CommandOptions&) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
@@ -505,7 +502,7 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
 
 int Auracle::BuildOrder(const std::vector<std::string>& args,
                         const CommandOptions&) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
@@ -517,7 +514,7 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     return r;
   }
 
-  if (iter.package_repo.size() == 0) {
+  if (iter.package_repo.empty()) {
     return -ENOENT;
   }
 

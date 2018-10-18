@@ -117,7 +117,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
       }
 
       for (size_t i = 0; i < globbuf->gl_pathc; ++i) {
-        if (ParseOneFile(globbuf->gl_pathv[i], state) == false) {
+        if (!ParseOneFile(globbuf->gl_pathv[i], state)) {
           return false;
         }
       }
@@ -162,8 +162,9 @@ bool Pacman::ShouldIgnorePackage(const std::string& package) const {
 std::string Pacman::RepoForPackage(const std::string& package) const {
   for (auto i = alpm_get_syncdbs(alpm_); i != nullptr; i = i->next) {
     auto db = static_cast<alpm_db_t*>(i->data);
+    auto pkgcache = alpm_db_get_pkgcache(db);
 
-    if (alpm_find_satisfier(alpm_db_get_pkgcache(db), package.c_str())) {
+    if (alpm_find_satisfier(pkgcache, package.c_str()) != nullptr) {
       return alpm_db_get_name(db);
     }
   }
@@ -189,7 +190,7 @@ std::variant<bool, Pacman::Package> Pacman::GetLocalPackage(
 std::vector<Pacman::Package> Pacman::ForeignPackages() const {
   std::vector<Package> packages;
 
-  for (auto i = alpm_db_get_pkgcache(local_db_); i; i = i->next) {
+  for (auto i = alpm_db_get_pkgcache(local_db_); i != nullptr; i = i->next) {
     const auto pkg = static_cast<alpm_pkg_t*>(i->data);
     std::string pkgname(alpm_pkg_get_name(pkg));
 

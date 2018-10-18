@@ -242,10 +242,10 @@ int main(int argc, char** argv) {
 
   if (auto iter = cmds.find(action); iter != cmds.end()) {
     return (auracle.*iter->second)(args, flags.command_options) < 0 ? 1 : 0;
-  } else {
-    std::cerr << "Unknown action " << action << "\n";
-    return 1;
   }
+
+  std::cerr << "Unknown action " << action << "\n";
+  return 1;
 }
 
 /* vim: set et ts=2 sw=2: */

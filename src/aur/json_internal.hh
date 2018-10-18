@@ -11,8 +11,8 @@ namespace aur {
 // NB: We only really need the Package overload of from_json here. All known
 // overloads of from_json are listed anyways for consistency.
 void from_json(const nlohmann::json& j, Package& p);
-void from_json(const nlohmann::json& j, Dependency& p);
-void from_json(const nlohmann::json& j, RpcResponse& p);
+void from_json(const nlohmann::json& j, Dependency& d);
+void from_json(const nlohmann::json& j, RpcResponse& r);
 
 template <typename FieldT, typename ParsedType>
 void Store(const nlohmann::json& j, ParsedType& r) {

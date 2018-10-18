@@ -60,7 +60,7 @@ class ResponseHandler {
     return 0;
   }
 
-  int RunCallback(const std::string& error) const {
+  int RunCallback(const std::string& error) {
     int r = Run(error);
     delete this;
     return r;
@@ -77,7 +77,7 @@ class ResponseHandler {
   char error_buffer[CURL_ERROR_SIZE]{};
 
  private:
-  virtual int Run(const std::string& error) const = 0;
+  virtual int Run(const std::string& error) = 0;
 
   void FilenameFromHeader(std::string_view value) {
     constexpr char kFilenameKey[] = "filename=";
@@ -105,10 +105,11 @@ class RpcResponseHandler : public ResponseHandler {
  public:
   using CallbackType = Aur::RpcResponseCallback;
 
-  RpcResponseHandler(CallbackType callback) : callback_(std::move(callback)) {}
+  explicit RpcResponseHandler(CallbackType callback)
+      : callback_(std::move(callback)) {}
 
  private:
-  int Run(const std::string& error) const override {
+  int Run(const std::string& error) override {
     if (!error.empty()) {
       return callback_(error);
     }
@@ -128,10 +129,11 @@ class RawResponseHandler : public ResponseHandler {
  public:
   using CallbackType = Aur::RawResponseCallback;
 
-  RawResponseHandler(CallbackType callback) : callback_(std::move(callback)) {}
+  explicit RawResponseHandler(CallbackType callback)
+      : callback_(std::move(callback)) {}
 
  private:
-  int Run(const std::string& error) const override {
+  int Run(const std::string& error) override {
     if (!error.empty()) {
       return callback_(error);
     }
@@ -156,7 +158,7 @@ class CloneResponseHandler : public ResponseHandler {
   }
 
  private:
-  int Run(const std::string& error) const override {
+  int Run(const std::string& error) override {
     if (!error.empty()) {
       return callback_(error);
     }
@@ -171,7 +173,7 @@ class CloneResponseHandler : public ResponseHandler {
 
 }  // namespace
 
-Aur::Aur(const std::string& baseurl) : baseurl_(baseurl) {
+Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
   curl_global_init(CURL_GLOBAL_SSL);
   curl_ = curl_multi_init();
 
@@ -241,7 +243,7 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
   sd_event_source* io = iter != aur->active_io_.end() ? iter->second : nullptr;
 
   if (action == CURL_POLL_REMOVE) {
-    if (io) {
+    if (io != nullptr) {
       int fd;
 
       fd = sd_event_source_get_io_fd(io);
@@ -343,7 +345,7 @@ int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
 
   if (timeout_ms < 0) {
-    if (aur->timer_) {
+    if (aur->timer_ != nullptr) {
       if (sd_event_source_set_enabled(aur->timer_, SD_EVENT_OFF) < 0) {
         return -1;
       }
@@ -355,7 +357,7 @@ int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
   auto usec = TimepointTo<std::chrono::microseconds>(
       std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms));
 
-  if (aur->timer_) {
+  if (aur->timer_ != nullptr) {
     if (sd_event_source_set_time(aur->timer_, usec) < 0) {
       return -1;
     }
@@ -410,7 +412,7 @@ int Aur::ProcessDoneEvents() {
   for (;;) {
     int msgs_left;
     auto msg = curl_multi_info_read(curl_, &msgs_left);
-    if (msg == NULL) {
+    if (msg == nullptr) {
       break;
     }
 
@@ -546,33 +548,24 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   }
 
   if (pid == 0) {
-    auto url = request.Build(baseurl_)[0];
+    std::vector<const char*> cmd{"git"};
 
-    const char* cmd[] = {
-        NULL,  // git
-        NULL,  // if pulling, -C
-        NULL,  // if pulling, arg to -C
-        NULL,  // 'clone' or 'pull'
-        NULL,  // --quiet
-        NULL,  // --ff-only (if pulling), URL if cloning
-        NULL,
-    };
-    int idx = 0;
-
-    cmd[idx++] = "git";
     if (update) {
-      cmd[idx++] = "-C";
-      cmd[idx++] = request.reponame().c_str();
-      cmd[idx++] = "pull";
-      cmd[idx++] = "--quiet";
-      cmd[idx++] = "--ff-only";
+      cmd.push_back("-C");
+      cmd.push_back(request.reponame().c_str());
+      cmd.push_back("pull");
+      cmd.push_back("--quiet");
+      cmd.push_back("--ff-only");
     } else {
-      cmd[idx++] = "clone";
-      cmd[idx++] = "--quiet";
-      cmd[idx++] = url.c_str();
-    }
+      const auto url = request.Build(baseurl_)[0];
 
-    execvp(cmd[0], const_cast<char* const*>(cmd));
+      cmd.push_back("clone");
+      cmd.push_back("--quiet");
+      cmd.push_back(url.c_str());
+    }
+    cmd.push_back(nullptr);
+
+    execvp(cmd[0], const_cast<char* const*>(cmd.data()));
     _exit(127);
   }
 

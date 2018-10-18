@@ -15,7 +15,7 @@ using QueryParam = std::pair<std::string, std::string>;
 
 class EncodedParam {
  public:
-  EncodedParam(const QueryParam& kv) : kv_(kv) {}
+  explicit EncodedParam(const QueryParam& kv) : kv_(kv) {}
 
   friend std::ostream& operator<<(std::ostream& os, const EncodedParam& param) {
     char* escaped = curl_easy_escape(nullptr, param.kv_.second.data(),

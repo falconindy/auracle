@@ -9,13 +9,13 @@
 namespace terminal {
 
 namespace {
-static int g_cached_columns = -1;
-static WantColor g_want_color = WantColor::AUTO;
+int g_cached_columns = -1;
+WantColor g_want_color = WantColor::AUTO;
 }  // namespace
 
 void Init(WantColor want) {
   if (want == WantColor::AUTO) {
-    g_want_color = isatty(STDOUT_FILENO) ? WantColor::YES : WantColor::NO;
+    g_want_color = isatty(STDOUT_FILENO) == 1 ? WantColor::YES : WantColor::NO;
   } else {
     g_want_color = want;
   }
@@ -23,7 +23,7 @@ void Init(WantColor want) {
 
 int Columns() {
   int c;
-  struct winsize ws;
+  struct winsize ws {};
 
   if (g_cached_columns >= 0) {
     return g_cached_columns;
@@ -32,7 +32,7 @@ int Columns() {
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
     c = ws.ws_col;
   } else {
-    c = isatty(STDOUT_FILENO) ? 80 : 0;
+    c = isatty(STDOUT_FILENO) == 1 ? 80 : 0;
   }
 
   g_cached_columns = c;
@@ -43,7 +43,7 @@ int Columns() {
   std::string ColorName(const std::string& s) {  \
     if (g_want_color == WantColor::NO) return s; \
     std::stringstream ss;                        \
-    ss << ColorCode << s << "\033[0m";           \
+    ss << (ColorCode) << s << "\033[0m";         \
     return ss.str();                             \
   }
 

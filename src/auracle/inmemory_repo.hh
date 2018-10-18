@@ -27,6 +27,8 @@ class InMemoryRepo {
 
   int size() const { return packages_.size(); }
 
+  bool empty() const { return size() == 0; }
+
   void WalkDependencies(const std::string& name,
                         std::function<void(const aur::Package*)> cb) const;
 

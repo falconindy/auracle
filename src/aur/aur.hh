@@ -24,7 +24,7 @@ class Aur {
 
   // Construct a new Aur object, rooted at the given URL, e.g.
   // https://aur.archlinux.org.
-  explicit Aur(const std::string& baseurl);
+  explicit Aur(std::string baseurl);
   ~Aur();
 
   Aur(const Aur&) = delete;
@@ -81,7 +81,7 @@ class Aur {
 
   int ProcessDoneEvents();
   void CancelAll();
-  void Cancel(const ActiveRequests::value_type& value);
+  void Cancel(const ActiveRequests::value_type& request);
 
   enum DebugLevel {
     // No debugging.

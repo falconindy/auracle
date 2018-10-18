@@ -16,8 +16,8 @@ namespace {
 // Copied from boost/io/ios_state.hpp
 class ios_flags_saver {
  public:
-  typedef std::ios_base state_type;
-  typedef std::ios_base::fmtflags aspect_type;
+  using state_type = std::ios_base;
+  using aspect_type = std::ios_base::fmtflags;
 
   explicit ios_flags_saver(state_type& s) : s_save_(s), a_save_(s.flags()) {}
   ios_flags_saver(state_type& s, aspect_type const& a)
@@ -55,7 +55,6 @@ class Field {
 
   std::string_view field_;
 };
-constexpr char Field::kFieldDelim[];
 
 template <typename T>
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
@@ -93,7 +92,9 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 template <>
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
                                const std::vector<std::string>& value) {
-  if (value.empty()) return os;
+  if (value.empty()) {
+    return os;
+  }
 
   const int columns = terminal::Columns();
   int line_size = 0;
@@ -120,7 +121,9 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 template <>
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
                                const std::vector<aur::Dependency>& value) {
-  if (value.empty()) return os;
+  if (value.empty()) {
+    return os;
+  }
 
   const int columns = terminal::Columns();
   int line_size = 0;
@@ -147,7 +150,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 template <>
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
                                const time_t& value) {
-  struct tm t;
+  struct tm t {};
   localtime_r(&value, &t);
 
   return os << Field(field) << std::put_time(&t, "%c") << "\n";
@@ -161,7 +164,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 
 // Specialization for optdepends since we don't treat them the same as other
 struct OptDepends {
-  OptDepends(const std::vector<std::string> value) : value(value) {}
+  explicit OptDepends(const std::vector<std::string> value) : value(value) {}
 
   const std::vector<std::string> value;
 };

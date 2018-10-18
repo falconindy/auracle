@@ -14,7 +14,7 @@ struct NameOnly {
   NameOnly(const aur::Package& package) : package(package) {}
   ~NameOnly() = default;
 
-  friend std::ostream& operator<<(std::ostream& os, const NameOnly& f);
+  friend std::ostream& operator<<(std::ostream& os, const NameOnly& n);
 
  private:
   const aur::Package& package;
@@ -24,7 +24,7 @@ struct Short {
   Short(const aur::Package& package) : package(package) {}
   ~Short() = default;
 
-  friend std::ostream& operator<<(std::ostream& os, const Short& f);
+  friend std::ostream& operator<<(std::ostream& os, const Short& s);
 
  private:
   const aur::Package& package;
@@ -36,7 +36,7 @@ struct Long {
       : package(package), local_package(local_package) {}
   ~Long() = default;
 
-  friend std::ostream& operator<<(std::ostream& os, const Long& f);
+  friend std::ostream& operator<<(std::ostream& os, const Long& l);
 
  private:
   const aur::Package& package;
