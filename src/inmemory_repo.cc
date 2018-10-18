@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace dlr {
+namespace auracle {
 
 std::pair<const aur::Package*, bool> InMemoryRepo::AddPackage(
     aur::Package package) {
@@ -63,4 +63,4 @@ void InMemoryRepo::WalkDependencies(
   walk(name);
 }
 
-}  // namespace dlr
+}  // namespace auracle

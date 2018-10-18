@@ -182,7 +182,7 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 
 struct Version {
   const aur::Package* p = nullptr;
-  const dlr::Pacman::Package* l = nullptr;
+  const auracle::Pacman::Package* l = nullptr;
 };
 
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
@@ -196,9 +196,9 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
   os << Field(field) << aur_ver_color(p->version);
 
   if (l != nullptr) {
-    const auto local_ver_color = dlr::Pacman::Vercmp(l->pkgver, p->version) < 0
-                                     ? &t::BoldRed
-                                     : &t::BoldGreen;
+    const auto local_ver_color =
+        auracle::Pacman::Vercmp(l->pkgver, p->version) < 0 ? &t::BoldRed
+                                                           : &t::BoldGreen;
     os << " [installed: " << local_ver_color(l->pkgver) << "]";
   }
 

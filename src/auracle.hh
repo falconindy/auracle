@@ -9,6 +9,8 @@
 #include "pacman.hh"
 #include "sort.hh"
 
+namespace auracle {
+
 class Auracle {
  public:
   struct Options {
@@ -17,7 +19,7 @@ class Auracle {
       return *this;
     }
 
-    Options& set_pacman(dlr::Pacman* pacman) {
+    Options& set_pacman(auracle::Pacman* pacman) {
       this->pacman = pacman;
       return *this;
     }
@@ -38,7 +40,7 @@ class Auracle {
     }
 
     std::string aur_baseurl;
-    dlr::Pacman* pacman;
+    auracle::Pacman* pacman;
     bool quiet = false;
     int max_connections = 0;
     int connection_timeout = 0;
@@ -92,7 +94,7 @@ class Auracle {
     bool recurse;
 
     const PackageCallback callback;
-    dlr::InMemoryRepo package_repo;
+    auracle::InMemoryRepo package_repo;
   };
 
   int SendRawRpc(const aur::RpcRequest* request);
@@ -100,7 +102,9 @@ class Auracle {
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
   aur::Aur aur_;
-  dlr::Pacman* const pacman_;
+  auracle::Pacman* const pacman_;
 };
+
+}  // namespace auracle
 
 #endif  // AURACLE_HH

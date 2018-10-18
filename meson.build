@@ -67,6 +67,7 @@ auracle_sources = '''
   src/pacman.cc src/pacman.hh
   src/terminal.cc src/terminal.hh
   src/inmemory_repo.cc src/inmemory_repo.hh
+  src/auracle_main.cc
 '''.split()
 
 auracle = executable(

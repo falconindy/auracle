@@ -47,7 +47,7 @@ bool IsSection(const std::string& s) {
 
 }  // namespace
 
-namespace dlr {
+namespace auracle {
 
 Pacman::Pacman(alpm_handle_t* alpm, std::vector<std::string> ignored_packages)
     : alpm_(alpm),
@@ -73,7 +73,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
   while (std::getline(file, line)) {
     line = trim(line);
 
-    if (line.size() == 0 || line[0] == '#') {
+    if (line.empty() || line[0] == '#') {
       continue;
     }
 
@@ -206,4 +206,4 @@ int Pacman::Vercmp(const std::string& a, const std::string& b) {
   return alpm_pkg_vercmp(a.c_str(), b.c_str());
 }
 
-}  // namespace dlr
+}  // namespace auracle

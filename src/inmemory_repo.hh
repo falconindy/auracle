@@ -7,7 +7,7 @@
 
 #include "aur/package.hh"
 
-namespace dlr {
+namespace auracle {
 
 class InMemoryRepo {
  public:
@@ -40,6 +40,6 @@ class InMemoryRepo {
   std::unordered_map<std::string, int> index_by_pkgbase_;
 };
 
-}  // namespace dlr
+}  // namespace auracle
 
 #endif  // INMEMORY_REPO_HH

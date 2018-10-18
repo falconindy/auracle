@@ -1,13 +1,10 @@
 #include "auracle.hh"
 
 #include <errno.h>
-#include <getopt.h>
-#include <locale.h>
 
 #include <archive.h>
 #include <archive_entry.h>
 
-#include <charconv>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -19,14 +16,8 @@
 #include "format.hh"
 #include "pacman.hh"
 #include "sort.hh"
-#include "terminal.hh"
-
-constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
-constexpr char kPacmanConf[] = "/etc/pacman.conf";
 
 namespace fs = std::filesystem;
-
-using SearchBy = aur::SearchRequest::SearchBy;
 
 namespace {
 
@@ -36,10 +27,10 @@ int ErrorNotEnoughArgs() {
 }
 
 void FormatLong(std::ostream& os, const std::vector<aur::Package>& packages,
-                const dlr::Pacman* pacman) {
+                const auracle::Pacman* pacman) {
   for (const auto& p : packages) {
     auto local_pkg = pacman->GetLocalPackage(p.name);
-    os << format::Long(p, std::get_if<dlr::Pacman::Package>(&local_pkg))
+    os << format::Long(p, std::get_if<auracle::Pacman::Package>(&local_pkg))
        << "\n";
   }
 }
@@ -99,7 +90,7 @@ int ExtractArchive(const std::string& archive_bytes) {
 
 std::vector<std::string> NotFoundPackages(const std::vector<std::string>& want,
                                           const std::vector<aur::Package>& got,
-                                          const dlr::InMemoryRepo& repo) {
+                                          const auracle::InMemoryRepo& repo) {
   std::vector<std::string> missing;
 
   for (const auto& p : want) {
@@ -118,8 +109,6 @@ std::vector<std::string> NotFoundPackages(const std::vector<std::string>& want,
 
   return missing;
 }
-
-}  // namespace
 
 std::string SearchFragFromRegex(const std::string& s) {
   static constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
@@ -157,126 +146,25 @@ std::string SearchFragFromRegex(const std::string& s) {
   return std::string(argstr, span);
 }
 
-int Auracle::Info(const std::vector<std::string>& args,
-                  const CommandOptions& options) {
-  if (args.size() == 0) {
-    return ErrorNotEnoughArgs();
+bool ChdirIfNeeded(const fs::path& target) {
+  if (target.empty()) {
+    return true;
   }
 
-  std::vector<aur::Package> packages;
-  aur_.QueueRpcRequest(
-      aur::InfoRequest(args), [&](aur::StatusOr<aur::RpcResponse> response) {
-        if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error() << "\n";
-        } else {
-          auto& results = response.value().results;
-          std::copy(std::make_move_iterator(results.begin()),
-                    std::make_move_iterator(results.end()),
-                    std::back_inserter(packages));
-        }
-        return 0;
-      });
-
-  auto r = aur_.Wait();
-  if (r) {
-    return r;
+  std::error_code ec;
+  fs::current_path(target, ec);
+  if (ec.value() != 0) {
+    std::cerr << "error: failed to change directory to " << target << ": "
+              << ec.message() << "\n";
+    return false;
   }
 
-  if (packages.size() == 0) {
-    return -ENOENT;
-  }
-
-  // It's unlikely, but still possible that the results may not be unique when
-  // our query is large enough that it needs to be split into multiple requests.
-  SortUnique(&packages, options.sorter);
-
-  FormatLong(std::cout, packages, pacman_);
-
-  return 0;
+  return true;
 }
 
-int Auracle::Search(const std::vector<std::string>& args,
-                    const CommandOptions& options) {
-  if (args.size() == 0) {
-    return ErrorNotEnoughArgs();
-  }
+}  // namespace
 
-  std::vector<std::regex> patterns;
-  for (const auto& arg : args) {
-    try {
-      patterns.emplace_back(arg, std::regex::icase | std::regex::optimize);
-    } catch (const std::regex_error& e) {
-      std::cerr << "error: invalid regex: " << arg << "\n";
-      return -EINVAL;
-    }
-  }
-
-  const auto matches = [&patterns, &options](const aur::Package& p) -> bool {
-    return std::all_of(patterns.begin(), patterns.end(),
-                       [&p, &options](const std::regex& re) {
-                         switch (options.search_by) {
-                           case SearchBy::NAME:
-                             return std::regex_search(p.name, re);
-                           case SearchBy::NAME_DESC:
-                             return std::regex_search(p.name, re) ||
-                                    std::regex_search(p.description, re);
-                           default:
-                             // The AUR only matches maintainer and *depends
-                             // fields exactly so there's no point in doing
-                             // additional filtering on these types.
-                             return true;
-                         }
-                       });
-  };
-
-  std::vector<aur::Package> packages;
-  for (size_t i = 0; i < args.size(); ++i) {
-    aur::SearchRequest r;
-    r.SetSearchBy(options.search_by);
-
-    if (options.allow_regex) {
-      auto frag = SearchFragFromRegex(args[i]);
-      if (frag.empty()) {
-        std::cerr << "error: search string '" << args[i]
-                  << "' insufficient for searching by regular expression.\n";
-        return -EINVAL;
-      }
-      r.AddArg(frag);
-    } else {
-      r.AddArg(args[i]);
-    }
-
-    aur_.QueueRpcRequest(
-        r, [&, arg{args[i]}](aur::StatusOr<aur::RpcResponse> response) {
-          if (!response.ok()) {
-            std::cerr << "error: request failed for '" << arg
-                      << "': " << response.error() << "\n";
-            return -EIO;
-          } else {
-            const auto& results = response.value().results;
-            std::copy_if(std::make_move_iterator(results.begin()),
-                         std::make_move_iterator(results.end()),
-                         std::back_inserter(packages), matches);
-          }
-          return 0;
-        });
-  }
-
-  int r = aur_.Wait();
-  if (r < 0) {
-    return r;
-  }
-
-  SortUnique(&packages, options.sorter);
-
-  if (options.quiet) {
-    FormatNameOnly(std::cout, packages);
-  } else {
-    FormatShort(std::cout, packages);
-  }
-
-  return 0;
-}
+namespace auracle {
 
 void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
@@ -357,20 +245,125 @@ void Auracle::IteratePackages(std::vector<std::string> args,
       });
 }
 
-bool ChdirIfNeeded(const fs::path& target) {
-  if (target.empty()) {
-    return true;
+int Auracle::Info(const std::vector<std::string>& args,
+                  const CommandOptions& options) {
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
   }
 
-  std::error_code ec;
-  fs::current_path(target, ec);
-  if (ec.value() != 0) {
-    std::cerr << "error: failed to change directory to " << target << ": "
-              << ec.message() << "\n";
-    return false;
+  std::vector<aur::Package> packages;
+  aur_.QueueRpcRequest(
+      aur::InfoRequest(args), [&](aur::StatusOr<aur::RpcResponse> response) {
+        if (!response.ok()) {
+          std::cerr << "error: request failed: " << response.error() << "\n";
+        } else {
+          auto& results = response.value().results;
+          std::copy(std::make_move_iterator(results.begin()),
+                    std::make_move_iterator(results.end()),
+                    std::back_inserter(packages));
+        }
+        return 0;
+      });
+
+  auto r = aur_.Wait();
+  if (r) {
+    return r;
   }
 
-  return true;
+  if (packages.size() == 0) {
+    return -ENOENT;
+  }
+
+  // It's unlikely, but still possible that the results may not be unique when
+  // our query is large enough that it needs to be split into multiple requests.
+  SortUnique(&packages, options.sorter);
+
+  FormatLong(std::cout, packages, pacman_);
+
+  return 0;
+}
+
+int Auracle::Search(const std::vector<std::string>& args,
+                    const CommandOptions& options) {
+  if (args.size() == 0) {
+    return ErrorNotEnoughArgs();
+  }
+
+  std::vector<std::regex> patterns;
+  for (const auto& arg : args) {
+    try {
+      patterns.emplace_back(arg, std::regex::icase | std::regex::optimize);
+    } catch (const std::regex_error& e) {
+      std::cerr << "error: invalid regex: " << arg << "\n";
+      return -EINVAL;
+    }
+  }
+
+  const auto matches = [&patterns, &options](const aur::Package& p) -> bool {
+    return std::all_of(patterns.begin(), patterns.end(),
+                       [&p, &options](const std::regex& re) {
+                         switch (options.search_by) {
+                           case aur::SearchRequest::SearchBy::NAME:
+                             return std::regex_search(p.name, re);
+                           case aur::SearchRequest::SearchBy::NAME_DESC:
+                             return std::regex_search(p.name, re) ||
+                                    std::regex_search(p.description, re);
+                           default:
+                             // The AUR only matches maintainer and *depends
+                             // fields exactly so there's no point in doing
+                             // additional filtering on these types.
+                             return true;
+                         }
+                       });
+  };
+
+  std::vector<aur::Package> packages;
+  for (size_t i = 0; i < args.size(); ++i) {
+    aur::SearchRequest r;
+    r.SetSearchBy(options.search_by);
+
+    if (options.allow_regex) {
+      auto frag = SearchFragFromRegex(args[i]);
+      if (frag.empty()) {
+        std::cerr << "error: search string '" << args[i]
+                  << "' insufficient for searching by regular expression.\n";
+        return -EINVAL;
+      }
+      r.AddArg(frag);
+    } else {
+      r.AddArg(args[i]);
+    }
+
+    aur_.QueueRpcRequest(
+        r, [&, arg{args[i]}](aur::StatusOr<aur::RpcResponse> response) {
+          if (!response.ok()) {
+            std::cerr << "error: request failed for '" << arg
+                      << "': " << response.error() << "\n";
+            return -EIO;
+          } else {
+            const auto& results = response.value().results;
+            std::copy_if(std::make_move_iterator(results.begin()),
+                         std::make_move_iterator(results.end()),
+                         std::back_inserter(packages), matches);
+          }
+          return 0;
+        });
+  }
+
+  int r = aur_.Wait();
+  if (r < 0) {
+    return r;
+  }
+
+  SortUnique(&packages, options.sorter);
+
+  if (options.quiet) {
+    FormatNameOnly(std::cout, packages);
+  } else {
+    FormatShort(std::cout, packages);
+  }
+
+  return 0;
 }
 
 int Auracle::Clone(const std::vector<std::string>& args,
@@ -569,10 +562,10 @@ int Auracle::Sync(const std::vector<std::string>& args,
 
         for (const auto& r : response.value().results) {
           auto iter = std::find_if(foreign_pkgs.cbegin(), foreign_pkgs.cend(),
-                                   [&r](const dlr::Pacman::Package& p) {
+                                   [&r](const auracle::Pacman::Package& p) {
                                      return p.pkgname == r.name;
                                    });
-          if (dlr::Pacman::Vercmp(r.version, iter->pkgver) > 0) {
+          if (auracle::Pacman::Vercmp(r.version, iter->pkgver) > 0) {
             if (options.quiet) {
               std::cout << format::NameOnly(r);
             } else {
@@ -632,238 +625,6 @@ int Auracle::RawInfo(const std::vector<std::string>& args,
   return aur_.Wait();
 }
 
-struct Flags {
-  std::string baseurl = kAurBaseurl;
-  std::string pacman_config = kPacmanConf;
-  int max_connections = 20;
-  int connect_timeout = 10;
-  terminal::WantColor color = terminal::WantColor::AUTO;
-
-  Auracle::CommandOptions command_options;
-};
-
-__attribute__((noreturn)) void usage(void) {
-  fputs(
-      "auracle [options] command\n"
-      "\n"
-      "Query the AUR or download snapshots of packages.\n"
-      "\n"
-      "  -h, --help               Show this help\n"
-      "      --version            Show software version\n"
-      "\n"
-      "  -q, --quiet              Output less, when possible\n"
-      "  -r, --recurse            Recurse through dependencies on download\n"
-      "      --literal            Disallow regex in searches\n"
-      "      --searchby=BY        Change search-by dimension\n"
-      "      --connect-timeout=N  Set connection timeout in seconds\n"
-      "      --max-connections=N  Limit active connections\n"
-      "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
-      "      --sort=KEY           Sort results in ascending order by KEY\n"
-      "      --rsort=KEY          Sort results in descending order by KEY\n"
-      "  -C DIR, --chdir=DIR      Change directory to DIR before downloading\n"
-      "\n"
-      "Commands:\n"
-      "  buildorder               Show build order\n"
-      "  clone                    Clone or update git repos for packages\n"
-      "  download                 Download tarball snapshots\n"
-      "  info                     Show detailed information\n"
-      "  pkgbuild                 Show PKGBUILDs\n"
-      "  search                   Search for packages\n"
-      "  sync                     Check for updates for foreign packages\n"
-      "  rawinfo                  Dump unformatted JSON for info query\n"
-      "  rawsearch                Dump unformatted JSON for search query\n",
-      stdout);
-  exit(0);
-}
-
-__attribute__((noreturn)) void version(void) {
-  std::cout << "auracle " << PACKAGE_VERSION << "\n";
-  exit(0);
-}
-
-bool ParseFlags(int* argc, char*** argv, Flags* flags) {
-  enum {
-    COLOR = 1000,
-    CONNECT_TIMEOUT,
-    LITERAL,
-    MAX_CONNECTIONS,
-    SEARCHBY,
-    VERSION,
-    BASEURL,
-    SORT,
-    RSORT,
-    PACMAN_CONFIG,
-  };
-
-  static constexpr struct option opts[] = {
-      // clang-format off
-      { "help",              no_argument,       0, 'h' },
-      { "quiet",             no_argument,       0, 'q' },
-      { "recurse",           no_argument,       0, 'r' },
-
-      { "chdir",             required_argument, 0, 'C' },
-      { "color",             required_argument, 0, COLOR },
-      { "connect-timeout",   required_argument, 0, CONNECT_TIMEOUT },
-      { "literal",           no_argument,       0, LITERAL },
-      { "max-connections",   required_argument, 0, MAX_CONNECTIONS },
-      { "rsort",             required_argument, 0, RSORT },
-      { "searchby",          required_argument, 0, SEARCHBY },
-      { "sort",              required_argument, 0, SORT },
-      { "version",           no_argument,       0, VERSION },
-      { "baseurl",           required_argument, 0, BASEURL },
-      { "pacmanconfig",      required_argument, 0, PACMAN_CONFIG },
-      {},
-      // clang-format on
-  };
-
-  const auto stoi = [](std::string_view s, int* i) -> bool {
-    return std::from_chars(s.data(), s.data() + s.size(), *i).ec == std::errc{};
-  };
-
-  int opt;
-  while ((opt = getopt_long(*argc, *argv, "C:hqr", opts, nullptr)) != -1) {
-    std::string_view sv_optarg(optarg);
-
-    switch (opt) {
-      case 'h':
-        usage();
-      case 'q':
-        flags->command_options.quiet = true;
-        break;
-      case 'r':
-        flags->command_options.recurse = true;
-        break;
-      case 'C':
-        if (sv_optarg.empty()) {
-          std::cerr << "error: meaningless option: -C ''\n";
-          return false;
-        }
-        flags->command_options.directory = optarg;
-        break;
-      case LITERAL:
-        flags->command_options.allow_regex = false;
-        break;
-      case SEARCHBY:
-        flags->command_options.search_by =
-            aur::SearchRequest::ParseSearchBy(sv_optarg);
-        if (flags->command_options.search_by == SearchBy::INVALID) {
-          std::cerr << "error: invalid arg to --searchby: " << sv_optarg
-                    << "\n";
-          return false;
-        }
-        break;
-      case CONNECT_TIMEOUT:
-        if (!stoi(sv_optarg, &flags->connect_timeout) ||
-            flags->max_connections < 0) {
-          std::cerr << "error: invalid value to --connect-timeout: "
-                    << sv_optarg << "\n";
-          return false;
-        }
-        break;
-      case MAX_CONNECTIONS:
-        if (!stoi(sv_optarg, &flags->max_connections) ||
-            flags->max_connections < 0) {
-          std::cerr << "error: invalid value to --max-connections: "
-                    << sv_optarg << "\n";
-          return false;
-        }
-        break;
-      case COLOR:
-        if (sv_optarg == "auto") {
-          flags->color = terminal::WantColor::AUTO;
-        } else if (sv_optarg == "never") {
-          flags->color = terminal::WantColor::NO;
-        } else if (sv_optarg == "always") {
-          flags->color = terminal::WantColor::YES;
-        } else {
-          std::cerr << "error: invalid arg to --color: " << sv_optarg << "\n";
-          return false;
-        }
-        break;
-      case SORT:
-        flags->command_options.sorter =
-            sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_ASC);
-        if (flags->command_options.sorter == nullptr) {
-          std::cerr << "error: invalid arg to --sort: " << sv_optarg << "\n";
-        }
-        break;
-      case RSORT:
-        flags->command_options.sorter =
-            sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_DESC);
-        if (flags->command_options.sorter == nullptr) {
-          std::cerr << "error: invalid arg to --rsort: " << sv_optarg << "\n";
-        }
-        break;
-      case BASEURL:
-        flags->baseurl = std::string(sv_optarg);
-        break;
-      case PACMAN_CONFIG:
-        flags->pacman_config = std::string(sv_optarg);
-        break;
-      case VERSION:
-        version();
-        break;
-      default:
-        return false;
-    }
-  }
-
-  *argc -= optind - 1;
-  *argv += optind - 1;
-
-  return true;
-}
-
-int main(int argc, char** argv) {
-  Flags flags;
-  if (!ParseFlags(&argc, &argv, &flags)) {
-    return 1;
-  }
-
-  if (argc < 2) {
-    std::cerr << "error: no operation specified (use -h for help)\n";
-    return 1;
-  }
-
-  setlocale(LC_ALL, "");
-  terminal::Init(flags.color);
-
-  const auto pacman = dlr::Pacman::NewFromConfig(flags.pacman_config);
-  if (pacman == nullptr) {
-    std::cerr << "error: failed to parse " << flags.pacman_config << "\n";
-    return 1;
-  }
-
-  Auracle auracle(Auracle::Options()
-                      .set_aur_baseurl(flags.baseurl)
-                      .set_pacman(pacman.get())
-                      .set_connection_timeout(flags.connect_timeout)
-                      .set_max_connections(flags.max_connections));
-
-  std::string_view action(argv[1]);
-  std::vector<std::string> args(argv + 2, argv + argc);
-
-  std::unordered_map<std::string_view,
-                     int (Auracle::*)(const std::vector<std::string>& args,
-                                      const Auracle::CommandOptions& options)>
-      cmds{
-          {"buildorder", &Auracle::BuildOrder},
-          {"clone", &Auracle::Clone},
-          {"download", &Auracle::Download},
-          {"info", &Auracle::Info},
-          {"pkgbuild", &Auracle::Pkgbuild},
-          {"rawinfo", &Auracle::RawInfo},
-          {"rawsearch", &Auracle::RawSearch},
-          {"search", &Auracle::Search},
-          {"sync", &Auracle::Sync},
-      };
-
-  if (auto iter = cmds.find(action); iter != cmds.end()) {
-    return (auracle.*iter->second)(args, flags.command_options) < 0 ? 1 : 0;
-  } else {
-    std::cerr << "Unknown action " << action << "\n";
-    return 1;
-  }
-}
+}  // namespace auracle
 
 /* vim: set et ts=2 sw=2: */

@@ -8,7 +8,7 @@
 
 #include <alpm.h>
 
-namespace dlr {
+namespace auracle {
 
 class Pacman {
  public:
@@ -50,6 +50,6 @@ class Pacman {
   std::vector<std::string> ignored_packages_;
 };
 
-}  // namespace dlr
+}  // namespace auracle
 
 #endif  // PACMAN_HH
