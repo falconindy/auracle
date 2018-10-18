@@ -7,16 +7,17 @@
 
 namespace aur {
 
-template <typename Value>
-class StatusOr : public std::variant<std::string, Value> {
+template <typename T>
+class StatusOr : public std::variant<std::string, T> {
  public:
-  using std::variant<std::string, Value>::variant;
+  using std::variant<std::string, T>::variant;
 
-  bool ok() const { return std::get_if<std::string>(this) == nullptr; }
+  bool ok() const { return std::holds_alternative<T>(*this); }
 
   const std::string& error() const { return std::get<std::string>(*this); }
 
-  const Value& value() const { return std::get<Value>(*this); }
+  const T& value() const { return std::get<T>(*this); }
+  T&& value() { return std::move(std::get<T>(*this)); }
 };
 
 struct CloneResponse {
