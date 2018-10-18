@@ -309,7 +309,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
           return -EIO;
         }
 
-        const auto& results = response.value().results;
+        auto& results = response.value().results;
 
         for (const auto& p :
              NotFoundPackages(want, results, state->package_repo)) {

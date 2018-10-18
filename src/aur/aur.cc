@@ -256,7 +256,7 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
     }
   }
 
-  std::uint32_t events;
+  std::uint32_t events{};
   if (action == CURL_POLL_IN) {
     events = EPOLLIN;
   } else if (action == CURL_POLL_OUT) {
