@@ -4,9 +4,9 @@
 #include <charconv>
 #include <iostream>
 
-#include "auracle.hh"
-#include "sort.hh"
-#include "terminal.hh"
+#include "auracle/auracle.hh"
+#include "auracle/sort.hh"
+#include "auracle/terminal.hh"
 
 constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
 constexpr char kPacmanConf[] = "/etc/pacman.conf";
