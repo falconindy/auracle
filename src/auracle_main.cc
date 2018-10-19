@@ -1,7 +1,7 @@
 #include <getopt.h>
-#include <locale.h>
 
 #include <charconv>
+#include <clocale>
 #include <iostream>
 
 #include "auracle/auracle.hh"
@@ -23,7 +23,7 @@ struct Flags {
   auracle::Auracle::CommandOptions command_options;
 };
 
-__attribute__((noreturn)) void usage(void) {
+__attribute__((noreturn)) void usage() {
   fputs(
       "auracle [options] command\n"
       "\n"
@@ -57,7 +57,7 @@ __attribute__((noreturn)) void usage(void) {
   exit(0);
 }
 
-__attribute__((noreturn)) void version(void) {
+__attribute__((noreturn)) void version() {
   std::cout << "auracle " << PACKAGE_VERSION << "\n";
   exit(0);
 }
@@ -78,21 +78,20 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
 
   static constexpr struct option opts[] = {
       // clang-format off
-      { "help",              no_argument,       0, 'h' },
-      { "quiet",             no_argument,       0, 'q' },
-      { "recurse",           no_argument,       0, 'r' },
-
-      { "chdir",             required_argument, 0, 'C' },
-      { "color",             required_argument, 0, ARG_COLOR },
-      { "connect-timeout",   required_argument, 0, ARG_CONNECT_TIMEOUT },
-      { "literal",           no_argument,       0, ARG_LITERAL },
-      { "max-connections",   required_argument, 0, ARG_MAX_CONNECTIONS },
-      { "rsort",             required_argument, 0, ARG_RSORT },
-      { "searchby",          required_argument, 0, ARG_SEARCHBY },
-      { "sort",              required_argument, 0, ARG_SORT },
-      { "version",           no_argument,       0, ARG_VERSION },
-      { "baseurl",           required_argument, 0, ARG_BASEURL },
-      { "pacmanconfig",      required_argument, 0, ARG_PACMAN_CONFIG },
+      { "help",            no_argument,       nullptr, 'h' },
+      { "quiet",           no_argument,       nullptr, 'q' },
+      { "recurse",         no_argument,       nullptr, 'r' },
+      { "chdir",           required_argument, nullptr, 'C' },
+      { "color",           required_argument, nullptr, ARG_COLOR },
+      { "connect-timeout", required_argument, nullptr, ARG_CONNECT_TIMEOUT },
+      { "literal",         no_argument,       nullptr, ARG_LITERAL },
+      { "max-connections", required_argument, nullptr, ARG_MAX_CONNECTIONS },
+      { "rsort",           required_argument, nullptr, ARG_RSORT },
+      { "searchby",        required_argument, nullptr, ARG_SEARCHBY },
+      { "sort",            required_argument, nullptr, ARG_SORT },
+      { "version",         no_argument,       nullptr, ARG_VERSION },
+      { "baseurl",         required_argument, nullptr, ARG_BASEURL },
+      { "pacmanconfig",    required_argument, nullptr, ARG_PACMAN_CONFIG },
       {},
       // clang-format on
   };

@@ -42,7 +42,7 @@ class Querystring {
 // Abstract class describing an HTTP request to the AUR.
 class Request {
  public:
-  Request() {}
+  Request() = default;
   virtual ~Request() = default;
 
   virtual std::vector<std::string> Build(const std::string& baseurl) const = 0;
@@ -54,7 +54,7 @@ class RawRequest : public Request {
   static std::string UrlForTarball(const Package& package);
   static std::string UrlForPkgbuild(const Package& package);
 
-  RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
+  explicit RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
@@ -64,7 +64,8 @@ class RawRequest : public Request {
 
 class CloneRequest : public Request {
  public:
-  CloneRequest(std::string reponame) : reponame_(std::move(reponame)) {}
+  explicit CloneRequest(std::string reponame)
+      : reponame_(std::move(reponame)) {}
 
   const std::string& reponame() const { return reponame_; }
 
@@ -92,7 +93,7 @@ class RpcRequest : public Request {
 
 class InfoRequest : public RpcRequest {
  public:
-  InfoRequest(const std::vector<std::string>& args) : RpcRequest() {
+  explicit InfoRequest(const std::vector<std::string>& args) : RpcRequest() {
     AddParam("type", "info");
     for (const auto& arg : args) {
       AddArg(arg);

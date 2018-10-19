@@ -5,7 +5,6 @@
 #include <string_view>
 
 #include <curl/curl.h>
-#include <stdio.h>
 
 namespace aur {
 

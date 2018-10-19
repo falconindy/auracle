@@ -1,7 +1,5 @@
 #include "format.hh"
 
-#include <time.h>
-
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -26,11 +24,11 @@ class ios_flags_saver {
 
   void restore() { s_save_.flags(a_save_); }
 
+  ios_flags_saver& operator=(const ios_flags_saver&) = delete;
+
  private:
   state_type& s_save_;
   aspect_type const a_save_;
-
-  ios_flags_saver& operator=(const ios_flags_saver&);
 };
 
 std::ostream& float_precision(std::ostream& os) {
@@ -57,7 +55,7 @@ class Field {
 };
 
 template <typename T>
-std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
+std::ostream& FormatFieldValue(std::ostream& os, std::string_view field,
                                const T& value);
 
 template <typename T>
@@ -168,9 +166,9 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 
 // Specialization for optdepends since we don't treat them the same as other
 struct OptDepends {
-  explicit OptDepends(const std::vector<std::string> value) : value(value) {}
+  explicit OptDepends(const std::vector<std::string>& value) : value(value) {}
 
-  const std::vector<std::string> value;
+  const std::vector<std::string>& value;
 };
 
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,

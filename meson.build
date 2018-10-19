@@ -66,17 +66,15 @@ libauracle = static_library(
       src/auracle/terminal.cc src/auracle/terminal.hh
       src/auracle/inmemory_repo.cc src/auracle/inmemory_repo.hh
     '''.split()),
+    include_directories : include_directories('src'),
     link_with : [libaur],
-    include_directories : [
-        include_directories('src'),
-    ],
     dependencies : [libarchive, libalpm, stdcppfs])
 
 auracle = executable(
     'auracle',
     files('src/auracle_main.cc'),
-    link_with : [libauracle],
     include_directories : include_directories('src'),
+    link_with : [libauracle],
     install : true)
 
 man = custom_target(
@@ -100,10 +98,17 @@ install_data(
   install_dir : join_paths(get_option('datadir'), 'bash-completion/completions'))
 
 run_target(
-  'fmt', command : [
+  'fmt',
+  command : [
     'find',
     '-name', '*.[ch][ch]',
     '-exec', 'clang-format', '-i', '-style=Google', '{}', '+'
+  ])
+
+run_target(
+  'tidy',
+  command : [
+    join_paths(meson.source_root(), 'build-aux/clang-tidy')
   ])
 
 # unit tests

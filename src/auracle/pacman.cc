@@ -24,22 +24,22 @@ struct default_delete<glob_t> {
 
 namespace {
 
-std::string& ltrim(std::string& s) {
-  s.erase(s.begin(),
-          std::find_if(s.begin(), s.end(),
-                       std::not1(std::ptr_fun<int, int>(std::isspace))));
+std::string* ltrim(std::string* s) {
+  s->erase(s->begin(),
+           std::find_if(s->begin(), s->end(),
+                        std::not1(std::ptr_fun<int, int>(std::isspace))));
   return s;
 }
 
-std::string& rtrim(std::string& s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(),
-                       std::not1(std::ptr_fun<int, int>(std::isspace)))
-              .base(),
-          s.end());
+std::string* rtrim(std::string* s) {
+  s->erase(std::find_if(s->rbegin(), s->rend(),
+                        std::not1(std::ptr_fun<int, int>(std::isspace)))
+               .base(),
+           s->end());
   return s;
 }
 
-std::string& trim(std::string& s) { return ltrim(rtrim(s)); }
+std::string* trim(std::string* s) { return ltrim(rtrim(s)); }
 
 bool IsSection(const std::string& s) {
   return s.size() > 2 && s[0] == '[' && s[s.size() - 1] == ']';
@@ -71,7 +71,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
 
   std::string line;
   while (std::getline(file, line)) {
-    line = trim(line);
+    trim(&line);
 
     if (line.empty() || line[0] == '#') {
       continue;
@@ -89,10 +89,10 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     }
 
     auto key = line.substr(0, equals);
-    key = trim(key);
+    trim(&key);
 
     auto value = line.substr(equals + 1);
-    value = trim(value);
+    trim(&value);
 
     if (state->section == "options") {
       if (key == "IgnorePkg") {

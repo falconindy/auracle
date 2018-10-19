@@ -1,10 +1,10 @@
 #include "aur.hh"
 
 #include <fcntl.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <chrono>
+#include <cstring>
 #include <filesystem>
 #include <string_view>
 
@@ -48,8 +48,8 @@ class ResponseHandler {
     return size * nmemb;
   }
 
-  static int DebugCallback(CURL* handle, curl_infotype type, char* data,
-                           size_t size, void* userdata) {
+  static int DebugCallback(CURL*, curl_infotype type, char* data, size_t size,
+                           void* userdata) {
     auto stream = static_cast<std::ofstream*>(userdata);
 
     if (type != CURLINFO_HEADER_OUT) {
@@ -235,8 +235,8 @@ void Aur::CancelAll() {
 }
 
 // static
-int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
-                        void* userdata, void*) {
+int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
+                        void*) {
   auto aur = static_cast<Aur*>(userdata);
 
   auto iter = aur->active_io_.find(s);
@@ -244,9 +244,7 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
 
   if (action == CURL_POLL_REMOVE) {
     if (io != nullptr) {
-      int fd;
-
-      fd = sd_event_source_get_io_fd(io);
+      int fd = sd_event_source_get_io_fd(io);
 
       sd_event_source_set_enabled(io, SD_EVENT_OFF);
       sd_event_source_unref(io);
@@ -258,14 +256,18 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
     }
   }
 
-  std::uint32_t events{};
-  if (action == CURL_POLL_IN) {
-    events = EPOLLIN;
-  } else if (action == CURL_POLL_OUT) {
-    events = EPOLLOUT;
-  } else if (action == CURL_POLL_INOUT) {
-    events = EPOLLIN | EPOLLOUT;
-  }
+  auto action_to_revents = [](int action) -> std::uint32_t {
+    switch (action) {
+      case CURL_POLL_IN:
+        return EPOLLIN;
+      case CURL_POLL_OUT:
+        return EPOLLOUT;
+      case CURL_POLL_INOUT:
+        return EPOLLIN | EPOLLOUT;
+    }
+    return 0;
+  };
+  std::uint32_t events = action_to_revents(action);
 
   if (iter != aur->active_io_.end()) {
     if (sd_event_source_set_io_events(io, events) < 0) {
@@ -276,15 +278,13 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
       return -1;
     }
   } else {
-    int fd;
-
     /* When curl needs to remove an fd from us it closes
      * the fd first, and only then calls into us. This is
      * nasty, since we cannot pass the fd on to epoll()
      * anymore. Hence, duplicate the fds here, and keep a
      * copy for epoll which we control after use. */
 
-    fd = fcntl(s, F_DUPFD_CLOEXEC, 3);
+    int fd = fcntl(s, F_DUPFD_CLOEXEC, 3);
     if (fd < 0) {
       return -1;
     }
@@ -303,7 +303,7 @@ int Aur::SocketCallback(CURLM* curl, curl_socket_t s, int action,
 }
 
 // static
-int Aur::OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata) {
+int Aur::OnIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
   int action, k = 0;
 
@@ -328,7 +328,7 @@ int Aur::OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata) {
 }
 
 // static
-int Aur::OnTimer(sd_event_source* s, uint64_t usec, void* userdata) {
+int Aur::OnTimer(sd_event_source*, uint64_t, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
   int k = 0;
 
@@ -341,7 +341,7 @@ int Aur::OnTimer(sd_event_source* s, uint64_t usec, void* userdata) {
 }
 
 // static
-int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
+int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
 
   if (timeout_ms < 0) {

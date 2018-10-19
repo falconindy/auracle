@@ -8,7 +8,6 @@ constexpr char kBaseUrl[] = "http://aur.archlinux.org";
 using testing::AllOf;
 using testing::EndsWith;
 using testing::HasSubstr;
-using testing::Not;
 using testing::StartsWith;
 
 TEST(RequestTest, BuildsInfoRequests) {

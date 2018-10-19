@@ -1,10 +1,9 @@
 #include "auracle.hh"
 
-#include <errno.h>
-
 #include <archive.h>
 #include <archive_entry.h>
 
+#include <cerrno>
 #include <filesystem>
 #include <functional>
 #include <memory>
