@@ -5,7 +5,7 @@
 namespace aur {
 
 void from_json(const nlohmann::json& j, Dependency& d) {
-  d.depstring = j.get<std::string>();
+  d.depstring = j;
 
   if (auto pos = d.depstring.find("<="); pos != std::string::npos) {
     d.mod = Dependency::Mod::LE;
@@ -41,11 +41,11 @@ void from_json(const nlohmann::json& j, std::chrono::seconds& s) {
     return;
   }
 
-  s = std::chrono::seconds(j.get<time_t>());
+  s = std::chrono::seconds(j);
 }
 
 void from_json(const nlohmann::json& j, Package& p) {
-  for (auto iter = j.begin(); iter != j.end(); iter++) {
+  for (auto iter : j.items()) {
     const auto& key = iter.key();
     const auto& value = iter.value();
 

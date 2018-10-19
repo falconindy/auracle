@@ -10,23 +10,21 @@ namespace aur {
 void from_json(const nlohmann::json& j, Package& p);
 
 template <typename T>
-void from_json(const nlohmann::json& j, T& s) {
+void from_json(const nlohmann::json& j, T& v) {
   if (j.is_null()) {
     return;
   }
-  s = j.get<T>();
+
+  v = j;
 }
 
 template <typename T>
-void from_json(const nlohmann::json& j, std::vector<T>& vs) {
+void from_json(const nlohmann::json& j, std::vector<T>& v) {
   if (j.is_null()) {
     return;
   }
 
-  vs.reserve(j.size());
-  for (auto iter = j.begin(); iter != j.end(); iter++) {
-    vs.emplace_back(iter->get<T>());
-  }
+  v = std::vector<T>(j.begin(), j.end());
 }
 
 }  // namespace aur
