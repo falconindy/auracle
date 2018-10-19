@@ -548,6 +548,8 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   }
 
   if (pid == 0) {
+    const auto url = request.Build(baseurl_)[0];
+
     std::vector<const char*> cmd{"git"};
 
     if (update) {
@@ -557,8 +559,6 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
       cmd.push_back("--quiet");
       cmd.push_back("--ff-only");
     } else {
-      const auto url = request.Build(baseurl_)[0];
-
       cmd.push_back("clone");
       cmd.push_back("--quiet");
       cmd.push_back(url.c_str());
