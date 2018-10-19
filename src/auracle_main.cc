@@ -14,7 +14,7 @@ constexpr char kPacmanConf[] = "/etc/pacman.conf";
 struct Flags {
   std::string baseurl = kAurBaseurl;
   std::string pacman_config = kPacmanConf;
-  int max_connections = 20;
+  int max_connections = 5;
   int connect_timeout = 10;
   terminal::WantColor color = terminal::WantColor::AUTO;
 

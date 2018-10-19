@@ -30,7 +30,7 @@ Pass an integer to specify a connection timeout, in seconds, for each
 connection made to the AUR. A singled failed connection will result in the
 entire operation failing. If zero, there will be no connection timeout.
 
-This option defaults to 0 (no timeout).
+This option defaults to 10 seconds.
 
 =item B<-h>, B<--help>
 
@@ -46,7 +46,7 @@ rather than as regular expressions.
 Pass an integer value to limit the number of simultaneous connections to the
 AUR backend. If zero, there will be no connection limit.
 
-This option defaults to 0 (no limit).
+This option defaults to 5.
 
 =item B<--quiet>
 
