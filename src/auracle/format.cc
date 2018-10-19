@@ -149,9 +149,13 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
 
 template <>
 std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
-                               const time_t& value) {
+                               const std::chrono::seconds& value) {
+  using system_clock = std::chrono::system_clock;
+
+  auto point = system_clock::to_time_t(system_clock::time_point(value));
+
   struct tm t {};
-  localtime_r(&value, &t);
+  localtime_r(&point, &t);
 
   return os << Field(field) << std::put_time(&t, "%c") << "\n";
 }
@@ -194,7 +198,9 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
   const auto* l = version.l;
 
   namespace t = terminal;
-  const auto aur_ver_color = p->out_of_date ? &t::BoldRed : &t::BoldGreen;
+  // const auto aur_ver_color = p->out_of_date == std::chrono::seconds{} ?
+  // &t::BoldRed : &t::BoldGreen;
+  const auto aur_ver_color = &t::BoldGreen;
 
   os << Field(field) << aur_ver_color(p->version);
 
@@ -220,7 +226,8 @@ std::ostream& operator<<(std::ostream& os, const Short& s) {
   namespace t = terminal;
 
   const auto& p = s.package;
-  const auto ood_color = p.out_of_date ? &t::BoldRed : &t::BoldGreen;
+  const auto ood_color =
+      p.out_of_date == std::chrono::seconds{} ? &t::BoldRed : &t::BoldGreen;
 
   ios_flags_saver ifs(os);
 
@@ -264,7 +271,7 @@ std::ostream& operator<<(std::ostream& os, const Long& l) {
                    p.maintainer.empty() ? "(orphan)" : p.maintainer);
   os << FieldValue("Submitted", p.submitted_s);
   os << FieldValue("Last Modified", p.modified_s);
-  if (p.out_of_date) {
+  if (p.out_of_date != std::chrono::seconds{}) {
     os << FieldValue("Out of Date", p.out_of_date);
   }
   os << FieldValue("Description", p.description);

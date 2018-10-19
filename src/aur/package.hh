@@ -1,6 +1,7 @@
 #ifndef PACKAGE_H
 #define PACKAGE_H
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -36,9 +37,9 @@ struct Package {
   int votes = 0;
   double popularity = 0.f;
 
-  time_t out_of_date = 0;
-  time_t submitted_s = 0;
-  time_t modified_s = 0;
+  std::chrono::seconds out_of_date{0};
+  std::chrono::seconds submitted_s{0};
+  std::chrono::seconds modified_s{0};
 
   std::vector<std::string> conflicts;
   std::vector<std::string> groups;

@@ -3,22 +3,21 @@
 #include "json_internal.hh"
 
 namespace aur {
-namespace fields {
-
-DEFINE_FIELD(type, std::string, RpcResponse::type);
-DEFINE_FIELD(error, std::string, RpcResponse::error);
-DEFINE_FIELD(resultcount, int, RpcResponse::resultcount);
-DEFINE_FIELD(version, int, RpcResponse::version);
-DEFINE_FIELD(results, std::vector<Package>, RpcResponse::results);
-
-}  // namespace fields
 
 void from_json(const nlohmann::json& j, RpcResponse& r) {
-  Store<fields::type>(j, r);
-  Store<fields::error>(j, r);
-  Store<fields::resultcount>(j, r);
-  Store<fields::version>(j, r);
-  Store<fields::results>(j, r);
+  for (auto iter = j.begin(); iter != j.end(); iter++) {
+    if (iter.key() == "type") {
+      from_json(iter.value(), r.type);
+    } else if (iter.key() == "error") {
+      from_json(iter.value(), r.error);
+    } else if (iter.key() == "resultcount") {
+      from_json(iter.value(), r.resultcount);
+    } else if (iter.key() == "version") {
+      from_json(iter.value(), r.version);
+    } else if (iter.key() == "results") {
+      from_json(iter.value(), r.results);
+    }
+  }
 }
 
 // static

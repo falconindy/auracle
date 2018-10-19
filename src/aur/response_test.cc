@@ -75,9 +75,9 @@ TEST(ResponseTest, ParsesJson) {
   EXPECT_EQ(result.upstream_url, "https://github.com/falconindy/auracle.git");
   EXPECT_EQ(result.votes, 15);
   EXPECT_EQ(result.popularity, 0.095498);
-  EXPECT_EQ(result.out_of_date, 0);
-  EXPECT_EQ(result.submitted_s, 1499013608);
-  EXPECT_EQ(result.modified_s, 1534000474);
+  EXPECT_EQ(result.out_of_date, std::chrono::seconds());
+  EXPECT_EQ(result.submitted_s, std::chrono::seconds(1499013608));
+  EXPECT_EQ(result.modified_s, std::chrono::seconds(1534000474));
   EXPECT_EQ(result.maintainer, "falconindy");
   EXPECT_EQ(result.aur_urlpath, "/cgit/aur.git/snapshot/auracle-git.tar.gz");
   EXPECT_THAT(
