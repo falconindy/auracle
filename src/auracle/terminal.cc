@@ -11,7 +11,24 @@ namespace terminal {
 namespace {
 int g_cached_columns = -1;
 WantColor g_want_color = WantColor::AUTO;
+
+std::string Color(const std::string& s, const char* color) {
+  if (g_want_color == WantColor::NO) {
+    return s;
+  }
+
+  std::stringstream ss;
+  ss << color << s << "\033[0m";
+  return ss.str();
+}
+
 }  // namespace
+
+std::string Bold(const std::string& s) { return Color(s, "\033[1m"); }
+std::string BoldRed(const std::string& s) { return Color(s, "\033[1;31m"); }
+std::string BoldCyan(const std::string& s) { return Color(s, "\033[1;36m"); }
+std::string BoldGreen(const std::string& s) { return Color(s, "\033[1;32m"); }
+std::string BoldMagenta(const std::string& s) { return Color(s, "\033[1;35m"); }
 
 void Init(WantColor want) {
   if (want == WantColor::AUTO) {
@@ -38,21 +55,5 @@ int Columns() {
   g_cached_columns = c;
   return g_cached_columns;
 }
-
-#define DEFINE_COLOR(ColorName, ColorCode)       \
-  std::string ColorName(const std::string& s) {  \
-    if (g_want_color == WantColor::NO) return s; \
-    std::stringstream ss;                        \
-    ss << (ColorCode) << s << "\033[0m";         \
-    return ss.str();                             \
-  }
-
-DEFINE_COLOR(Bold, "\033[1m");
-DEFINE_COLOR(BoldRed, "\033[1;31m");
-DEFINE_COLOR(BoldGreen, "\033[1;32m");
-DEFINE_COLOR(BoldMagenta, "\033[1;35m");
-DEFINE_COLOR(BoldCyan, "\033[1;36m");
-
-#undef DEFINE_COLOR
 
 }  // namespace terminal
