@@ -8,6 +8,8 @@
 #include "auracle/sort.hh"
 #include "auracle/terminal.hh"
 
+namespace {
+
 constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
 constexpr char kPacmanConf[] = "/etc/pacman.conf";
 
@@ -196,6 +198,8 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
 
   return true;
 }
+
+}  // namespace
 
 int main(int argc, char** argv) {
   Flags flags;
