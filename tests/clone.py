@@ -12,7 +12,7 @@ class TestClone(auracle_test.TestCase):
         self.assertPkgbuildExists('auracle-git', git=True)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git'
+            '/rpc?v=5&type=info&arg[]=auracle-git'
         ])
 
 
@@ -23,7 +23,7 @@ class TestClone(auracle_test.TestCase):
         self.assertPkgbuildExists('pkgfile-git', git=True)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git&arg[]=pkgfile-git'
+            '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=pkgfile-git'
         ])
 
 
@@ -34,7 +34,7 @@ class TestClone(auracle_test.TestCase):
         self.assertPkgbuildExists('nlohmann-json', git=True)
 
         self.assertGreater(len(self.request_uris), 1)
-        self.assertIn('/rpc?type=info&v=5&arg[]=auracle-git',
+        self.assertIn('/rpc?v=5&type=info&arg[]=auracle-git',
                 self.request_uris)
 
 

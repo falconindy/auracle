@@ -11,7 +11,7 @@ class TestDownload(auracle_test.TestCase):
         self.assertEqual(p.stdout.decode().strip(), 'auracle-git')
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git&arg[]=pkgfile-git'])
+            '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=pkgfile-git'])
 
 
     def testSyncFiltersUpdatesToArgs(self):
@@ -19,7 +19,7 @@ class TestDownload(auracle_test.TestCase):
         self.assertEqual(p.returncode, 0)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git'])
+            '/rpc?v=5&type=info&arg[]=auracle-git'])
 
 
 if __name__ == '__main__':

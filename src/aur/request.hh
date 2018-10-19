@@ -1,7 +1,6 @@
 #ifndef REQUEST_HH
 #define REQUEST_HH
 
-#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -11,33 +10,6 @@
 #include "package.hh"
 
 namespace aur {
-
-namespace detail {
-
-class Querystring {
- public:
-  Querystring() {}
-
-  // We differentiate between "params" and "args" in that "params" are things
-  // which should be present across all requests, e.g. v=, type=. "args" are the
-  // remaining arg= or arg[]= values.
-  void AddParam(const std::string& key, const std::string& value);
-  void AddArg(const std::string& key, const std::string& value);
-
-  // Build returns a querystring suitable for appending to a URL. Build should
-  // be called repeatedly until it returns an empty string.
-  std::string Build();
-
- private:
-  // Upper limit for HTTP/1.1 on aur.archlinux.org is somewhere in the 8000s,
-  // but closer to 4k for HTTP2. Let's stick with something that works for both.
-  static constexpr int kMaxUriLength = 4000;
-
-  std::map<std::string, std::string> params_;
-  std::vector<std::pair<std::string, std::string>> args_;
-};
-
-}  // namespace detail
 
 // Abstract class describing an HTTP request to the AUR.
 class Request {
@@ -62,6 +34,7 @@ class RawRequest : public Request {
   const std::string urlpath_;
 };
 
+// A class describing a url for a git repo hosted on the AUR.
 class CloneRequest : public Request {
  public:
   explicit CloneRequest(std::string reponame)
@@ -78,29 +51,33 @@ class CloneRequest : public Request {
 // A base class describing a GET request to the RPC endpoint of the AUR.
 class RpcRequest : public Request {
  public:
-  RpcRequest() { AddParam("v", "5"); }
+  // Upper limit for HTTP/1.1 on aur.archlinux.org is somewhere in the 8000s,
+  // but closer to 4k for HTTP2. Let's stick with something that works for both.
+  static constexpr int kMaxUriLength = 4000;
+
+  RpcRequest(
+      const std::vector<std::pair<std::string, std::string>>& base_params,
+      long unsigned approx_max_length = kMaxUriLength);
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
   void AddArg(const std::string& key, const std::string& value);
 
- protected:
-  void AddParam(const std::string& key, const std::string& value);
-
  private:
-  mutable detail::Querystring qs_;
+  const std::string baseuri_;
+  std::vector<std::pair<std::string, std::string>> args_;
+  const long unsigned approx_max_length_;
 };
 
 class InfoRequest : public RpcRequest {
  public:
-  explicit InfoRequest(const std::vector<std::string>& args) : RpcRequest() {
-    AddParam("type", "info");
+  explicit InfoRequest(const std::vector<std::string>& args) : InfoRequest() {
     for (const auto& arg : args) {
       AddArg(arg);
     }
   }
 
-  InfoRequest() : RpcRequest() { AddParam("type", "info"); }
+  InfoRequest() : RpcRequest({{"v", "5"}, {"type", "info"}}) {}
 
   void AddArg(const std::string& arg) { RpcRequest::AddArg("arg[]", arg); }
 };
@@ -138,9 +115,12 @@ class SearchRequest : public RpcRequest {
     }
   }
 
-  SearchRequest() : RpcRequest() { AddParam("type", "search"); }
-
-  void SetSearchBy(SearchBy by) { AddParam("by", SearchByToString(by)); }
+  SearchRequest(SearchBy by)
+      : RpcRequest({
+            {"v", "5"},
+            {"type", "search"},
+            {"by", SearchByToString(by)},
+        }) {}
 
   void AddArg(const std::string& arg) { RpcRequest::AddArg("arg", arg); }
 

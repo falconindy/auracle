@@ -32,30 +32,31 @@ TEST(RequestTest, UrlEncodesParameterValues) {
 }
 
 TEST(RequestTest, BuildsMultipleUrlsForLongRequests) {
-  aur::InfoRequest request;
+  aur::RpcRequest request({{"v", "5"}}, 100);
 
-  const std::string longarg(22, 'a');
-  for (int i = 0; i < 250; ++i) {
-    request.AddArg(longarg);
+  const std::string longarg(14, 'a');
+  for (int i = 0; i < 10; ++i) {
+    request.AddArg("arg[]", longarg);
   }
 
   // Builds more than one URL because we go over the limit.
   const auto urls = request.Build(kBaseUrl);
-  ASSERT_EQ(urls.size(), 2);
+  ASSERT_EQ(urls.size(), 3);
 
-  // URLs aren't truncated
   const auto arg = "&arg[]=" + longarg;
-  EXPECT_THAT(urls[0], EndsWith(arg));
-  EXPECT_THAT(urls[1], EndsWith(arg));
+  for (const auto& url : urls) {
+    // URLs aren't truncated
+    EXPECT_THAT(url, EndsWith(arg));
+    // We've trimmed things correctly in chopping up the querystring
+    EXPECT_THAT(url, testing::Not(testing::HasSubstr("&&")));
+  }
 }
 
 TEST(RequestTest, BuildsSearchRequests) {
-  aur::SearchRequest request;
+  aur::SearchRequest request(aur::SearchRequest::SearchBy::MAINTAINER);
 
   request.AddArg("bar");
   request.AddArg("foo");
-
-  request.SetSearchBy(aur::SearchRequest::SearchBy::MAINTAINER);
 
   const auto urls = request.Build(kBaseUrl);
   ASSERT_EQ(urls.size(), 1);

@@ -20,9 +20,9 @@ class TestRegexSearch(auracle_test.TestCase):
         self.assertEqual('auracle-git', p.stdout.decode().strip())
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?by=name-desc&type=search&v=5&arg=aurac',
-            '/rpc?by=name-desc&type=search&v=5&arg=le-git',
-            '/rpc?by=name-desc&type=search&v=5&arg=auracle',
+            '/rpc?v=5&type=search&by=name-desc&arg=aurac',
+            '/rpc?v=5&type=search&by=name-desc&arg=le-git',
+            '/rpc?v=5&type=search&by=name-desc&arg=auracle',
         ])
 
 
@@ -31,7 +31,7 @@ class TestRegexSearch(auracle_test.TestCase):
         self.assertEqual(p.returncode, 0)
 
         self.assertListEqual(self.request_uris, [
-            '/rpc?by=name-desc&type=search&v=5&arg=%5Eaurac.%2B',
+            '/rpc?v=5&type=search&by=name-desc&arg=%5Eaurac.%2B',
         ])
 
 

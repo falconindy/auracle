@@ -1,7 +1,7 @@
 #include "request.hh"
 
+#include <cstring>
 #include <memory>
-#include <sstream>
 #include <string_view>
 
 #include <curl/curl.h>
@@ -10,106 +10,106 @@ namespace aur {
 
 namespace {
 
-using QueryParam = std::pair<std::string, std::string>;
+std::string UrlEscape(const std::string_view sv) {
+  char* ptr = curl_easy_escape(nullptr, sv.data(), sv.size());
+  std::string escaped(ptr);
+  free(ptr);
 
-class EncodedParam {
- public:
-  explicit EncodedParam(const QueryParam& kv) : kv_(kv) {}
+  return escaped;
+}
 
-  friend std::ostream& operator<<(std::ostream& os, const EncodedParam& param) {
-    char* escaped = curl_easy_escape(nullptr, param.kv_.second.data(),
-                                     param.kv_.second.size());
+char* AppendUnsafe(char* to, std::string_view from) {
+  auto ptr = mempcpy(to, from.data(), from.size());
 
-    os << param.kv_.first << '=' << escaped;
+  return static_cast<char*>(ptr);
+}
 
-    free(escaped);
+template <typename... Pieces>
+void StrAppend(std::string* out, const Pieces&... args) {
+  std::vector<std::string_view> v{args...};
 
-    return os;
+  std::string::size_type append_sz = 0;
+  for (const auto& piece : v) {
+    append_sz += piece.size();
   }
 
- private:
-  const QueryParam& kv_;
-};
+  auto original_sz = out->size();
+  out->resize(original_sz + append_sz);
+
+  char* ptr = out->data() + original_sz;
+  for (const auto& piece : v) {
+    ptr = AppendUnsafe(ptr, piece);
+  }
+}
+
+template <typename... Pieces>
+std::string StrCat(const Pieces&... args) {
+  std::string out;
+  StrAppend(&out, args...);
+  return out;
+}
+
+void QueryParamFormatter(std::string* out,
+                         const std::pair<std::string, std::string>& kv) {
+  StrAppend(out, kv.first, "=", UrlEscape(kv.second));
+}
+
+template <typename Iterator, typename Formatter>
+std::string StrJoin(Iterator begin, Iterator end, std::string_view s,
+                    Formatter&& f) {
+  std::string result;
+
+  std::string_view sep("");
+  for (Iterator it = begin; it != end; ++it) {
+    result.append(sep.data(), sep.size());
+    f(&result, *it);
+    sep = s;
+  }
+
+  return result;
+}
 
 }  // namespace
 
-namespace detail {
-
-void Querystring::AddParam(const std::string& key, const std::string& value) {
-  params_.emplace(key, value);
-}
-
-void Querystring::AddArg(const std::string& key, const std::string& value) {
-  args_.emplace_back(key, value);
-}
-
-std::string Querystring::Build() {
-  std::stringstream ss;
-
-  if (args_.empty()) {
-    return std::string();
-  }
-
-  for (auto it = params_.cbegin(); it != params_.cend(); ++it) {
-    if (it != params_.cbegin()) {
-      ss << '&';
-    }
-
-    ss << EncodedParam(*it);
-  }
-
-  auto ss_size = [](std::stringstream& ss) -> size_t {
-    ss.seekp(0, std::ios::end);
-    auto size = ss.tellp();
-    ss.seekg(0, std::ios::beg);
-    return size;
-  };
-
-  auto param_size = [](const QueryParam& kv) {
-    // Size of key, plus '=', and worst case scenario for value size.
-    return kv.first.size() + 1 + kv.second.size() * 3;
-  };
-
-  for (auto it = args_.cbegin(); it != args_.cend();) {
-    if (ss_size(ss) + param_size(*it) > kMaxUriLength) {
-      break;
-    }
-
-    ss << '&' << EncodedParam(*it);
-    it = args_.erase(it);
-  }
-
-  return ss.str();
-}
-
-}  // namespace detail
-
-void RpcRequest::AddParam(const std::string& key, const std::string& value) {
-  qs_.AddParam(key, value);
-}
-
 void RpcRequest::AddArg(const std::string& key, const std::string& value) {
-  qs_.AddArg(key, value);
+  args_.emplace_back(key, value);
 }
 
 std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
   std::vector<std::string> requests;
 
-  for (;;) {
-    auto args = qs_.Build();
-    if (args.empty()) {
+  const auto assemble = [&](std::string_view qs) {
+    return StrCat(baseurl, "/rpc?", baseuri_, "&", qs);
+  };
+
+  const auto qs =
+      StrJoin(args_.begin(), args_.end(), "&", &QueryParamFormatter);
+
+  std::string_view sv(qs);
+  while (!sv.empty()) {
+    if (sv.size() <= approx_max_length_) {
+      requests.push_back(assemble(sv));
       break;
     }
 
-    std::stringstream ss;
+    std::string_view::size_type n = approx_max_length_;
+    do {
+      n = sv.substr(0, n).find_last_of("&");
+    } while (n > kMaxUriLength);
 
-    ss << baseurl << "/rpc?" << args;
-
-    requests.push_back(ss.str());
+    requests.push_back(assemble(sv.substr(0, n)));
+    sv.remove_prefix(n + 1);
   }
 
   return requests;
 }
+
+RpcRequest::RpcRequest(
+    const std::vector<std::pair<std::string, std::string>>& base_params,
+    long unsigned approx_max_length)
+    : baseuri_(StrJoin(base_params.begin(), base_params.end(), "&",
+                       &QueryParamFormatter)),
+      approx_max_length_(approx_max_length) {}
 
 // static
 std::string RawRequest::UrlForTarball(const Package& package) {
@@ -122,19 +122,11 @@ std::string RawRequest::UrlForPkgbuild(const Package& package) {
 }
 
 std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
-  std::stringstream ss;
-
-  ss << baseurl << urlpath_;
-
-  return {ss.str()};
+  return {StrCat(baseurl, urlpath_)};
 }
 
 std::vector<std::string> CloneRequest::Build(const std::string& baseurl) const {
-  std::stringstream ss;
-
-  ss << baseurl << "/" << reponame_;
-
-  return {ss.str()};
+  return {StrCat(baseurl, "/", reponame_)};
 }
 
 }  // namespace aur

@@ -316,8 +316,7 @@ int Auracle::Search(const std::vector<std::string>& args,
 
   std::vector<aur::Package> packages;
   for (const auto& arg : args) {
-    aur::SearchRequest r;
-    r.SetSearchBy(options.search_by);
+    aur::SearchRequest r(options.search_by);
 
     if (options.allow_regex) {
       auto frag = SearchFragFromRegex(arg);
@@ -580,9 +579,8 @@ int Auracle::Sync(const std::vector<std::string>& args,
 int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
-    aur::SearchRequest request;
+    aur::SearchRequest request(options.search_by);
     request.AddArg(arg);
-    request.SetSearchBy(options.search_by);
 
     aur_.QueueRawRpcRequest(
         request, [](aur::StatusOr<aur::RawResponse> response) {

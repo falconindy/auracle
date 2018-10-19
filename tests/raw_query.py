@@ -17,7 +17,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertIn('auracle-git', names)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git'
+            '/rpc?v=5&type=info&arg[]=auracle-git',
         ])
 
 
@@ -32,7 +32,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertIn('auracle-git', names)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?by=name-desc&type=search&v=5&arg=aura'
+            '/rpc?v=5&type=search&by=name-desc&arg=aura',
         ])
 
 
@@ -45,8 +45,8 @@ class TestRawQuery(auracle_test.TestCase):
             self.assertGreater(parsed['resultcount'], 1)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?by=name-desc&type=search&v=5&arg=aura',
-            '/rpc?by=name-desc&type=search&v=5&arg=systemd',
+            '/rpc?v=5&type=search&by=name-desc&arg=aura',
+            '/rpc?v=5&type=search&by=name-desc&arg=systemd',
         ])
 
 
@@ -61,7 +61,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertIn('auracle-git', names)
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?by=maintainer&type=search&v=5&arg=falconindy'
+            '/rpc?v=5&type=search&by=maintainer&arg=falconindy',
         ])
 
 
@@ -70,7 +70,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertEqual(p.returncode, 0)
 
         self.assertListEqual(self.request_uris, [
-            '/rpc?by=name-desc&type=search&v=5&arg=%5Eaurac.%2B',
+            '/rpc?v=5&type=search&by=name-desc&arg=%5Eaurac.%2B',
         ])
 
 

@@ -13,7 +13,7 @@ class TestDownload(auracle_test.TestCase):
         # We can assert ordering here because the RPC call must necessarily be
         # made prior to the tarball request.
         self.assertListEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git',
+            '/rpc?v=5&type=info&arg[]=auracle-git',
             '/cgit/aur.git/snapshot/auracle-git.tar.gz'
         ])
 
@@ -38,7 +38,7 @@ class TestDownload(auracle_test.TestCase):
         self.assertPkgbuildExists('pkgfile-git')
 
         self.assertCountEqual(self.request_uris, [
-            '/rpc?type=info&v=5&arg[]=auracle-git&arg[]=pkgfile-git',
+            '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=pkgfile-git',
             '/cgit/aur.git/snapshot/auracle-git.tar.gz',
             '/cgit/aur.git/snapshot/pkgfile-git.tar.gz'
         ])
@@ -51,7 +51,7 @@ class TestDownload(auracle_test.TestCase):
         self.assertPkgbuildExists('nlohmann-json')
 
         self.assertGreater(len(self.request_uris), 2)
-        self.assertIn('/rpc?type=info&v=5&arg[]=auracle-git',
+        self.assertIn('/rpc?v=5&type=info&arg[]=auracle-git',
                 self.request_uris)
         self.assertIn('/cgit/aur.git/snapshot/auracle-git.tar.gz',
                 self.request_uris)
