@@ -166,6 +166,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_ASC);
         if (flags->command_options.sorter == nullptr) {
           std::cerr << "error: invalid arg to --sort: " << sv_optarg << "\n";
+          return false;
         }
         break;
       case ARG_RSORT:
@@ -173,6 +174,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_DESC);
         if (flags->command_options.sorter == nullptr) {
           std::cerr << "error: invalid arg to --rsort: " << sv_optarg << "\n";
+          return false;
         }
         break;
       case ARG_BASEURL:
