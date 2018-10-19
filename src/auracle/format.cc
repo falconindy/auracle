@@ -198,9 +198,9 @@ std::ostream& FormatFieldValue(std::ostream& os, const std::string_view field,
   const auto* l = version.l;
 
   namespace t = terminal;
-  // const auto aur_ver_color = p->out_of_date == std::chrono::seconds{} ?
-  // &t::BoldRed : &t::BoldGreen;
-  const auto aur_ver_color = &t::BoldGreen;
+  const auto aur_ver_color = p->out_of_date > std::chrono::seconds::zero()
+                                 ? &t::BoldRed
+                                 : &t::BoldGreen;
 
   os << Field(field) << aur_ver_color(p->version);
 
@@ -226,8 +226,9 @@ std::ostream& operator<<(std::ostream& os, const Short& s) {
   namespace t = terminal;
 
   const auto& p = s.package;
-  const auto ood_color =
-      p.out_of_date == std::chrono::seconds{} ? &t::BoldRed : &t::BoldGreen;
+  const auto ood_color = p.out_of_date > std::chrono::seconds::zero()
+                             ? &t::BoldRed
+                             : &t::BoldGreen;
 
   ios_flags_saver ifs(os);
 
