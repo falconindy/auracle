@@ -36,14 +36,6 @@ void from_json(const nlohmann::json& j, Dependency& d) {
   }
 }
 
-void from_json(const nlohmann::json& j, std::chrono::seconds& s) {
-  if (j.is_null()) {
-    return;
-  }
-
-  s = std::chrono::seconds(j);
-}
-
 void from_json(const nlohmann::json& j, Package& p) {
   for (const auto& iter : j.items()) {
     const auto& key = iter.key();
