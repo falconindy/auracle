@@ -90,6 +90,9 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "searchby",        required_argument, nullptr, ARG_SEARCHBY },
       { "sort",            required_argument, nullptr, ARG_SORT },
       { "version",         no_argument,       nullptr, ARG_VERSION },
+
+      // These are "private", and intentionally not documented in the manual or
+      // usage.
       { "baseurl",         required_argument, nullptr, ARG_BASEURL },
       { "pacmanconfig",    required_argument, nullptr, ARG_PACMAN_CONFIG },
       {},
@@ -226,13 +229,13 @@ int main(int argc, char** argv) {
                                .set_connection_timeout(flags.connect_timeout)
                                .set_max_connections(flags.max_connections));
 
-  std::string_view action(argv[1]);
-  std::vector<std::string> args(argv + 2, argv + argc);
+  const std::string_view action(argv[1]);
+  const std::vector<std::string> args(argv + 2, argv + argc);
 
-  std::unordered_map<std::string_view,
-                     int (auracle::Auracle::*)(
-                         const std::vector<std::string>& args,
-                         const auracle::Auracle::CommandOptions& options)>
+  const std::unordered_map<std::string_view,
+                           int (auracle::Auracle::*)(
+                               const std::vector<std::string>& args,
+                               const auracle::Auracle::CommandOptions& options)>
       cmds{
           {"buildorder", &auracle::Auracle::BuildOrder},
           {"clone", &auracle::Auracle::Clone},
