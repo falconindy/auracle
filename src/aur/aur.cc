@@ -78,27 +78,6 @@ class ResponseHandler {
 
  private:
   virtual int Run(const std::string& error) = 0;
-
-  void FilenameFromHeader(std::string_view value) {
-    constexpr char kFilenameKey[] = "filename=";
-
-    const auto pos = value.find(kFilenameKey);
-    if (pos == std::string_view::npos) {
-      return;
-    }
-
-    value.remove_prefix(pos + strlen(kFilenameKey));
-    if (value.size() < 3) {
-      // Malformed header or empty filename
-      return;
-    }
-
-    // Blind assumptions:
-    // 1) filename is either quoted or the last
-    // 2) filename is never a path (contains no slashes)
-    ConsumePrefix(&value, "\"");
-    filename_hint.assign(value.data(), value.find('"'));
-  }
 };
 
 class RpcResponseHandler : public ResponseHandler {
