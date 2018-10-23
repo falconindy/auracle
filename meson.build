@@ -19,12 +19,12 @@ add_project_arguments('-include', 'config.h', language : 'cpp')
 possible_cpp_flags = []
 possible_link_flags = []
 if get_option('buildtype') != 'debug'
-        possible_cpp_flags += [
-                '-ffunction-sections',
-                '-fdata-sections',
-        ]
+  possible_cpp_flags += [
+    '-ffunction-sections',
+    '-fdata-sections',
+  ]
 
-        possible_link_flags += '-Wl,--gc-sections'
+  possible_link_flags += '-Wl,--gc-sections'
 endif
 
 add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
