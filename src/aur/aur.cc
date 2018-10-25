@@ -70,8 +70,6 @@ class ResponseHandler {
     this->filename_hint = filename_hint;
   }
 
-  void EnableDebugging() {}
-
   std::string body;
   std::string filename_hint;
   char error_buffer[CURL_ERROR_SIZE]{};
@@ -299,7 +297,8 @@ int Aur::OnIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
     action = 0;
   }
 
-  if (curl_multi_socket_action(aur->curl_, translated_fd, action, &k) < 0) {
+  if (curl_multi_socket_action(aur->curl_, translated_fd, action, &k) !=
+      CURLM_OK) {
     return -EINVAL;
   }
 
@@ -522,7 +521,7 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
 
   int pid = fork();
   if (pid < 0) {
-    response_handler->RunCallback(std::string(strerror(errno)));
+    response_handler->RunCallback(strerror(errno));
     return;
   }
 
