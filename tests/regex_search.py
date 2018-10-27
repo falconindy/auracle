@@ -12,6 +12,12 @@ class TestRegexSearch(auracle_test.TestCase):
                 p.stderr.decode())
 
 
+    def testInvalidRegex(self):
+        p = self.Auracle(['search', '*invalid'])
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('invalid regex', p.stderr.decode())
+
+
     def testMultipleSearchesWithFiltering(self):
         p = self.Auracle([
             'search', '--quiet', '^aurac.+', '.le-git$', 'auracle'
