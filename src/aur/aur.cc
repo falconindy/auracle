@@ -231,7 +231,8 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
       return -1;
     }
 
-    if (sd_event_add_io(aur->event_, &io, fd, events, &Aur::OnIO, aur) < 0) {
+    if (sd_event_add_io(aur->event_, &io, fd, events, &Aur::OnCurlIO, aur) <
+        0) {
       return -1;
     }
 
@@ -243,7 +244,7 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
 }
 
 // static
-int Aur::OnIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
+int Aur::OnCurlIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
   int action, k = 0;
 
@@ -269,7 +270,7 @@ int Aur::OnIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
 }
 
 // static
-int Aur::OnTimer(sd_event_source*, uint64_t, void* userdata) {
+int Aur::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
   int k = 0;
 
@@ -282,7 +283,7 @@ int Aur::OnTimer(sd_event_source*, uint64_t, void* userdata) {
 }
 
 // static
-int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
+int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
 
   if (timeout_ms < 0) {
@@ -308,7 +309,7 @@ int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
     }
   } else {
     if (sd_event_add_time(aur->event_, &aur->timer_, CLOCK_MONOTONIC, usec, 0,
-                          &Aur::OnTimer, aur) < 0) {
+                          &Aur::OnCurlTimer, aur) < 0) {
       return -1;
     }
   }
@@ -448,7 +449,7 @@ int Aur::OnCloneExit(sd_event_source* s, const siginfo_t* si, void* userdata) {
 
   std::string error;
   if (si->si_status != 0) {
-    error.assign("TODO: useful error message for non-zero exit status: " +
+    error.assign("git exited with unexpected exit status " +
                  std::to_string(si->si_status));
   }
 
@@ -468,7 +469,8 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
 
   int pid = fork();
   if (pid < 0) {
-    response_handler->RunCallback(strerror(errno));
+    response_handler->RunCallback("failed to fork new process for git: " +
+                                  std::string(strerror(errno)));
     return;
   }
 

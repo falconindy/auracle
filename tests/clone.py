@@ -55,7 +55,9 @@ class TestClone(auracle_test.TestCase):
     def testCloneFailureReportsError(self):
         p = self.Auracle(['clone', 'yaourt'])
         self.assertNotEqual(p.returncode, 0)
-        self.assertEqual(p.stderr.decode().strip(), 'error: git clone failed')
+        self.assertEqual(p.stderr.decode().strip(), (
+            'error: clone failed for yaourt: '
+            'git exited with unexpected exit status 1'))
 
 
 

@@ -391,6 +391,8 @@ int Auracle::Clone(const std::vector<std::string>& args,
             std::cout << response.value().operation << " complete: "
                       << (fs::current_path() / pkgbase).string() << "\n";
           } else {
+            std::cerr << "error: clone failed for " << pkgbase << ": "
+                      << response.error() << "\n";
             ret = -EIO;
           }
           return 0;

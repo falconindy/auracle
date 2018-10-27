@@ -22,7 +22,6 @@ pkgname=${non_option_argv[-1]##*/}
 
 case $pkgname in
   yaourt)
-    echo "error: git clone failed" >&2
     exit 1
     ;;
 esac

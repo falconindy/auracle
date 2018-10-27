@@ -97,8 +97,9 @@ class Aur {
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
                             void* userdata, void* socketp);
   static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
-  static int OnIO(sd_event_source* s, int fd, uint32_t revents, void* userdata);
-  static int OnTimer(sd_event_source* s, uint64_t usec, void* userdata);
+  static int OnCurlIO(sd_event_source* s, int fd, uint32_t revents,
+                      void* userdata);
+  static int OnCurlTimer(sd_event_source* s, uint64_t usec, void* userdata);
   static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
                          void* userdata);
 
