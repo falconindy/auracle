@@ -21,20 +21,43 @@ class StatusOr : public std::variant<std::string, T> {
 };
 
 struct CloneResponse {
+  CloneResponse(std::string operation) : operation(std::move(operation)) {}
+
+  CloneResponse(const CloneResponse&) = delete;
+  CloneResponse& operator=(const CloneResponse&) = delete;
+
+  CloneResponse(CloneResponse&&) = default;
+  CloneResponse& operator=(CloneResponse&&) = default;
+
   std::string operation;
 };
 
 struct RpcResponse {
+  RpcResponse() = default;
+  explicit RpcResponse(const std::string& json_bytes);
+
+  RpcResponse(const RpcResponse&) = delete;
+  RpcResponse& operator=(const RpcResponse&) = delete;
+
+  RpcResponse(RpcResponse&&) = default;
+  RpcResponse& operator=(RpcResponse&&) = default;
+
   std::string type;
   std::string error;
   int resultcount;
   std::vector<Package> results;
   int version;
-
-  static RpcResponse Parse(const std::string& json_bytes);
 };
 
 struct RawResponse {
+  RawResponse(std::string bytes) : bytes(std::move(bytes)) {}
+
+  RawResponse(const RawResponse&) = delete;
+  RawResponse& operator=(const RawResponse&) = delete;
+
+  RawResponse(RawResponse&&) = default;
+  RawResponse& operator=(RawResponse&&) = default;
+
   std::string bytes;
 };
 

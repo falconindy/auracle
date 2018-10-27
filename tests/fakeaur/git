@@ -27,7 +27,7 @@ case $pkgname in
     ;;
 esac
 
-mkdir -vp "$AURACLE_TEST_TMPDIR/$pkgname/.git"
+mkdir -p "$AURACLE_TEST_TMPDIR/$pkgname/.git"
 touch \
     "$AURACLE_TEST_TMPDIR/$pkgname/PKGBUILD" \
     "$AURACLE_TEST_TMPDIR/$pkgname/$action"

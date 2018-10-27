@@ -41,11 +41,13 @@ class TestClone(auracle_test.TestCase):
     def testCloneUpdatesExistingCheckouts(self):
         # Package doesn't initially exist, expect a clone.
         p = self.Auracle(['clone', 'auracle-git'])
+        self.assertTrue(p.stdout.decode().startswith('clone'))
         self.assertTrue(os.path.exists(
             os.path.join(self.tempdir, 'auracle-git', 'clone')))
 
         # Package now exists, expect a pull
         p = self.Auracle(['clone', 'auracle-git'])
+        self.assertTrue(p.stdout.decode().startswith('update'))
         self.assertTrue(os.path.exists(
             os.path.join(self.tempdir, 'auracle-git', 'pull')))
 

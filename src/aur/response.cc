@@ -21,8 +21,8 @@ void from_json(const nlohmann::json& j, RpcResponse& r) {
 }
 
 // static
-RpcResponse RpcResponse::Parse(const std::string& json_bytes) {
-  return nlohmann::json::parse(json_bytes);
+RpcResponse::RpcResponse(const std::string& json_bytes) {
+  *this = nlohmann::json::parse(json_bytes);
 }
 
 }  // namespace aur

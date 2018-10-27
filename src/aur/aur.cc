@@ -30,6 +30,7 @@ bool ConsumePrefix(std::string_view* view, std::string_view prefix) {
 
 class ResponseHandler {
  public:
+  ResponseHandler() = default;
   virtual ~ResponseHandler() = default;
 
   static size_t BodyCallback(char* ptr, size_t size, size_t nmemb,
@@ -65,74 +66,43 @@ class ResponseHandler {
   virtual int Run(const std::string& error) = 0;
 };
 
-class RpcResponseHandler : public ResponseHandler {
+template <typename ResponseT, typename CallbackT>
+class TypedResponseHandler : public ResponseHandler {
  public:
-  using CallbackType = Aur::RpcResponseCallback;
+  using CallbackType = CallbackT;
 
-  explicit RpcResponseHandler(CallbackType callback)
-      : callback_(std::move(callback)) {}
-
- private:
-  int Run(const std::string& error) override {
-    if (!error.empty()) {
-      return callback_(error);
-    }
-
-    auto json = aur::RpcResponse::Parse(body);
-    if (!json.error.empty()) {
-      return callback_(json.error);
-    }
-
-    return callback_(std::move(json));
-  }
-
-  const CallbackType callback_;
-};
-
-class RawResponseHandler : public ResponseHandler {
- public:
-  using CallbackType = Aur::RawResponseCallback;
-
-  explicit RawResponseHandler(CallbackType callback)
-      : callback_(std::move(callback)) {}
-
- private:
-  int Run(const std::string& error) override {
-    if (!error.empty()) {
-      return callback_(error);
-    }
-
-    return callback_(RawResponse{std::move(body)});
-  }
-
-  const CallbackType callback_;
-};
-
-class CloneResponseHandler : public ResponseHandler {
- public:
-  using CallbackType = Aur::CloneResponseCallback;
-
-  CloneResponseHandler(Aur* aur, CallbackType callback)
+  TypedResponseHandler(Aur* aur, CallbackT callback)
       : aur_(aur), callback_(std::move(callback)) {}
 
   Aur* aur() const { return aur_; }
 
-  void SetOperation(std::string operation) {
-    operation_ = std::move(operation);
-  }
-
  private:
   int Run(const std::string& error) override {
     if (!error.empty()) {
       return callback_(error);
     }
 
-    return callback_(CloneResponse{std::move(operation_)});
+    return callback_(ResponseT(std::move(body)));
   }
 
   Aur* aur_;
-  const CallbackType callback_;
-  std::string operation_;
+  const CallbackT callback_;
+};
+
+using RpcResponseHandler =
+    TypedResponseHandler<RpcResponse, Aur::RpcResponseCallback>;
+using RawResponseHandler =
+    TypedResponseHandler<RawResponse, Aur::RawResponseCallback>;
+
+class CloneResponseHandler
+    : public TypedResponseHandler<CloneResponse, Aur::CloneResponseCallback> {
+ public:
+  using TypedResponseHandler<CloneResponse,
+                             Aur::CloneResponseCallback>::TypedResponseHandler;
+
+  void SetOperation(std::string operation) {
+    ResponseHandler::body = std::move(operation);
+  }
 };
 
 }  // namespace
@@ -265,8 +235,6 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
       return -1;
     }
 
-    sd_event_source_set_description(io, "curl-io");
-
     aur->active_io_.emplace(s, io);
     aur->translate_fds_.emplace(fd, s);
   }
@@ -343,8 +311,6 @@ int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
                           &Aur::OnTimer, aur) < 0) {
       return -1;
     }
-
-    sd_event_source_set_description(aur->timer_, "curl-timer");
   }
 
   return 0;
@@ -449,7 +415,7 @@ void Aur::QueueRequest(
     auto curl = curl_easy_init();
 
     auto response_handler =
-        new typename RequestTraits::ResponseHandlerType(callback);
+        new typename RequestTraits::ResponseHandlerType(this, callback);
 
     using RH = ResponseHandler;
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);

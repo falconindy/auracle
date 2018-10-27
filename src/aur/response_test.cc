@@ -59,7 +59,7 @@ TEST(ResponseTest, ParsesJson) {
     ]
   })";
 
-  const auto response = aur::RpcResponse::Parse(json);
+  const aur::RpcResponse response(json);
 
   EXPECT_EQ(response.type, "multiinfo");
   EXPECT_EQ(response.version, 5);

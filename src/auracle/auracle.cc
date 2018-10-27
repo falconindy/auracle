@@ -161,6 +161,15 @@ bool ChdirIfNeeded(const fs::path& target) {
   return true;
 }
 
+const std::string& GetRpcError(
+    const aur::StatusOr<aur::RpcResponse>& response) {
+  if (!response.ok()) {
+    return response.error();
+  }
+
+  return response.value().error;
+}
+
 }  // namespace
 
 namespace auracle {
@@ -251,7 +260,8 @@ int Auracle::Info(const std::vector<std::string>& args,
   std::vector<aur::Package> packages;
   aur_.QueueRpcRequest(
       aur::InfoRequest(args), [&](aur::StatusOr<aur::RpcResponse> response) {
-        if (!response.ok()) {
+        const auto& error = GetRpcError(response);
+        if (!error.empty()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
         } else {
           auto results = std::move(response.value().results);
@@ -331,9 +341,10 @@ int Auracle::Search(const std::vector<std::string>& args,
     }
 
     aur_.QueueRpcRequest(r, [&](aur::StatusOr<aur::RpcResponse> response) {
-      if (!response.ok()) {
-        std::cerr << "error: request failed for '" << arg
-                  << "': " << response.error() << "\n";
+      const auto& error = GetRpcError(response);
+      if (!error.empty()) {
+        std::cerr << "error: request failed for '" << arg << "': " << error
+                  << "\n";
         return -EIO;
       }
 
