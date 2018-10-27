@@ -66,12 +66,7 @@ class ResponseHandler {
     return r;
   }
 
-  void set_filename_hint(const std::string& filename_hint) {
-    this->filename_hint = filename_hint;
-  }
-
   std::string body;
-  std::string filename_hint;
   char error_buffer[CURL_ERROR_SIZE]{};
 
  private:
@@ -115,7 +110,7 @@ class RawResponseHandler : public ResponseHandler {
       return callback_(error);
     }
 
-    return callback_(RawResponse{std::move(filename_hint), std::move(body)});
+    return callback_(RawResponse{std::move(body)});
   }
 
   const CallbackType callback_;
@@ -426,28 +421,24 @@ struct RpcRequestTraits {
   using ResponseHandlerType = RpcResponseHandler;
 
   static constexpr char const* kEncoding = "";
-  static constexpr char const* kFilenameHint = nullptr;
 };
 
 struct RawRpcRequestTraits {
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
-  static constexpr char const* kFilenameHint = nullptr;
 };
 
 struct TarballRequestTraits {
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "identity";
-  static constexpr char const* kFilenameHint = nullptr;
 };
 
 struct PkgbuildRequestTraits {
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
-  static constexpr char const* kFilenameHint = "PKGBUILD";
 };
 
 template <typename RequestTraits>
@@ -471,10 +462,6 @@ void Aur::QueueRequest(
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout_);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
-
-    if (RequestTraits::kFilenameHint) {
-      response_handler->set_filename_hint(RequestTraits::kFilenameHint);
-    }
 
     switch (debug_level_) {
       case DEBUG_NONE:

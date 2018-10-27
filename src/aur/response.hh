@@ -35,7 +35,6 @@ struct RpcResponse {
 };
 
 struct RawResponse {
-  std::string filename_hint;
   std::string bytes;
 };
 
