@@ -14,14 +14,6 @@ namespace aur {
 
 namespace {
 
-template <class... Ts>
-struct overloaded : Ts... {
-  using Ts::operator()...;
-};
-
-template <class... Ts>
-overloaded(Ts...)->overloaded<Ts...>;
-
 template <typename TimeRes, typename ClockType>
 auto TimepointTo(std::chrono::time_point<ClockType> tp) {
   return std::chrono::time_point_cast<TimeRes>(tp).time_since_epoch().count();
@@ -187,15 +179,23 @@ Aur::~Aur() {
 }
 
 void Aur::Cancel(const ActiveRequests::value_type& request) {
-  std::visit(overloaded{[this](CURL* curl) {
-                          FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
-                                        /*dispatch_callback=*/false);
-                        },
-                        [this](sd_event_source* source) {
-                          active_requests_.erase(source);
-                          sd_event_source_unref(source);
-                        }},
-             request);
+  struct Visitor {
+    explicit Visitor(Aur* aur) : aur(aur) {}
+
+    void operator()(CURL* curl) {
+      aur->FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
+                         /*dispatch_callback=*/false);
+    }
+
+    void operator()(sd_event_source* source) {
+      aur->active_requests_.erase(source);
+      sd_event_source_unref(source);
+    }
+
+    Aur* aur;
+  };
+
+  std::visit(Visitor(this), request);
 }
 
 void Aur::CancelAll() {
