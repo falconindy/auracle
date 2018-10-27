@@ -79,7 +79,7 @@ class Aur {
   void StartRequest(CURL* curl);
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
 
-  int ProcessDoneEvents();
+  int CheckFinished();
   void CancelAll();
   void Cancel(const ActiveRequests::value_type& request);
 

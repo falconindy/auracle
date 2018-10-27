@@ -265,7 +265,7 @@ int Aur::OnIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
     return -EINVAL;
   }
 
-  return aur->ProcessDoneEvents();
+  return aur->CheckFinished();
 }
 
 // static
@@ -278,7 +278,7 @@ int Aur::OnTimer(sd_event_source*, uint64_t, void* userdata) {
     return -EINVAL;
   }
 
-  return aur->ProcessDoneEvents();
+  return aur->CheckFinished();
 }
 
 // static
@@ -347,24 +347,18 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   return r;
 }
 
-int Aur::ProcessDoneEvents() {
-  for (;;) {
-    int msgs_left;
-    auto msg = curl_multi_info_read(curl_, &msgs_left);
-    if (msg == nullptr) {
-      break;
-    }
+int Aur::CheckFinished() {
+  int unused;
+  auto msg = curl_multi_info_read(curl_, &unused);
+  if (msg == nullptr || msg->msg != CURLMSG_DONE) {
+    return 0;
+  }
 
-    if (msg->msg != CURLMSG_DONE) {
-      continue;
-    }
-
-    auto r = FinishRequest(msg->easy_handle, msg->data.result,
-                           /* dispatch_callback = */ true);
-    if (r < 0) {
-      CancelAll();
-      return r;
-    }
+  auto r = FinishRequest(msg->easy_handle, msg->data.result,
+                         /* dispatch_callback = */ true);
+  if (r < 0) {
+    CancelAll();
+    return r;
   }
 
   return 0;
@@ -482,17 +476,11 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
     const auto url = request.Build(baseurl_)[0];
 
     std::vector<const char*> cmd{"git"};
-
     if (update) {
-      cmd.push_back("-C");
-      cmd.push_back(request.reponame().c_str());
-      cmd.push_back("pull");
-      cmd.push_back("--quiet");
-      cmd.push_back("--ff-only");
+      cmd.insert(cmd.end(), {"-C", request.reponame().c_str(), "pull",
+                             "--quiet", "--ff-only"});
     } else {
-      cmd.push_back("clone");
-      cmd.push_back("--quiet");
-      cmd.push_back(url.c_str());
+      cmd.insert(cmd.end(), {"clone", "--quiet", url.c_str()});
     }
     cmd.push_back(nullptr);
 
