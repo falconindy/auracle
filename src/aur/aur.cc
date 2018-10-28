@@ -402,7 +402,7 @@ struct RpcRequestTraits {
   static constexpr char const* kEncoding = "";
 };
 
-struct RawRpcRequestTraits {
+struct RawRequestTraits {
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "";
@@ -412,12 +412,6 @@ struct TarballRequestTraits {
   using ResponseHandlerType = RawResponseHandler;
 
   static constexpr char const* kEncoding = "identity";
-};
-
-struct PkgbuildRequestTraits {
-  using ResponseHandlerType = RawResponseHandler;
-
-  static constexpr char const* kEncoding = "";
 };
 
 template <typename RequestTraits>
@@ -517,7 +511,7 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
 
 void Aur::QueueRawRpcRequest(const RpcRequest& request,
                              const RawResponseCallback& callback) {
-  QueueRequest<RawRpcRequestTraits>(request, callback);
+  QueueRequest<RawRequestTraits>(request, callback);
 }
 
 void Aur::QueueRpcRequest(const RpcRequest& request,
@@ -532,7 +526,7 @@ void Aur::QueueTarballRequest(const RawRequest& request,
 
 void Aur::QueuePkgbuildRequest(const RawRequest& request,
                                const RawResponseCallback& callback) {
-  QueueRequest<PkgbuildRequestTraits>(request, callback);
+  QueueRequest<RawRequestTraits>(request, callback);
 }
 
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }
