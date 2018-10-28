@@ -12,6 +12,12 @@ class StatusOr : public std::variant<std::string, T> {
  public:
   using std::variant<std::string, T>::variant;
 
+  StatusOr(const StatusOr&) = delete;
+  StatusOr& operator=(const StatusOr&) = delete;
+
+  StatusOr(StatusOr&&) = default;
+  StatusOr& operator=(StatusOr&&) = default;
+
   bool ok() const { return std::holds_alternative<T>(*this); }
 
   const std::string& error() const { return std::get<std::string>(*this); }

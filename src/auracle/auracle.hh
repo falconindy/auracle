@@ -53,8 +53,12 @@ class Auracle {
   }
 
   ~Auracle() = default;
+
   Auracle(const Auracle&) = delete;
   Auracle& operator=(const Auracle&) = delete;
+
+  Auracle(Auracle&&) = default;
+  Auracle& operator=(Auracle&&) = default;
 
   struct CommandOptions {
     aur::SearchRequest::SearchBy search_by =

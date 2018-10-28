@@ -29,7 +29,9 @@ class Aur {
 
   Aur(const Aur&) = delete;
   Aur& operator=(const Aur&) = delete;
+
   Aur(Aur&&) = default;
+  Aur& operator=(Aur&&) = default;
 
   // Sets the maximum number of allowed simultaneous connections open to the AUR
   // server at any given time. Set to 0 to specify unlimited connections.
@@ -113,7 +115,7 @@ class Aur {
   std::unordered_map<int, sd_event_source*> active_io_;
   std::unordered_map<int, int> translate_fds_;
 
-  sigset_t saved_ss_;
+  sigset_t saved_ss_{};
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
 

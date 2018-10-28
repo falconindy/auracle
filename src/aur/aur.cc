@@ -33,6 +33,12 @@ class ResponseHandler {
   ResponseHandler() = default;
   virtual ~ResponseHandler() = default;
 
+  ResponseHandler(const ResponseHandler&) = delete;
+  ResponseHandler& operator=(const ResponseHandler&) = delete;
+
+  ResponseHandler(ResponseHandler&&) = default;
+  ResponseHandler& operator=(ResponseHandler&&) = default;
+
   static size_t BodyCallback(char* ptr, size_t size, size_t nmemb,
                              void* userdata) {
     auto handler = static_cast<ResponseHandler*>(userdata);
@@ -211,8 +217,9 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
         return EPOLLOUT;
       case CURL_POLL_INOUT:
         return EPOLLIN | EPOLLOUT;
+      default:
+        return 0;
     }
-    return 0;
   };
   std::uint32_t events = action_to_revents(action);
 
@@ -288,7 +295,7 @@ int Aur::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
 }
 
 // static
-int Aur::TimerCallback(CURLM* curl, long timeout_ms, void* userdata) {
+int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
 
   if (timeout_ms < 0) {
@@ -340,8 +347,8 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
       error = "HTTP " + std::to_string(response_code);
     }
   } else {
-    error = strlen(handler->error_buffer) > 0 ? handler->error_buffer
-                                              : curl_easy_strerror(result);
+    const std::string_view buf(handler->error_buffer);
+    error = !buf.empty() ? std::string(buf) : curl_easy_strerror(result);
   }
 
   auto r = dispatch_callback ? handler->RunCallback(error) : 0;

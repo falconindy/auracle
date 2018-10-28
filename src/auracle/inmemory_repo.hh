@@ -11,8 +11,8 @@ namespace auracle {
 
 class InMemoryRepo {
  public:
-  InMemoryRepo() {}
-  ~InMemoryRepo() {}
+  InMemoryRepo() = default;
+  ~InMemoryRepo() = default;
 
   InMemoryRepo(const InMemoryRepo&) = delete;
   InMemoryRepo& operator=(const InMemoryRepo&) = delete;

@@ -14,7 +14,6 @@ namespace aur {
 // Abstract class describing an HTTP request to the AUR.
 class Request {
  public:
-  Request() = default;
   virtual ~Request() = default;
 
   virtual std::vector<std::string> Build(const std::string& baseurl) const = 0;
@@ -40,6 +39,9 @@ class CloneRequest : public Request {
   explicit CloneRequest(std::string reponame)
       : reponame_(std::move(reponame)) {}
 
+  CloneRequest(const CloneRequest&) = delete;
+  CloneRequest& operator=(const CloneRequest&) = delete;
+
   const std::string& reponame() const { return reponame_; }
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
@@ -58,6 +60,9 @@ class RpcRequest : public Request {
   RpcRequest(
       const std::vector<std::pair<std::string, std::string>>& base_params,
       long unsigned approx_max_length = kMaxUriLength);
+
+  RpcRequest(const RpcRequest&) = delete;
+  RpcRequest& operator=(const RpcRequest&) = delete;
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 

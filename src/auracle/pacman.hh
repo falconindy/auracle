@@ -24,6 +24,12 @@ class Pacman {
 
   ~Pacman();
 
+  Pacman(const Pacman&) = delete;
+  Pacman& operator=(const Pacman&) = delete;
+
+  Pacman(Pacman&&) = default;
+  Pacman& operator=(Pacman&&) = default;
+
   static int Vercmp(const std::string& a, const std::string& b);
 
   // Returns true if the package is ignored.
