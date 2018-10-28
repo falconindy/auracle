@@ -530,14 +530,16 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   }
 
   std::vector<const aur::Package*> total_ordering;
+  std::unordered_set<const aur::Package*> seen;
   for (const auto& arg : args) {
     iter.package_repo.WalkDependencies(
-        arg, [&total_ordering](const aur::Package* package) {
-          total_ordering.push_back(package);
+        arg, [&total_ordering, &seen](const aur::Package* package) {
+          if (seen.emplace(package).second) {
+            total_ordering.push_back(package);
+          }
         });
   }
 
-  // TODO: dedupe for when multiple args given.
   for (const auto& p : total_ordering) {
     if (pacman_->DependencyIsSatisfied(p->name)) {
       continue;

@@ -136,6 +136,7 @@ endif
 # integration tests
 python = import('python').find_installation('python3')
 foreach input : [
+  'tests/buildorder.py',
   'tests/clone.py',
   'tests/download.py',
   'tests/info.py',
