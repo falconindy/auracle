@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  setlocale(LC_ALL, "");
+  std::setlocale(LC_ALL, "");
   terminal::Init(flags.color);
 
   const auto pacman = auracle::Pacman::NewFromConfig(flags.pacman_config);
@@ -248,7 +248,7 @@ int main(int argc, char** argv) {
           {"sync", &auracle::Auracle::Sync},
       };
 
-  if (auto iter = cmds.find(action); iter != cmds.end()) {
+  if (const auto iter = cmds.find(action); iter != cmds.end()) {
     return (auracle.*iter->second)(args, flags.command_options) < 0 ? 1 : 0;
   }
 
