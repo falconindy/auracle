@@ -49,10 +49,10 @@ __attribute__((noreturn)) void usage() {
       "  download                 Download tarball snapshots\n"
       "  info                     Show detailed information\n"
       "  pkgbuild                 Show PKGBUILDs\n"
-      "  search                   Search for packages\n"
-      "  sync                     Check for updates for foreign packages\n"
       "  rawinfo                  Dump unformatted JSON for info query\n"
-      "  rawsearch                Dump unformatted JSON for search query\n",
+      "  rawsearch                Dump unformatted JSON for search query\n"
+      "  search                   Search for packages\n"
+      "  sync                     Check for updates for foreign packages\n",
       stdout);
   exit(0);
 }
