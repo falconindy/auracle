@@ -76,13 +76,16 @@ class TypedResponseHandler : public ResponseHandler {
 
   Aur* aur() const { return aur_; }
 
+ protected:
+  virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
+
  private:
   int Run(const std::string& error) override {
     if (!error.empty()) {
       return callback_(error);
     }
 
-    return callback_(ResponseT(std::move(body)));
+    return callback_(MakeResponse());
   }
 
   Aur* aur_;
@@ -101,8 +104,13 @@ class CloneResponseHandler
                              Aur::CloneResponseCallback>::TypedResponseHandler;
 
   void SetOperation(std::string operation) {
-    ResponseHandler::body = std::move(operation);
+    operation_ = std::move(operation);
   }
+
+  CloneResponse MakeResponse() override { return {std::move(operation_)}; }
+
+ private:
+  std::string operation_;
 };
 
 }  // namespace
@@ -157,10 +165,7 @@ void Aur::Cancel(const ActiveRequests::value_type& request) {
                          /*dispatch_callback=*/false);
     }
 
-    void operator()(sd_event_source* source) {
-      aur->active_requests_.erase(source);
-      sd_event_source_unref(source);
-    }
+    void operator()(sd_event_source* source) { aur->FinishRequest(source); }
 
     Aur* aur;
   };
@@ -348,6 +353,12 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   return r;
 }
 
+int Aur::FinishRequest(sd_event_source* source) {
+  active_requests_.erase(source);
+  sd_event_source_unref(source);
+  return 0;
+}
+
 int Aur::CheckFinished() {
   int unused;
   auto msg = curl_multi_info_read(curl_, &unused);
@@ -441,11 +452,11 @@ void Aur::QueueRequest(
 }
 
 // static
-int Aur::OnCloneExit(sd_event_source* s, const siginfo_t* si, void* userdata) {
+int Aur::OnCloneExit(sd_event_source* source, const siginfo_t* si,
+                     void* userdata) {
   auto handler = static_cast<CloneResponseHandler*>(userdata);
 
-  handler->aur()->active_requests_.erase(s);
-  sd_event_source_unref(s);
+  handler->aur()->FinishRequest(source);
 
   std::string error;
   if (si->si_status != 0) {

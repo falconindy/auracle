@@ -78,6 +78,7 @@ class Aur {
 
   void StartRequest(CURL* curl);
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
+  int FinishRequest(sd_event_source* source);
 
   int CheckFinished();
   void CancelAll();
