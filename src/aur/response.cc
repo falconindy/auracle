@@ -5,17 +5,20 @@
 namespace aur {
 
 void from_json(const nlohmann::json& j, RpcResponse& r) {
-  for (auto iter = j.begin(); iter != j.end(); iter++) {
-    if (iter.key() == "type") {
-      from_json(iter.value(), r.type);
-    } else if (iter.key() == "error") {
-      from_json(iter.value(), r.error);
-    } else if (iter.key() == "resultcount") {
-      from_json(iter.value(), r.resultcount);
-    } else if (iter.key() == "version") {
-      from_json(iter.value(), r.version);
-    } else if (iter.key() == "results") {
-      from_json(iter.value(), r.results);
+  for (const auto& iter : j.items()) {
+    const auto& key = iter.key();
+    const auto& value = iter.value();
+
+    if (key == "type") {
+      from_json(value, r.type);
+    } else if (key == "error") {
+      from_json(value, r.error);
+    } else if (key == "resultcount") {
+      from_json(value, r.resultcount);
+    } else if (key == "version") {
+      from_json(value, r.version);
+    } else if (key == "results") {
+      from_json(value, r.results);
     }
   }
 }
