@@ -432,7 +432,6 @@ void Aur::QueueRequest(
     curl_easy_setopt(curl, CURLOPT_PRIVATE, response_handler);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, response_handler->error_buffer);
     curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestTraits::kEncoding);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout_);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
 
