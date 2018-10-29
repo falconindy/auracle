@@ -96,7 +96,8 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.handle_rpc_search(self.collapse_params(queryparams.get('arg')),
                                    self.collapse_params(queryparams.get('by')))
         else:
-            self.respond(status_code=400)
+            self.respond(response=self.make_json_reply(
+                'error', error='Incorrect request type specified.'))
 
 
     def handle_download(self, url):
