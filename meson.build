@@ -30,6 +30,10 @@ endif
 add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
 add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
 
+libfmt_sp = subproject('fmt')
+libfmt = libfmt_sp.get_variable('lib')
+libfmt_inc = libfmt_sp.get_variable('inc')
+
 libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
@@ -68,8 +72,11 @@ libauracle = static_library(
       src/auracle/sort.cc src/auracle/sort.hh
       src/auracle/terminal.cc src/auracle/terminal.hh
     '''.split()),
-    include_directories : include_directories('src'),
-    link_with : [libaur],
+    include_directories : [
+      include_directories('src'),
+      libfmt_inc,
+    ],
+    link_with : [libaur, libfmt],
     dependencies : [libarchive, libalpm, stdcppfs])
 
 auracle = executable(

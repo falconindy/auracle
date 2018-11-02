@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <filesystem>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <regex>
 #include <string>
@@ -27,24 +28,23 @@ int ErrorNotEnoughArgs() {
   return -EINVAL;
 }
 
-void FormatLong(std::ostream& os, const std::vector<aur::Package>& packages,
-                const Pacman* pacman) {
+void FormatLong(const std::vector<aur::Package>& packages,
+                const auracle::Pacman* pacman) {
   for (const auto& p : packages) {
     auto local_pkg = pacman->GetLocalPackage(p.name);
-    os << format::Long(p, local_pkg ? &local_pkg.value() : nullptr) << "\n";
+    format::Long(p, local_pkg ? &local_pkg.value() : nullptr);
   }
 }
 
-void FormatNameOnly(std::ostream& os,
-                    const std::vector<aur::Package>& packages) {
+void FormatNameOnly(const std::vector<aur::Package>& packages) {
   for (const auto& p : packages) {
-    os << format::NameOnly(p);
+    format::NameOnly(p);
   }
 }
 
-void FormatShort(std::ostream& os, const std::vector<aur::Package>& packages) {
+void FormatShort(const std::vector<aur::Package>& packages) {
   for (const auto& p : packages) {
-    os << format::Short(p);
+    format::Short(p);
   }
 }
 
@@ -302,7 +302,7 @@ int Auracle::Info(const std::vector<std::string>& args,
   // our query is large enough that it needs to be split into multiple requests.
   SortUnique(&packages, options.sorter);
 
-  FormatLong(std::cout, packages, pacman_);
+  FormatLong(packages, pacman_);
 
   return 0;
 }
@@ -373,9 +373,9 @@ int Auracle::Search(const std::vector<std::string>& args,
   SortUnique(&packages, options.sorter);
 
   if (options.quiet) {
-    FormatNameOnly(std::cout, packages);
+    FormatNameOnly(packages);
   } else {
-    FormatShort(std::cout, packages);
+    FormatShort(packages);
   }
 
   return 0;
@@ -601,10 +601,9 @@ int Auracle::Sync(const std::vector<std::string>& args,
               [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
           if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
             if (options.quiet) {
-              std::cout << format::NameOnly(r);
+              format::NameOnly(r);
             } else {
-              std::cout << format::Update(*iter, r,
-                                          pacman_->ShouldIgnorePackage(r.name));
+              format::Update(*iter, r, pacman_->ShouldIgnorePackage(r.name));
             }
           }
         }

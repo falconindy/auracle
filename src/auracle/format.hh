@@ -1,60 +1,19 @@
 #ifndef FORMAT_HH
 #define FORMAT_HH
 
-#include <functional>
-#include <iostream>
-#include <variant>
+#include <string_view>
 
 #include "aur/package.hh"
 #include "pacman.hh"
 
 namespace format {
 
-struct NameOnly {
-  NameOnly(const aur::Package& package) : package(package) {}
-  ~NameOnly() = default;
-
-  friend std::ostream& operator<<(std::ostream& os, const NameOnly& n);
-
- private:
-  const aur::Package& package;
-};
-
-struct Short {
-  Short(const aur::Package& package) : package(package) {}
-  ~Short() = default;
-
-  friend std::ostream& operator<<(std::ostream& os, const Short& s);
-
- private:
-  const aur::Package& package;
-};
-
-struct Long {
-  Long(const aur::Package& package,
-       const auracle::Pacman::Package* local_package)
-      : package(package), local_package(local_package) {}
-  ~Long() = default;
-
-  friend std::ostream& operator<<(std::ostream& os, const Long& l);
-
- private:
-  const aur::Package& package;
-  const auracle::Pacman::Package* local_package;
-};
-
-struct Update {
-  Update(const auracle::Pacman::Package& from, const aur::Package& to,
-         bool ignored)
-      : from(from), to(to), ignored(ignored) {}
-
-  friend std::ostream& operator<<(std::ostream& os, const Update& u);
-
- private:
-  const auracle::Pacman::Package& from;
-  const aur::Package& to;
-  const bool ignored;
-};
+void NameOnly(const aur::Package& package);
+void Update(const auracle::Pacman::Package& from, const aur::Package& to,
+            bool ignored);
+void Short(const aur::Package& package);
+void Long(const aur::Package& package,
+          const auracle::Pacman::Package* local_package);
 
 }  // namespace format
 
