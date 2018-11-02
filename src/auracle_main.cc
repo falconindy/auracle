@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "auracle/auracle.hh"
+#include "auracle/format.hh"
 #include "auracle/sort.hh"
 #include "auracle/terminal.hh"
 
@@ -93,6 +94,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "show-file",       required_argument, nullptr, ARG_SHOW_FILE },
       { "sort",            required_argument, nullptr, ARG_SORT },
       { "version",         no_argument,       nullptr, ARG_VERSION },
+      { "format",          required_argument, nullptr, 'F' },
 
       // These are "private", and intentionally not documented in the manual or
       // usage.
@@ -108,7 +110,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
   };
 
   int opt;
-  while ((opt = getopt_long(*argc, *argv, "C:hqr", opts, nullptr)) != -1) {
+  while ((opt = getopt_long(*argc, *argv, "C:F:hqr", opts, nullptr)) != -1) {
     std::string_view sv_optarg(optarg);
 
     switch (opt) {
@@ -127,6 +129,16 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         }
         flags->command_options.directory = optarg;
         break;
+      case 'F': {
+        std::string error;
+        if (!format::FormatIsValid(optarg, &error)) {
+          std::cerr << "error: invalid arg to --format (" << error
+                    << "): " << sv_optarg << "\n";
+          return false;
+        }
+        flags->command_options.format = optarg;
+        break;
+      }
       case ARG_LITERAL:
         flags->command_options.allow_regex = false;
         break;

@@ -27,19 +27,20 @@ struct formatter<std::chrono::seconds, Char> {
   template <typename ParseContext>
   auto parse(ParseContext& ctx) -> decltype(ctx.begin()) {
     auto it = internal::null_terminating_iterator<Char>(ctx);
-    if (*it == ':') ++it;
     auto end = it;
-    while (*end && *end != '}') ++end;
-
-    if ((end - it) == 0) {
-      constexpr char kDefaultFormat[] = "%c";
-      tm_format.append(std::begin(kDefaultFormat), std::end(kDefaultFormat));
+    while (*end && *end != '}') {
+      ++end;
     }
 
-    tm_format.reserve(end - it + 1);
     using internal::pointer_from;
-    tm_format.append(pointer_from(it), pointer_from(end));
-    tm_format.push_back('\0');
+    if (it != end) {
+      tm_format.reserve(end - it + 1);
+      tm_format.append(pointer_from(it), pointer_from(end));
+      tm_format.push_back('\0');
+    } else {
+      constexpr char kDefaultFormat[] = "%c\0";
+      tm_format.append(std::begin(kDefaultFormat), std::end(kDefaultFormat));
+    }
     return pointer_from(end);
   }
 
@@ -83,7 +84,7 @@ struct formatter<std::vector<T>, Char> {
                        std::end(kDefaultDelimeter));
     }
 
-    return internal::pointer_from(ctx.end());
+    return internal::pointer_from(end);
   }
 
   template <typename FormatContext>
@@ -216,6 +217,59 @@ void Update(const auracle::Pacman::Package& from, const aur::Package& to,
 
   fmt::print("{} {} -> {} {}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
              t::BoldGreen(to.version), ignored ? " [ignored]" : "");
+}
+
+void FormatCustomTo(std::string* out, const std::string& format,
+                    const aur::Package& package) {
+  // clang-format off
+  fmt::format_to(
+      std::back_inserter(*out), format,
+      fmt::arg("name", package.name),
+      fmt::arg("description", package.description),
+      fmt::arg("maintainer", package.maintainer),
+      fmt::arg("version", package.version),
+      fmt::arg("pkgbase", package.pkgbase),
+      fmt::arg("url", package.upstream_url),
+
+      fmt::arg("votes", package.votes),
+      fmt::arg("popularity", package.popularity),
+
+      fmt::arg("submitted", package.submitted_s),
+      fmt::arg("modified", package.modified_s),
+      fmt::arg("outofdate", package.out_of_date),
+
+      fmt::arg("depends", package.depends),
+      fmt::arg("makedepends", package.makedepends),
+      fmt::arg("checkdepends", package.checkdepends),
+
+      fmt::arg("conflicts", package.conflicts),
+      fmt::arg("groups", package.groups),
+      fmt::arg("keywords", package.keywords),
+      fmt::arg("licenses", package.licenses),
+      fmt::arg("optdepends", package.optdepends),
+      fmt::arg("provides", package.provides),
+      fmt::arg("replaces", package.replaces));
+  // clang-format on
+}
+
+void Custom(const std::string& format, const aur::Package& package) {
+  std::string out;
+
+  FormatCustomTo(&out, format, package);
+
+  fmt::print("{}\n", out);
+}
+
+bool FormatIsValid(const std::string format, std::string* error) {
+  try {
+    std::string out;
+    FormatCustomTo(&out, std::string(format), aur::Package());
+  } catch (const fmt::v5::format_error& e) {
+    error->assign(e.what());
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace format

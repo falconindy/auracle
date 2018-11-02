@@ -48,6 +48,13 @@ void FormatShort(const std::vector<aur::Package>& packages) {
   }
 }
 
+void FormatCustom(const std::vector<aur::Package>& packages,
+                  const std::string& format) {
+  for (const auto& p : packages) {
+    format::Custom(format, p);
+  }
+}
+
 void SortUnique(std::vector<aur::Package>* packages,
                 const sort::Sorter& sorter) {
   std::sort(packages->begin(), packages->end(), sorter);
@@ -302,7 +309,11 @@ int Auracle::Info(const std::vector<std::string>& args,
   // our query is large enough that it needs to be split into multiple requests.
   SortUnique(&packages, options.sorter);
 
-  FormatLong(packages, pacman_);
+  if (!options.format.empty()) {
+    FormatCustom(packages, options.format);
+  } else {
+    FormatLong(packages, pacman_);
+  }
 
   return 0;
 }
@@ -372,7 +383,9 @@ int Auracle::Search(const std::vector<std::string>& args,
 
   SortUnique(&packages, options.sorter);
 
-  if (options.quiet) {
+  if (!options.format.empty()) {
+    FormatCustom(packages, options.format);
+  } else if (options.quiet) {
     FormatNameOnly(packages);
   } else {
     FormatShort(packages);

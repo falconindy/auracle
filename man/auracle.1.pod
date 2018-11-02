@@ -86,7 +86,6 @@ Change directory to I<DIR> before downloading and extracting tarballs.
 
 =back
 
-
 =head1 COMMANDS
 
 =over 4
@@ -152,6 +151,40 @@ If no arguments are given, pacman is queried for all foreign packages as an
 input to this operation.
 
 =back
+
+=head1 CUSTOM FORMATTING
+
+Auracle provides the ability to customize the output format from B<info> and
+B<search> operations. The format specification is similar to that of python.
+Each field is wrapped in curly brackets and is optionally suffixed with a colon
+and additional formatting directives.
+
+B<NOTE:> not all fields are available for B<search> queries.
+
+String fields: B<{name}>, B<{version}>, B<{description}>, B<{maintainer}>,
+B<{pkgbase}>, B<{url}>.
+
+Floating point fields: B<{votes}>, B<{popularity}>.
+
+Time fields: B<{submitted}>, B<{modified}>, B<{outofdate}>. These fields
+default to using your locale's default date and time, but can be further
+customized in their format, according to the specifier described in
+strftime(3), For example, B<{submitted:%Y.%m.%d}> would show year month and
+day in dotted form.
+
+String array fields: B<{depends}>, B<{makedepends}>, B<{checkdepends}>,
+B<{optdepends}>, B<{conflicts}>, B<{provides}>, B<{replaces}>, B<{groups}>,
+B<{keywords}>, B<{licenses}>. These fields default to using a delimiter of two
+whitespace, but can be customized, e.g.  B<{depends:,}> to comma delimit the
+values of the depends field.
+
+Example: recreating auracle's search output:
+
+  auracle search -F $'aur/{name} ({votes}, {popularity})\n    {description}' ...
+
+Example: listing dependencies of packages:
+
+  auracle info -F '{depends} {makedepends} {checkdepends}' ...
 
 =head1 AUTHOR
 

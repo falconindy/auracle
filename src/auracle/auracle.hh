@@ -70,6 +70,7 @@ class Auracle {
     std::string show_file = "PKGBUILD";
     sort::Sorter sorter =
         sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
+    std::string format;
   };
 
   int BuildOrder(const std::vector<std::string>& args,

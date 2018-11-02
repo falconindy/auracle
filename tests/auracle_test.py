@@ -103,6 +103,7 @@ class TestCase(unittest.TestCase):
                 os.path.dirname(os.path.realpath(__file__)), os.getenv('PATH')),
             'AURACLE_TEST_TMPDIR': self.tempdir,
             'AURACLE_DEBUG': 'requests:{}'.format(self.requests_file),
+            'LC_TIME': 'C',
         }
 
         cmdline = [

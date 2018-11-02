@@ -148,6 +148,7 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
   foreach input : [
     'tests/buildorder.py',
     'tests/clone.py',
+    'tests/custom_format.py',
     'tests/download.py',
     'tests/info.py',
     'tests/raw_query.py',
