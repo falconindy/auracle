@@ -100,9 +100,7 @@ install_data(
 run_target(
   'fmt',
   command : [
-    'find',
-    '-name', '*.[ch][ch]',
-    '-exec', 'clang-format', '-i', '-style=Google', '{}', '+'
+    join_paths(meson.source_root(), 'build-aux/clang-format')
   ])
 
 run_target(

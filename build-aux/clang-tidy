@@ -15,4 +15,4 @@ fi
 
 sed 's/-pipe //' build/compile_commands.json >"$tmpdir"/compile_commands.json
 
-git ls-files -z '*.cc' | xargs -0 clang-tidy -p "$tmpdir"
+git ls-files -z -- '*.cc' | xargs -0 clang-tidy -p "$tmpdir"
