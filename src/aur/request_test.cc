@@ -74,6 +74,14 @@ TEST(RequestTest, BuildsRawRequests) {
   EXPECT_EQ(urls[0], std::string(kBaseUrl) + "/foo/bar/baz");
 }
 
+TEST(RequestTest, UrlForPkgbuildEscapesReponame) {
+  aur::Package p;
+  p.pkgbase = "libc++";
+  auto url = aur::RawRequest::UrlForPkgbuild(p);
+
+  EXPECT_THAT(url, testing::EndsWith("h=libc%2B%2B"));
+}
+
 TEST(RequestTest, BuildsCloneRequests) {
   const std::string kReponame = "auracle-git";
 

@@ -118,7 +118,7 @@ std::string RawRequest::UrlForTarball(const Package& package) {
 
 // static
 std::string RawRequest::UrlForPkgbuild(const Package& package) {
-  return "/cgit/aur.git/plain/PKGBUILD?h=" + package.pkgbase;
+  return StrCat("/cgit/aur.git/plain/PKGBUILD?h=", UrlEscape(package.pkgbase));
 }
 
 std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
