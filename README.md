@@ -1,7 +1,12 @@
 ## What is Auracle?
 
-This is mainly a result of frustrations over the years with how cower has
-developed, and limitations I've run into.
+Auracle is a command line tool used to interact with Arch Linux's User
+Repository, commonly referred to as the [AUR](https://aur.archlinux.org).
+
+Auracle supersedes my previous efforts in developing
+[cower](https://github.com/falconindy/cower), a tool with a similar purpose.
+I've started anew mainly as a result of frustrations over the years with how
+cower has developed, and limitations I've run into.
 
 ### Background
 
