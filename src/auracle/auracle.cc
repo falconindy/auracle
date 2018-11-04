@@ -470,7 +470,7 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
       aur::InfoRequest(args),
       [this, &resultcount](aur::StatusOr<aur::RpcResponse> response) {
         if (!response.ok()) {
-          std::cerr << "request failed: " << response.error() << "\n";
+          std::cerr << "error: request failed: " << response.error() << "\n";
           return 0;
         }
 
@@ -483,7 +483,8 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
               aur::RawRequest(aur::RawRequest::UrlForPkgbuild(pkg)),
               [print_header, &pkg](aur::StatusOr<aur::RawResponse> response) {
                 if (!response.ok()) {
-                  std::cerr << "request failed: " << response.error() << "\n";
+                  std::cerr << "error: request failed: " << response.error()
+                            << "\n";
                   return -EIO;
                 }
 
