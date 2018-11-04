@@ -13,12 +13,10 @@ import urllib.parse
 
 
 DBROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'db')
+AUR_SERVER_VERSION = 5
 
 
 class FakeAurHandler(http.server.BaseHTTPRequestHandler):
-
-    def log_request(self, unused):
-        pass
 
     def do_GET(self):
         handlers = {
@@ -36,16 +34,14 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         self.respond(404)
 
 
-    def collapse_params(self, params):
-        if not params:
-            return None
-
-        return params[-1]
+    @staticmethod
+    def last_of(l):
+        return l[-1] if l else None
 
 
-    def make_json_reply(self, querytype, results=[], version=5, error=None):
-        return  json.dumps({
-            'version': version,
+    def make_json_reply(self, querytype, results=[], error=None):
+        return json.dumps({
+            'version': AUR_SERVER_VERSION,
             'type': querytype,
             'resultcount': len(results),
             'results': results,
@@ -57,10 +53,11 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         return 'pkgname={}\npkgver=1.2.3\n'.format(pkgname).encode()
 
 
-    def lookup_canned_response(self, querytype, fragment):
+    def lookup_response(self, querytype, fragment):
         f = os.path.join(DBROOT, querytype, fragment)
         if not os.path.exists(f):
-            return None
+            # empty reply
+            return self.make_json_reply(querytype)
 
         with open(f) as replyfile:
             return replyfile.read().strip().encode()
@@ -68,20 +65,18 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
     def handle_rpc_info(self, args):
         results = []
+
         for arg in args:
-            r = self.lookup_canned_response('info', arg)
-            if r:
-                # extract the results from each DB file
-                results.extend(json.loads(r)['results'])
+            reply = self.lookup_response('info', arg)
+            # extract the results from each DB file
+            results.extend(json.loads(reply)['results'])
 
         self.respond(response=self.make_json_reply('multiinfo', results))
 
 
     def handle_rpc_search(self, arg, by):
-        f = '{}|{}'.format(by, arg) if by else arg
-        reply = self.lookup_canned_response('search', f)
-        if reply is None:
-            reply = self.make_json_reply('search')
+        reply = self.lookup_response(
+                'search', '{}|{}'.format(by, arg) if by else arg)
 
         self.respond(response=reply)
 
@@ -89,12 +84,12 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
     def handle_rpc(self, url):
         queryparams = urllib.parse.parse_qs(url.query)
 
-        rpc_type = self.collapse_params(queryparams.get('type', None))
+        rpc_type = self.last_of(queryparams.get('type', None))
         if rpc_type == 'info':
             self.handle_rpc_info(set(queryparams.get('arg[]', [])))
         elif rpc_type == 'search':
-            self.handle_rpc_search(self.collapse_params(queryparams.get('arg')),
-                                   self.collapse_params(queryparams.get('by')))
+            self.handle_rpc_search(self.last_of(queryparams.get('arg')),
+                                   self.last_of(queryparams.get('by')))
         else:
             self.respond(response=self.make_json_reply(
                 'error', error='Incorrect request type specified.'))
@@ -128,7 +123,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
     def handle_pkgbuild(self, url):
         queryparams = urllib.parse.parse_qs(url.query)
-        pkgname = self.collapse_params(queryparams.get('h'))
+        pkgname = self.last_of(queryparams.get('h'))
         self.respond(response=self.make_pkgbuild(pkgname))
 
 
