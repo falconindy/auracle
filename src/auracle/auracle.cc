@@ -614,14 +614,8 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
 
 int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
-  aur::InfoRequest request;
-
-  for (const auto& arg : args) {
-    request.AddArg(arg);
-  }
-
   aur_.QueueRawRpcRequest(
-      request, [](aur::StatusOr<aur::RawResponse> response) {
+      aur::InfoRequest(args), [](aur::StatusOr<aur::RawResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return -EIO;
