@@ -64,9 +64,9 @@ class TestCase(unittest.TestCase):
         self.server = multiprocessing.Process(
                 target=fakeaur.server.Serve, args=(q,))
         self.server.start()
-        port = q.get()
+        sockname = q.get()
 
-        self.baseurl = 'http://localhost:{}'.format(port)
+        self.baseurl = 'http://{}:{}'.format(*sockname)
 
         self._WritePacmanConf()
 
