@@ -1,0 +1,10 @@
+#!/bin/bash
+
+if [[ -d build ]]; then
+  verb=configure
+else
+  verb=setup
+fi
+
+meson "$verb" build -Db_sanitize=address
+meson test -C build
