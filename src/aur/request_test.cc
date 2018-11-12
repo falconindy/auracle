@@ -53,10 +53,7 @@ TEST(RequestTest, BuildsMultipleUrlsForLongRequests) {
 }
 
 TEST(RequestTest, BuildsSearchRequests) {
-  aur::SearchRequest request(aur::SearchRequest::SearchBy::MAINTAINER);
-
-  request.AddArg("bar");
-  request.AddArg("foo");
+  aur::SearchRequest request(aur::SearchRequest::SearchBy::MAINTAINER, "foo");
 
   const auto urls = request.Build(kBaseUrl);
   ASSERT_EQ(urls.size(), 1);

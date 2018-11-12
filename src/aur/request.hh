@@ -120,14 +120,14 @@ class SearchRequest : public RpcRequest {
     }
   }
 
-  SearchRequest(SearchBy by)
+  SearchRequest(SearchBy by, const std::string& arg)
       : RpcRequest({
             {"v", "5"},
             {"type", "search"},
             {"by", SearchByToString(by)},
-        }) {}
-
-  void AddArg(const std::string& arg) { RpcRequest::AddArg("arg", arg); }
+        }) {
+    AddArg("arg", arg);
+  }
 
  private:
   std::string SearchByToString(SearchBy by) {

@@ -111,8 +111,12 @@ std::vector<std::string> NotFoundPackages(const std::vector<std::string>& want,
   return missing;
 }
 
-std::string SearchFragFromRegex(const std::string& s) {
+std::string GetSearchFragment(const std::string& s, bool allow_regex) {
   static constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
+
+  if (!allow_regex) {
+    return s;
+  }
 
   int span = 0;
   const char* argstr;
@@ -326,34 +330,29 @@ int Auracle::Search(const std::vector<std::string>& args,
 
   std::vector<aur::Package> packages;
   for (const auto& arg : args) {
-    aur::SearchRequest r(options.search_by);
-
-    if (options.allow_regex) {
-      auto frag = SearchFragFromRegex(arg);
-      if (frag.empty()) {
-        std::cerr << "error: search string '" << arg
-                  << "' insufficient for searching by regular expression.\n";
-        return -EINVAL;
-      }
-      r.AddArg(frag);
-    } else {
-      r.AddArg(arg);
+    auto frag = GetSearchFragment(arg, options.allow_regex);
+    if (frag.empty()) {
+      std::cerr << "error: search string '" << arg
+                << "' insufficient for searching by regular expression.\n";
+      return -EINVAL;
     }
 
-    aur_.QueueRpcRequest(r, [&](aur::StatusOr<aur::RpcResponse> response) {
-      const auto& error = GetRpcError(response);
-      if (!error.empty()) {
-        std::cerr << "error: request failed for '" << arg << "': " << error
-                  << "\n";
-        return -EIO;
-      }
+    aur_.QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
+                         [&](aur::StatusOr<aur::RpcResponse> response) {
+                           const auto& error = GetRpcError(response);
+                           if (!error.empty()) {
+                             std::cerr << "error: request failed for '" << arg
+                                       << "': " << error << "\n";
+                             return -EIO;
+                           }
 
-      auto results = std::move(response.value().results);
-      std::copy_if(std::make_move_iterator(results.begin()),
-                   std::make_move_iterator(results.end()),
-                   std::back_inserter(packages), matches);
-      return 0;
-    });
+                           auto results = std::move(response.value().results);
+                           std::copy_if(
+                               std::make_move_iterator(results.begin()),
+                               std::make_move_iterator(results.end()),
+                               std::back_inserter(packages), matches);
+                           return 0;
+                         });
   }
 
   int r = aur_.Wait();
@@ -595,11 +594,9 @@ int Auracle::Sync(const std::vector<std::string>& args,
 int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
-    aur::SearchRequest request(options.search_by);
-    request.AddArg(arg);
-
     aur_.QueueRawRpcRequest(
-        request, [](aur::StatusOr<aur::RawResponse> response) {
+        aur::SearchRequest(options.search_by, arg),
+        [](aur::StatusOr<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
             return -EIO;
