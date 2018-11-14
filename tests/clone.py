@@ -60,6 +60,5 @@ class TestClone(auracle_test.TestCase):
             'git exited with unexpected exit status 1'))
 
 
-
 if __name__ == '__main__':
     auracle_test.main()
