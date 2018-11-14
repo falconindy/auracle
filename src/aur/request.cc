@@ -76,39 +76,39 @@ void RpcRequest::AddArg(const std::string& key, const std::string& value) {
 }
 
 std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
-  std::vector<std::string> requests;
+  const auto next_span = [&](const std::string_view& s) {
+    // No chopping needed.
+    if (s.size() <= approx_max_length_) {
+      return s;
+    }
 
-  const auto assemble = [&](std::string_view qs) {
-    return StrCat(baseurl, "/rpc?", baseuri_, "&", qs);
+    // Try to chop at the final ampersand before the cutoff length.
+    auto n = s.substr(0, approx_max_length_).find_last_of('&');
+    if (n != std::string_view::npos) {
+      return s.substr(0, n);
+    }
+
+    // We found a single arg which is Too Damn Long. Look for the ampersand just
+    // after the length limit and use all of it.
+    n = s.substr(approx_max_length_).find_first_of('&');
+    if (n != std::string_view::npos) {
+      return s.substr(0, n + approx_max_length_);
+    }
+
+    // We're at the end of the querystring and have no place to chop.
+    return s;
   };
 
   const auto qs =
       StrJoin(args_.begin(), args_.end(), "&", &QueryParamFormatter);
-
   std::string_view sv(qs);
+
+  std::vector<std::string> requests;
   while (!sv.empty()) {
-    if (sv.size() <= approx_max_length_) {
-      requests.push_back(assemble(sv));
-      break;
-    }
+    const auto span = next_span(sv);
 
-    // Look for an ampersand just under the max allowed length.
-    auto n = sv.substr(0, approx_max_length_).find_last_of('&');
-    if (n == std::string_view::npos) {
-      // Failed, which means we found a single arg which is Too Damn Long. Look
-      // for the ampersand just after the length limit and use all of it. This
-      // request might fail, but it's bad user input.
-      n = sv.substr(approx_max_length_).find_first_of('&');
-      if (n == std::string_view::npos) {
-        // We're at the end of the querystring. Take the whole thing.
-        n = sv.size();
-      } else {
-        n += approx_max_length_;
-      }
-    }
-
-    requests.push_back(assemble(sv.substr(0, n)));
-    sv.remove_prefix(std::min(sv.length(), n + 1));
+    requests.push_back(StrCat(baseurl, "/rpc?", baseuri_, "&", span));
+    sv.remove_prefix(std::min(sv.length(), span.length() + 1));
   }
 
   return requests;
