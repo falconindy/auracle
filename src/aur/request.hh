@@ -104,21 +104,26 @@ class SearchRequest : public RpcRequest {
   static SearchBy ParseSearchBy(std::string_view searchby) {
     if (searchby == "name") {
       return SearchBy::NAME;
-    } else if (searchby == "name-desc") {
-      return SearchBy::NAME_DESC;
-    } else if (searchby == "maintainer") {
-      return SearchBy::MAINTAINER;
-    } else if (searchby == "depends") {
-      return SearchBy::DEPENDS;
-    } else if (searchby == "makedepends") {
-      return SearchBy::MAKEDEPENDS;
-    } else if (searchby == "optdepends") {
-      return SearchBy::OPTDEPENDS;
-    } else if (searchby == "checkdepends") {
-      return SearchBy::CHECKDEPENDS;
-    } else {
-      return SearchBy::INVALID;
     }
+    if (searchby == "name-desc") {
+      return SearchBy::NAME_DESC;
+    }
+    if (searchby == "maintainer") {
+      return SearchBy::MAINTAINER;
+    }
+    if (searchby == "depends") {
+      return SearchBy::DEPENDS;
+    }
+    if (searchby == "makedepends") {
+      return SearchBy::MAKEDEPENDS;
+    }
+    if (searchby == "optdepends") {
+      return SearchBy::OPTDEPENDS;
+    }
+    if (searchby == "checkdepends") {
+      return SearchBy::CHECKDEPENDS;
+    }
+    return SearchBy::INVALID;
   }
 
   SearchRequest(SearchBy by, const std::string& arg)
