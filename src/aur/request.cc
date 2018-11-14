@@ -95,7 +95,7 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
     std::string_view::size_type n = approx_max_length_;
     do {
       n = sv.substr(0, n).find_last_of("&");
-    } while (n > kMaxUriLength);
+    } while (n > approx_max_length_);
 
     requests.push_back(assemble(sv.substr(0, n)));
     sv.remove_prefix(n + 1);

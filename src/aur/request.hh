@@ -70,8 +70,9 @@ class RpcRequest : public Request {
 
  private:
   const std::string baseuri_;
-  std::vector<std::pair<std::string, std::string>> args_;
   const long unsigned approx_max_length_;
+
+  std::vector<std::pair<std::string, std::string>> args_;
 };
 
 class InfoRequest : public RpcRequest {
