@@ -56,6 +56,28 @@ TEST(RequestTest, BuildsMultipleUrlsForLongRequests) {
   }
 }
 
+TEST(RequestTest, BuildsUrlForArgLongerThanMaxLen) {
+  aur::RpcRequest request({{"v", "5"}}, 10);
+
+  // At the limit
+  request.AddArg("arg[]", "fooo");
+  // Consecutive over the limit
+  request.AddArg("arg[]", "1234567890");
+  request.AddArg("arg[]", "0987654321");
+  // Under the limit
+  request.AddArg("arg[]", "bar");
+  // Over the limit at the end
+  request.AddArg("arg[]", "0987654321");
+
+  const auto urls = request.Build(kBaseUrl);
+  ASSERT_EQ(urls.size(), 5);
+  EXPECT_THAT(urls[0], EndsWith("arg[]=fooo"));
+  EXPECT_THAT(urls[1], EndsWith("arg[]=1234567890"));
+  EXPECT_THAT(urls[2], EndsWith("arg[]=0987654321"));
+  EXPECT_THAT(urls[3], EndsWith("arg[]=bar"));
+  EXPECT_THAT(urls[4], EndsWith("arg[]=0987654321"));
+}
+
 TEST(RequestTest, BuildsSearchRequests) {
   aur::SearchRequest request(aur::SearchRequest::SearchBy::MAINTAINER, "foo");
 

@@ -92,13 +92,23 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
       break;
     }
 
-    std::string_view::size_type n = approx_max_length_;
-    do {
-      n = sv.substr(0, n).find_last_of("&");
-    } while (n > approx_max_length_);
+    // Look for an ampersand just under the max allowed length.
+    auto n = sv.substr(0, approx_max_length_).find_last_of('&');
+    if (n == std::string_view::npos) {
+      // Failed, which means we found a single arg which is Too Damn Long. Look
+      // for the ampersand just after the length limit and use all of it. This
+      // request might fail, but it's bad user input.
+      n = sv.substr(approx_max_length_).find_first_of('&');
+      if (n == std::string_view::npos) {
+        // We're at the end of the querystring. Take the whole thing.
+        n = sv.size();
+      } else {
+        n += approx_max_length_;
+      }
+    }
 
     requests.push_back(assemble(sv.substr(0, n)));
-    sv.remove_prefix(n + 1);
+    sv.remove_prefix(std::min(sv.length(), n + 1));
   }
 
   return requests;
