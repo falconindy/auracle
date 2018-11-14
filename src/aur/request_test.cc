@@ -8,6 +8,7 @@ constexpr char kBaseUrl[] = "http://aur.archlinux.org";
 using testing::AllOf;
 using testing::EndsWith;
 using testing::HasSubstr;
+using testing::Not;
 using testing::StartsWith;
 
 TEST(RequestTest, BuildsInfoRequests) {
@@ -45,10 +46,13 @@ TEST(RequestTest, BuildsMultipleUrlsForLongRequests) {
 
   const auto arg = "&arg[]=" + longarg;
   for (const auto& url : urls) {
-    // URLs aren't truncated
-    EXPECT_THAT(url, EndsWith(arg));
-    // We've trimmed things correctly in chopping up the querystring
-    EXPECT_THAT(url, testing::Not(testing::HasSubstr("&&")));
+    EXPECT_THAT(
+        url,
+        AllOf(
+            // URLs aren't truncated
+            EndsWith(arg),
+            // We've trimmed things correctly in chopping up the querystring
+            Not(HasSubstr("&&"))));
   }
 }
 
@@ -76,7 +80,7 @@ TEST(RequestTest, UrlForPkgbuildEscapesReponame) {
   p.pkgbase = "libc++";
   auto url = aur::RawRequest::UrlForPkgbuild(p);
 
-  EXPECT_THAT(url, testing::EndsWith("h=libc%2B%2B"));
+  EXPECT_THAT(url, EndsWith("h=libc%2B%2B"));
 }
 
 TEST(RequestTest, BuildsCloneRequests) {
