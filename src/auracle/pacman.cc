@@ -82,7 +82,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
       continue;
     }
 
-    auto equals = line.find_first_of('=');
+    auto equals = line.find('=');
     if (equals == std::string::npos) {
       // There aren't any directives we care about which are valueless.
       continue;

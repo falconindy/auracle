@@ -83,14 +83,14 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
     }
 
     // Try to chop at the final ampersand before the cutoff length.
-    auto n = s.substr(0, approx_max_length_).find_last_of('&');
+    auto n = s.substr(0, approx_max_length_).rfind('&');
     if (n != std::string_view::npos) {
       return s.substr(0, n);
     }
 
     // We found a single arg which is Too Damn Long. Look for the ampersand just
     // after the length limit and use all of it.
-    n = s.substr(approx_max_length_).find_first_of('&');
+    n = s.substr(approx_max_length_).find('&');
     if (n != std::string_view::npos) {
       return s.substr(0, n + approx_max_length_);
     }
