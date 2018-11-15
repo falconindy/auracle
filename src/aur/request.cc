@@ -107,7 +107,7 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
   while (!sv.empty()) {
     const auto span = next_span(sv);
 
-    requests.push_back(StrCat(baseurl, "/rpc?", baseuri_, "&", span));
+    requests.push_back(StrCat(baseurl, "/rpc?", base_querystring_, "&", span));
     sv.remove_prefix(std::min(sv.length(), span.length() + 1));
   }
 
@@ -117,8 +117,8 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
 RpcRequest::RpcRequest(
     const std::vector<std::pair<std::string, std::string>>& base_params,
     long unsigned approx_max_length)
-    : baseuri_(StrJoin(base_params.begin(), base_params.end(), "&",
-                       &QueryParamFormatter)),
+    : base_querystring_(StrJoin(base_params.begin(), base_params.end(), "&",
+                                &QueryParamFormatter)),
       approx_max_length_(approx_max_length) {}
 
 // static

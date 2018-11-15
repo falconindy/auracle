@@ -69,7 +69,7 @@ class RpcRequest : public Request {
   void AddArg(const std::string& key, const std::string& value);
 
  private:
-  const std::string baseuri_;
+  const std::string base_querystring_;
   const long unsigned approx_max_length_;
 
   std::vector<std::pair<std::string, std::string>> args_;
