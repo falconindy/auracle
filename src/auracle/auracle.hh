@@ -40,7 +40,7 @@ class Auracle {
     }
 
     std::string aur_baseurl;
-    auracle::Pacman* pacman;
+    auracle::Pacman* pacman = nullptr;
     bool quiet = false;
     int max_connections = 0;
     int connection_timeout = 0;

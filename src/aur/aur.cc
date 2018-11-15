@@ -77,7 +77,7 @@ class TypedResponseHandler : public ResponseHandler {
  public:
   using CallbackType = CallbackT;
 
-  TypedResponseHandler(Aur* aur, CallbackT callback)
+  constexpr TypedResponseHandler(Aur* aur, CallbackT callback)
       : aur_(aur), callback_(std::move(callback)) {}
 
   Aur* aur() const { return aur_; }
@@ -164,7 +164,7 @@ Aur::~Aur() {
 
 void Aur::Cancel(const ActiveRequests::value_type& request) {
   struct Visitor {
-    explicit Visitor(Aur* aur) : aur(aur) {}
+    constexpr explicit Visitor(Aur* aur) : aur(aur) {}
 
     void operator()(CURL* curl) {
       aur->FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
