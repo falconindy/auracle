@@ -87,8 +87,17 @@ Change directory to I<DIR> before downloading and extracting tarballs.
 
 =item B<buildorder> I<PACKAGES>...
 
-Pass one to many arguments to print a build order for the given packages.
-The resulting output will be the total ordering to build all packages.
+Pass one to many arguments to print a build order for the given packages.  The
+resulting output will be the total ordering to build all packages. Each line is
+two columns delimited by a single whitespace. The first column contains an
+identifier and the second column names the dependency. Possible identifiers
+are:
+
+=over 4
+
+B<BUILD>   The package is foreign and needs to be built from the AUR.
+
+=back
 
 =item B<clone> I<PACKAGES>...
 
