@@ -367,17 +367,19 @@ int Aur::FinishRequest(sd_event_source* source) {
 }
 
 int Aur::CheckFinished() {
-  int unused;
-  auto msg = curl_multi_info_read(curl_, &unused);
-  if (msg == nullptr || msg->msg != CURLMSG_DONE) {
-    return 0;
-  }
+  for (;;) {
+    int unused;
+    auto msg = curl_multi_info_read(curl_, &unused);
+    if (msg == nullptr || msg->msg != CURLMSG_DONE) {
+      break;
+    }
 
-  auto r = FinishRequest(msg->easy_handle, msg->data.result,
-                         /* dispatch_callback = */ true);
-  if (r < 0) {
-    CancelAll();
-    return r;
+    auto r = FinishRequest(msg->easy_handle, msg->data.result,
+                           /* dispatch_callback = */ true);
+    if (r < 0) {
+      CancelAll();
+      return r;
+    }
   }
 
   return 0;
