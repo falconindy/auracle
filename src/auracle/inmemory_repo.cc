@@ -6,9 +6,7 @@ namespace auracle {
 
 std::pair<const aur::Package*, bool> InMemoryRepo::AddPackage(
     aur::Package package) {
-  const auto iter = std::find_if(
-      packages_.cbegin(), packages_.cend(),
-      [&package](const aur::Package& p) { return p.name == package.name; });
+  const auto iter = std::find(packages_.begin(), packages_.end(), package);
   if (iter != packages_.cend()) {
     return {&*iter, false};
   }
