@@ -10,8 +10,9 @@ class TestDownload(auracle_test.TestCase):
         self.assertEqual(p.returncode, 0)
         self.assertEqual(p.stdout.decode().strip(), 'auracle-git')
 
+        # TODO: build this dynamically from the filesystem?
         self.assertCountEqual(self.request_uris, [
-            '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=pkgfile-git'])
+            '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=ocaml&arg[]=pkgfile-git'])
 
 
     def testSyncFiltersUpdatesToArgs(self):

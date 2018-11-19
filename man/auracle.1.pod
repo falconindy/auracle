@@ -94,15 +94,22 @@ Change directory to I<DIR> before downloading and extracting tarballs.
 
 Pass one to many arguments to print a build order for the given packages.  The
 resulting output will be the total ordering to build all packages. Each line is
-two columns delimited by a single whitespace. The first column contains an
+at least two columns delimited by a single whitespace. The first column contains an
 identifier and the second column names the dependency. Possible identifiers
 are:
 
 =over 4
 
-B<BUILD>   The package is foreign and needs to be built from the AUR.
+B<AUR>        The dependency was found in the AUR and needs to be built and installed.
+
+B<REPOS>      The dependency was found in a binary repo and can be installed via pacman.
+
+B<UNKNOWN>    The dependency was unable to be found anywhere. This might indicate a broken dependency chain.
 
 =back
+
+Additionally, both of B<AUR> and B<REPOS> can be prefixed with B<SATISFIED> to
+indicate that the dependency is already installed.
 
 =item B<clone> I<PACKAGES>...
 

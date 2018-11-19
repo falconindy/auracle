@@ -1,0 +1,44 @@
+%NAME%
+ocaml
+
+%VERSION%
+4.07.0-1
+
+%BASE%
+ocaml
+
+%DESC%
+A functional language with OO extensions
+
+%URL%
+http://caml.inria.fr/
+
+%ARCH%
+x86_64
+
+%BUILDDATE%
+1534229348
+
+%INSTALLDATE%
+1542637336
+
+%PACKAGER%
+Juergen Hoetzel <juergen@archlinux.org>
+
+%SIZE%
+177992704
+
+%LICENSE%
+LGPL2.1
+custom: QPL-1.0
+
+%VALIDATION%
+pgp
+
+%DEPENDS%
+gdbm
+
+%OPTDEPENDS%
+ncurses: advanced ncurses features
+tk: advanced tk features
+

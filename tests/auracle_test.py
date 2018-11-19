@@ -91,8 +91,16 @@ class TestCase(unittest.TestCase):
 
     def _WritePacmanConf(self):
         with open(os.path.join(self.tempdir, 'pacman.conf'), 'w') as f:
-            f.write('[options]\nDBPath = {}/fakepacman'.format(
-                os.path.dirname(os.path.realpath(__file__))))
+            f.write('''
+            [options]
+            DBPath = {}/fakepacman
+
+            [extra]
+            Server = file:///dev/null
+
+            [community]
+            Server = file:///dev/null
+            '''.format(os.path.dirname(os.path.realpath(__file__))))
 
 
     def Auracle(self, args):
