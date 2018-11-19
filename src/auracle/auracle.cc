@@ -18,6 +18,8 @@
 
 namespace fs = std::filesystem;
 
+namespace auracle {
+
 namespace {
 
 int ErrorNotEnoughArgs() {
@@ -26,11 +28,10 @@ int ErrorNotEnoughArgs() {
 }
 
 void FormatLong(std::ostream& os, const std::vector<aur::Package>& packages,
-                const auracle::Pacman* pacman) {
+                const Pacman* pacman) {
   for (const auto& p : packages) {
     auto local_pkg = pacman->GetLocalPackage(p.name);
-    os << format::Long(p, std::get_if<auracle::Pacman::Package>(&local_pkg))
-       << "\n";
+    os << format::Long(p, std::get_if<Pacman::Package>(&local_pkg)) << "\n";
   }
 }
 
@@ -175,8 +176,6 @@ const std::string& GetRpcError(
 }
 
 }  // namespace
-
-namespace auracle {
 
 void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
@@ -571,11 +570,10 @@ int Auracle::Sync(const std::vector<std::string>& args,
         }
 
         for (const auto& r : response.value().results) {
-          auto iter = std::find_if(foreign_pkgs.cbegin(), foreign_pkgs.cend(),
-                                   [&r](const auracle::Pacman::Package& p) {
-                                     return p.pkgname == r.name;
-                                   });
-          if (auracle::Pacman::Vercmp(r.version, iter->pkgver) > 0) {
+          auto iter = std::find_if(
+              foreign_pkgs.cbegin(), foreign_pkgs.cend(),
+              [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
+          if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
             if (options.quiet) {
               std::cout << format::NameOnly(r);
             } else {

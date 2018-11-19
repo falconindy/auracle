@@ -19,7 +19,7 @@ class Auracle {
       return *this;
     }
 
-    Options& set_pacman(auracle::Pacman* pacman) {
+    Options& set_pacman(Pacman* pacman) {
       this->pacman = pacman;
       return *this;
     }
@@ -40,7 +40,7 @@ class Auracle {
     }
 
     std::string aur_baseurl;
-    auracle::Pacman* pacman = nullptr;
+    Pacman* pacman = nullptr;
     bool quiet = false;
     int max_connections = 0;
     int connection_timeout = 0;
@@ -98,7 +98,7 @@ class Auracle {
     bool recurse;
 
     const PackageCallback callback;
-    auracle::InMemoryRepo package_repo;
+    InMemoryRepo package_repo;
   };
 
   int SendRawRpc(const aur::RpcRequest* request);
@@ -106,7 +106,7 @@ class Auracle {
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
   aur::Aur aur_;
-  auracle::Pacman* const pacman_;
+  Pacman* const pacman_;
 };
 
 }  // namespace auracle
