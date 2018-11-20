@@ -18,6 +18,12 @@ class TestDownload(auracle_test.TestCase):
         ])
 
 
+    def testDownloadNotFound(self):
+        p = self.Auracle(['download', 'packagenotfound'])
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('no results found', p.stderr.decode())
+
+
     def testSendsDifferentAcceptEncodingHeaders(self):
         p = self.Auracle(['download', 'auracle-git'])
         self.assertEqual(p.returncode, 0)

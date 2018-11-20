@@ -16,6 +16,12 @@ class TestClone(auracle_test.TestCase):
         ])
 
 
+    def testCloneNotFound(self):
+        p = self.Auracle(['clone', 'packagenotfound'])
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('no results found', p.stderr.decode())
+
+
     def testCloneMultiple(self):
         p = self.Auracle(['clone', 'auracle-git', 'pkgfile-git'])
         self.assertEqual(p.returncode, 0)
