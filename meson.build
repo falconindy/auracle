@@ -38,10 +38,6 @@ gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
 stdcppfs = cpp.find_library('stdc++fs')
 
-if not cpp.has_header('nlohmann/json.hpp')
-  error('Header dependency "nlohmann/json.hpp" not found')
-endif
-
 pod2man = find_program('pod2man')
 
 python = import('python')
@@ -56,7 +52,10 @@ libaur = static_library(
       src/aur/response.cc src/aur/response.hh
       src/aur/json_internal.hh
     '''.split()),
-    include_directories : include_directories('src'),
+    include_directories : include_directories(
+      'src',
+      'third_party/nlohmann_json',
+    ),
     dependencies : [libcurl, libsystemd])
 
 libauracle = static_library(
