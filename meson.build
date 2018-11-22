@@ -131,10 +131,13 @@ if gtest.found() and gmock.found()
         link_with : [libaur, gtest_main],
         dependencies : [gtest, gmock]))
     endforeach
+else
+  message('Skipping unit tests, gtest or gmock not found')
 endif
 
 # integration tests
-if py3.found() and py3.language_version().version_compare('>=3.7')
+python_requirement = '>=3.7'
+if py3.found() and py3.language_version().version_compare(python_requirement)
   foreach input : [
     'tests/buildorder.py',
     'tests/clone.py',
@@ -155,4 +158,7 @@ if py3.found() and py3.language_version().version_compare('>=3.7')
       args : [join_paths(meson.source_root(), input)],
       env : ['PYTHONDONTWRITEBYTECODE=1'])
   endforeach
+else
+  message('Skipping integration tests, python @0@ not found'.format(
+    python_requirement))
 endif
