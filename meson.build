@@ -44,6 +44,9 @@ endif
 
 pod2man = find_program('pod2man')
 
+python = import('python')
+py3 = python.find_installation('python3')
+
 libaur = static_library(
     'libaur',
     files('''
@@ -132,24 +135,25 @@ if gtest.found() and gmock.found()
 endif
 
 # integration tests
-python = import('python').find_installation('python3')
-foreach input : [
-  'tests/buildorder.py',
-  'tests/clone.py',
-  'tests/download.py',
-  'tests/info.py',
-  'tests/pkgbuild.py',
-  'tests/raw_query.py',
-  'tests/regex_search.py',
-  'tests/search.py',
-  'tests/sort.py',
-  'tests/sync.py',
-]
-  basename = input.split('/')[-1].split('.')[0]
+if py3.found() and py3.language_version().version_compare('>=3.7')
+  foreach input : [
+    'tests/buildorder.py',
+    'tests/clone.py',
+    'tests/download.py',
+    'tests/info.py',
+    'tests/pkgbuild.py',
+    'tests/raw_query.py',
+    'tests/regex_search.py',
+    'tests/search.py',
+    'tests/sort.py',
+    'tests/sync.py',
+  ]
+    basename = input.split('/')[-1].split('.')[0]
 
-  test(
-    '@0@_integration_test'.format(basename),
-    python,
-    args : [join_paths(meson.source_root(), input)],
-    env : ['PYTHONDONTWRITEBYTECODE=1'])
-endforeach
+    test(
+      '@0@_integration_test'.format(basename),
+      py3,
+      args : [join_paths(meson.source_root(), input)],
+      env : ['PYTHONDONTWRITEBYTECODE=1'])
+  endforeach
+endif
