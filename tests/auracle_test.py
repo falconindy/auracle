@@ -4,7 +4,6 @@ import fakeaur.server
 import glob
 import multiprocessing
 import os.path
-import shutil
 import subprocess
 import tempfile
 import time
@@ -12,9 +11,11 @@ import unittest
 
 
 def FindMesonBuildDir():
+    # When run through meson or ninja, we're already in the build dir
     if os.path.exists('.ninja_log'):
         return os.path.curdir
 
+    # When run manually, we're probably in the repo root.
     paths = glob.glob('*/.ninja_log')
     if len(paths) > 1:
         raise ValueError('Multiple build directories found. Unable to proceed.')
@@ -33,9 +34,8 @@ class HTTPRequest(object):
 
         self.headers = {}
         for line in request:
-            if line:
-                k, v = line.split(':', 1)
-                self.headers[k.lower()] = v.strip()
+            k, v = line.split(':', 1)
+            self.headers[k.lower()] = v.strip()
 
 
 class TimeLoggingTestResult(unittest.runner.TextTestResult):
@@ -55,7 +55,8 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.build_dir = FindMesonBuildDir()
-        self.tempdir = tempfile.mkdtemp()
+        self._tempdir = tempfile.TemporaryDirectory()
+        self.tempdir = self._tempdir.name
 
         self.requests_file = tempfile.NamedTemporaryFile(
                 dir=self.tempdir, prefix='requests-', delete=False).name
@@ -73,7 +74,6 @@ class TestCase(unittest.TestCase):
 
     def tearDown(self):
         self.server.terminate()
-        shutil.rmtree(self.tempdir)
 
 
     def _ProcessDebugOutput(self):
@@ -82,11 +82,11 @@ class TestCase(unittest.TestCase):
         with open(self.requests_file) as f:
             header_text = []
             for line in f.read().splitlines():
-                if not line:
+                if line:
+                    header_text.append(line)
+                else:
                     self.requests_sent.append(HTTPRequest(header_text))
                     header_text = []
-                else:
-                    header_text.append(line)
 
         self.request_uris = [r.path for r in self.requests_sent]
 
@@ -111,7 +111,7 @@ class TestCase(unittest.TestCase):
             '--color=never',
             '--pacmanconfig={}/pacman.conf'.format(self.tempdir),
             '--chdir', self.tempdir,
-        ] + list(args)
+        ] + args
 
         p = subprocess.run(cmdline, env=env, capture_output=True)
 
