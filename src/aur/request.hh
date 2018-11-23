@@ -11,7 +11,7 @@
 
 namespace aur {
 
-// Abstract class describing an HTTP request to the AUR.
+// Abstract class describing a request for a resource.
 class Request {
  public:
   virtual ~Request() = default;
@@ -26,6 +26,9 @@ class RawRequest : public Request {
   static std::string UrlForPkgbuild(const Package& package);
 
   explicit RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
+
+  RawRequest(const RawRequest&) = delete;
+  RawRequest& operator=(const RawRequest&) = delete;
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
@@ -83,6 +86,9 @@ class InfoRequest : public RpcRequest {
     }
   }
 
+  InfoRequest(const InfoRequest&) = delete;
+  InfoRequest& operator=(const InfoRequest&) = delete;
+
   InfoRequest() : RpcRequest({{"v", "5"}, {"type", "info"}}) {}
 
   void AddArg(const std::string& arg) { RpcRequest::AddArg("arg[]", arg); }
@@ -134,6 +140,9 @@ class SearchRequest : public RpcRequest {
         }) {
     AddArg("arg", arg);
   }
+
+  SearchRequest(const SearchRequest&) = delete;
+  SearchRequest& operator=(const SearchRequest&) = delete;
 
  private:
   std::string SearchByToString(SearchBy by) {
