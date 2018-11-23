@@ -90,13 +90,13 @@ int ExtractArchive(const std::string& archive_bytes) {
   return r;
 }
 
-std::vector<std::string> NotFoundPackages(const std::vector<std::string>& want,
-                                          const std::vector<aur::Package>& got,
-                                          const auracle::InMemoryRepo& repo) {
+std::vector<std::string> NotFoundPackages(
+    const std::vector<std::string>& want, const std::vector<aur::Package>& got,
+    const auracle::PackageCache& package_cache) {
   std::vector<std::string> missing;
 
   for (const auto& p : want) {
-    if (repo.LookupByPkgname(p) != nullptr) {
+    if (package_cache.LookupByPkgname(p) != nullptr) {
       continue;
     }
 
@@ -186,7 +186,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
       continue;
     }
 
-    if (state->package_repo.LookupByPkgname(arg) != nullptr) {
+    if (state->package_cache.LookupByPkgname(arg) != nullptr) {
       continue;
     }
 
@@ -209,18 +209,18 @@ void Auracle::IteratePackages(std::vector<std::string> args,
         auto results = std::move(response.value().results);
 
         for (const auto& p :
-             NotFoundPackages(want, results, state->package_repo)) {
+             NotFoundPackages(want, results, state->package_cache)) {
           std::cerr << "no results found for " << p << "\n";
         }
 
         for (auto& result : results) {
           // check for the pkgbase existing in our repo
           const bool have_pkgbase =
-              state->package_repo.LookupByPkgbase(result.pkgbase) != nullptr;
+              state->package_cache.LookupByPkgbase(result.pkgbase) != nullptr;
 
           // Regardless, try to add the package, as it might be another member
           // of the same pkgbase.
-          auto [p, added] = state->package_repo.AddPackage(std::move(result));
+          auto [p, added] = state->package_cache.AddPackage(std::move(result));
 
           if (!added || have_pkgbase) {
             continue;
@@ -404,7 +404,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
     return r;
   }
 
-  if (iter.package_repo.empty()) {
+  if (iter.package_cache.empty()) {
     return -ENOENT;
   }
 
@@ -450,7 +450,7 @@ int Auracle::Download(const std::vector<std::string>& args,
     return r;
   }
 
-  if (iter.package_repo.empty()) {
+  if (iter.package_cache.empty()) {
     return -ENOENT;
   }
 
@@ -524,14 +524,14 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     return r;
   }
 
-  if (iter.package_repo.empty()) {
+  if (iter.package_cache.empty()) {
     return -ENOENT;
   }
 
   std::vector<const aur::Package*> total_ordering;
   std::unordered_set<const aur::Package*> seen;
   for (const auto& arg : args) {
-    iter.package_repo.WalkDependencies(
+    iter.package_cache.WalkDependencies(
         arg, [&total_ordering, &seen](const aur::Package* package) {
           if (seen.emplace(package).second) {
             total_ordering.push_back(package);

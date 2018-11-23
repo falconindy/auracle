@@ -63,10 +63,10 @@ libauracle = static_library(
     files('''
       src/auracle/auracle.cc src/auracle/auracle.hh
       src/auracle/format.cc src/auracle/format.hh
-      src/auracle/sort.cc src/auracle/sort.hh
+      src/auracle/package_cache.cc src/auracle/package_cache.hh
       src/auracle/pacman.cc src/auracle/pacman.hh
+      src/auracle/sort.cc src/auracle/sort.hh
       src/auracle/terminal.cc src/auracle/terminal.hh
-      src/auracle/inmemory_repo.cc src/auracle/inmemory_repo.hh
     '''.split()),
     include_directories : include_directories('src'),
     link_with : [libaur],

@@ -1,10 +1,10 @@
-#include "inmemory_repo.hh"
+#include "package_cache.hh"
 
 #include <algorithm>
 
 namespace auracle {
 
-std::pair<const aur::Package*, bool> InMemoryRepo::AddPackage(
+std::pair<const aur::Package*, bool> PackageCache::AddPackage(
     aur::Package package) {
   const auto iter = std::find(packages_.begin(), packages_.end(), package);
   if (iter != packages_.cend()) {
@@ -18,19 +18,19 @@ std::pair<const aur::Package*, bool> InMemoryRepo::AddPackage(
   return {&p, true};
 }
 
-const aur::Package* InMemoryRepo::LookupByPkgname(
+const aur::Package* PackageCache::LookupByPkgname(
     const std::string& pkgname) const {
   const auto iter = index_by_pkgname_.find(pkgname);
   return iter == index_by_pkgname_.end() ? nullptr : &packages_[iter->second];
 }
 
-const aur::Package* InMemoryRepo::LookupByPkgbase(
+const aur::Package* PackageCache::LookupByPkgbase(
     const std::string& pkgbase) const {
   const auto iter = index_by_pkgbase_.find(pkgbase);
   return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
 }
 
-void InMemoryRepo::WalkDependencies(
+void PackageCache::WalkDependencies(
     const std::string& name,
     std::function<void(const aur::Package*)> cb) const {
   std::unordered_set<std::string> visited;

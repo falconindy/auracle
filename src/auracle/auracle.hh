@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "aur/aur.hh"
-#include "inmemory_repo.hh"
+#include "package_cache.hh"
 #include "pacman.hh"
 #include "sort.hh"
 
@@ -98,7 +98,7 @@ class Auracle {
     bool recurse;
 
     const PackageCallback callback;
-    InMemoryRepo package_repo;
+    PackageCache package_cache;
   };
 
   int SendRawRpc(const aur::RpcRequest* request);

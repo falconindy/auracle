@@ -1,5 +1,5 @@
-#ifndef INMEMORY_REPO_HH
-#define INMEMORY_REPO_HH
+#ifndef PACKAGE_CACHE_HH
+#define PACKAGE_CACHE_HH
 
 #include <functional>
 #include <unordered_map>
@@ -9,16 +9,16 @@
 
 namespace auracle {
 
-class InMemoryRepo {
+class PackageCache {
  public:
-  InMemoryRepo() = default;
-  ~InMemoryRepo() = default;
+  PackageCache() = default;
+  ~PackageCache() = default;
 
-  InMemoryRepo(const InMemoryRepo&) = delete;
-  InMemoryRepo& operator=(const InMemoryRepo&) = delete;
+  PackageCache(const PackageCache&) = delete;
+  PackageCache& operator=(const PackageCache&) = delete;
 
-  InMemoryRepo(InMemoryRepo&&) = default;
-  InMemoryRepo& operator=(InMemoryRepo&&) = default;
+  PackageCache(PackageCache&&) = default;
+  PackageCache& operator=(PackageCache&&) = default;
 
   std::pair<const aur::Package*, bool> AddPackage(aur::Package package);
 
@@ -44,4 +44,4 @@ class InMemoryRepo {
 
 }  // namespace auracle
 
-#endif  // INMEMORY_REPO_HH
+#endif  // PACKAGE_CACHE_HH
