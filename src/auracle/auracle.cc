@@ -529,11 +529,12 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   }
 
   std::vector<const aur::Package*> total_ordering;
-  std::unordered_set<const aur::Package*> seen;
+  std::unordered_set<std::string> seen;
   for (const auto& arg : args) {
     iter.package_cache.WalkDependencies(
-        arg, [&total_ordering, &seen](const aur::Package* package) {
-          if (seen.emplace(package).second) {
+        arg, [&total_ordering, &seen](const std::string& pkgname,
+                                      const aur::Package* package) {
+          if (seen.emplace(pkgname).second && package != nullptr) {
             total_ordering.push_back(package);
           }
         });

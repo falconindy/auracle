@@ -29,8 +29,9 @@ class PackageCache {
 
   bool empty() const { return size() == 0; }
 
-  void WalkDependencies(const std::string& name,
-                        std::function<void(const aur::Package*)> cb) const;
+  using WalkDependenciesFn =
+      std::function<void(const std::string& name, const aur::Package*)>;
+  void WalkDependencies(const std::string& name, WalkDependenciesFn cb) const;
 
  private:
   std::vector<aur::Package> packages_;

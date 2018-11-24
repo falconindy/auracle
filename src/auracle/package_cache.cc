@@ -30,32 +30,27 @@ const aur::Package* PackageCache::LookupByPkgbase(
   return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
 }
 
-void PackageCache::WalkDependencies(
-    const std::string& name,
-    std::function<void(const aur::Package*)> cb) const {
+void PackageCache::WalkDependencies(const std::string& name,
+                                    WalkDependenciesFn cb) const {
   std::unordered_set<std::string> visited;
 
   std::function<void(std::string)> walk;
-  walk = [this, &visited, &walk, &cb](const std::string& n) {
-    if (visited.find(n) != visited.end()) {
+  walk = [this, &visited, &walk, &cb](const std::string& pkgname) {
+    if (!visited.insert(pkgname).second) {
       return;
     }
 
-    const auto pkg = LookupByPkgname(n);
-    if (pkg == nullptr) {
-      return;
-    }
-
-    visited.insert(pkg->name);
-
-    for (const auto* deplist :
-         {&pkg->depends, &pkg->makedepends, &pkg->checkdepends}) {
-      for (const auto& dep : *deplist) {
-        walk(dep.name);
+    const auto pkg = LookupByPkgname(pkgname);
+    if (pkg != nullptr) {
+      for (const auto* deplist :
+           {&pkg->depends, &pkg->makedepends, &pkg->checkdepends}) {
+        for (const auto& dep : *deplist) {
+          walk(dep.name);
+        }
       }
     }
 
-    cb(pkg);
+    cb(pkgname, pkg);
   };
 
   walk(name);
