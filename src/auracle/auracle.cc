@@ -31,7 +31,7 @@ void FormatLong(std::ostream& os, const std::vector<aur::Package>& packages,
                 const Pacman* pacman) {
   for (const auto& p : packages) {
     auto local_pkg = pacman->GetLocalPackage(p.name);
-    os << format::Long(p, std::get_if<Pacman::Package>(&local_pkg)) << "\n";
+    os << format::Long(p, local_pkg ? &local_pkg.value() : nullptr) << "\n";
   }
 }
 
@@ -238,7 +238,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
             for (const auto* deparray :
                  {&p->depends, &p->makedepends, &p->checkdepends}) {
               for (const auto& dep : *deparray) {
-                if (!pacman_->RepoForPackage(dep.depstring).empty()) {
+                if (pacman_->HasPackage(dep.depstring)) {
                   continue;
                 }
 

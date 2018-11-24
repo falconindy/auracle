@@ -2,8 +2,8 @@
 #define PACMAN_HH
 
 #include <memory>
+#include <optional>
 #include <string>
-#include <variant>
 #include <vector>
 
 #include <alpm.h>
@@ -39,13 +39,17 @@ class Pacman {
   // if the package was not found in any repo.
   std::string RepoForPackage(const std::string& package) const;
 
+  bool HasPackage(const std::string& package) const {
+    return !RepoForPackage(package).empty();
+  }
+
   bool DependencyIsSatisfied(const std::string& package) const;
 
   // A list of installed packages which are not found in any currently enabled
   // Sync DB.
   std::vector<Package> ForeignPackages() const;
 
-  std::variant<bool, Package> GetLocalPackage(const std::string& name) const;
+  std::optional<Package> GetLocalPackage(const std::string& name) const;
 
  private:
   Pacman(alpm_handle_t* alpm, std::vector<std::string> ignored_packages);
