@@ -97,12 +97,12 @@ TEST(RequestTest, BuildsRawRequests) {
   EXPECT_EQ(urls[0], std::string(kBaseUrl) + "/foo/bar/baz");
 }
 
-TEST(RequestTest, UrlForPkgbuildEscapesReponame) {
+TEST(RequestTest, UrlForSourceFileEscapesReponame) {
   aur::Package p;
   p.pkgbase = "libc++";
-  auto url = aur::RawRequest::UrlForPkgbuild(p);
+  auto url = aur::RawRequest::UrlForSourceFile(p, "PKGBUILD");
 
-  EXPECT_THAT(url, EndsWith("h=libc%2B%2B"));
+  EXPECT_THAT(url, EndsWith("/PKGBUILD?h=libc%2B%2B"));
 }
 
 TEST(RequestTest, BuildsCloneRequests) {

@@ -478,7 +478,8 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
 
         for (const auto& pkg : response.value().results) {
           aur_.QueuePkgbuildRequest(
-              aur::RawRequest(aur::RawRequest::UrlForPkgbuild(pkg)),
+              aur::RawRequest(
+                  aur::RawRequest::UrlForSourceFile(pkg, "PKGBUILD")),
               [print_header,
                pkgbase{pkg.pkgbase}](aur::StatusOr<aur::RawResponse> response) {
                 if (!response.ok()) {

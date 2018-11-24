@@ -23,7 +23,8 @@ class Request {
 class RawRequest : public Request {
  public:
   static std::string UrlForTarball(const Package& package);
-  static std::string UrlForPkgbuild(const Package& package);
+  static std::string UrlForSourceFile(const Package& package,
+                                      const std::string& filename);
 
   explicit RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
 
