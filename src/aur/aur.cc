@@ -338,20 +338,27 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   ResponseHandler* handler;
   curl_easy_getinfo(curl, CURLINFO_PRIVATE, &handler);
 
-  long response_code;
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+  int r = 0;
+  if (dispatch_callback) {
+    long response_code;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
-  std::string error;
-  if (result == CURLE_OK) {
-    if (response_code != 200) {
-      error = "HTTP " + std::to_string(response_code);
+    std::string error;
+    if (result == CURLE_OK) {
+      if (response_code != 200) {
+        error = "HTTP " + std::to_string(response_code);
+      }
+    } else {
+      error = handler->error_buffer;
+      if (error.empty()) {
+        error = curl_easy_strerror(result);
+      }
     }
-  } else {
-    const std::string_view buf(handler->error_buffer);
-    error = !buf.empty() ? std::string(buf) : curl_easy_strerror(result);
-  }
 
-  auto r = dispatch_callback ? handler->RunCallback(error) : 0;
+    r = handler->RunCallback(error);
+  } else {
+    delete handler;
+  }
 
   active_requests_.erase(curl);
   curl_multi_remove_handle(curl_, curl);
