@@ -573,14 +573,13 @@ int Auracle::Sync(const std::vector<std::string>& args,
           auto iter = std::find_if(
               foreign_pkgs.cbegin(), foreign_pkgs.cend(),
               [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
-          if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
-            if (options.quiet) {
-              std::cout << format::NameOnly(r);
-            } else {
-              std::cout << format::Update(*iter, r,
-                                          pacman_->ShouldIgnorePackage(r.name));
-            }
-          }
+
+          auto needs_update = Pacman::Vercmp(r.version, iter->pkgver) > 0;
+          if (needs_update && options.quiet)
+            std::cout << format::NameOnly(r);
+          else if (needs_update || options.verbosity > 0)
+            std::cout << format::Update(*iter, r,
+                                        pacman_->ShouldIgnorePackage(r.name), needs_update);
         }
 
         return 0;

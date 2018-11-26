@@ -45,8 +45,8 @@ struct Long {
 
 struct Update {
   Update(const auracle::Pacman::Package& from, const aur::Package& to,
-         bool ignored)
-      : from(from), to(to), ignored(ignored) {}
+         bool ignored, bool needs_update)
+      : from(from), to(to), ignored(ignored), needs_update(needs_update) {}
 
   friend std::ostream& operator<<(std::ostream& os, const Update& u);
 
@@ -54,6 +54,7 @@ struct Update {
   const auracle::Pacman::Package& from;
   const aur::Package& to;
   const bool ignored;
+  const bool needs_update;
 };
 
 }  // namespace format

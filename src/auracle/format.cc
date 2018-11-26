@@ -281,8 +281,17 @@ std::ostream& operator<<(std::ostream& os, const Long& l) {
 std::ostream& operator<<(std::ostream& os, const Update& u) {
   namespace t = terminal;
 
-  os << t::Bold(u.from.pkgname) << " " << t::BoldRed(u.from.pkgver) << " -> "
-     << t::BoldGreen(u.to.version) << (u.ignored ? " [ignored]" : "") << "\n";
+  os << t::Bold(u.from.pkgname) << " ";
+
+  if (u.needs_update)
+    os << t::BoldRed(u.from.pkgver) << " -> " << t::BoldGreen(u.to.version);
+  else
+    os << t::BoldGreen(u.from.pkgver);
+
+  if (u.ignored)
+    os << " [ignored]";
+
+  os << "\n";
 
   return os;
 }
