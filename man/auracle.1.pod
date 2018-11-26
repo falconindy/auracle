@@ -53,6 +53,12 @@ This option defaults to 5.
 When used with the B<search> and B<sync> commands, output will be limited to
 package names only.
 
+=item B<-v>I<N>, B<--verbose=>I<N>
+
+Enable verbose output mode. Without an argument, increases verbosity level
+by 1. With an argument, sets verbosity to that level. In B<sync>, causes
+all packages to be printed, not just those needing an update.
+
 =item B<-r>, B<--recurse>
 
 When used with the B<download> command, recursively follow and download
