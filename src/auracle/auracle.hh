@@ -67,6 +67,7 @@ class Auracle {
     bool recurse = false;
     bool allow_regex = true;
     bool quiet = false;
+    int  verbosity = 0;
     sort::Sorter sorter =
         sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
   };

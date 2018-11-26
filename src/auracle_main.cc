@@ -33,6 +33,9 @@ __attribute__((noreturn)) void usage() {
       "      --version            Show software version\n"
       "\n"
       "  -q, --quiet              Output less, when possible\n"
+      "  -v[N], --verbose[=N]     Increase verbosity of output (value of N sets level;\n"
+      "                               without argument increases level by 1)"
+      "\n"
       "  -r, --recurse            Recurse through dependencies on download\n"
       "      --literal            Disallow regex in searches\n"
       "      --searchby=BY        Change search-by dimension\n"
@@ -80,6 +83,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       // clang-format off
       { "help",            no_argument,       nullptr, 'h' },
       { "quiet",           no_argument,       nullptr, 'q' },
+      { "verbose",         optional_argument, nullptr, 'v' },
       { "recurse",         no_argument,       nullptr, 'r' },
       { "chdir",           required_argument, nullptr, 'C' },
       { "color",           required_argument, nullptr, ARG_COLOR },
@@ -104,7 +108,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
   };
 
   int opt;
-  while ((opt = getopt_long(*argc, *argv, "C:hqr", opts, nullptr)) != -1) {
+  while ((opt = getopt_long(*argc, *argv, "C:hqv::r", opts, nullptr)) != -1) {
     std::string_view sv_optarg(optarg);
 
     switch (opt) {
@@ -112,6 +116,23 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         usage();
       case 'q':
         flags->command_options.quiet = true;
+        break;
+      case 'v':
+        if (sv_optarg.empty())
+          flags->command_options.verbosity += 1;
+        else
+        {
+          int verbosity;
+          auto result = std::from_chars(sv_optarg.begin(), sv_optarg.end(), verbosity);
+
+          if (result.ec != std::errc{} || result.ptr != sv_optarg.end())
+          {
+            std::cerr << "invalid verbosity setting \"" << sv_optarg << "\"\n";
+            return false;
+          }
+
+          flags->command_options.verbosity = verbosity;
+        }
         break;
       case 'r':
         flags->command_options.recurse = true;
