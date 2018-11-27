@@ -100,7 +100,8 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
   };
 
   const auto stoi = [](std::string_view s, int* i) -> bool {
-    return std::from_chars(s.data(), s.data() + s.size(), *i).ec == std::errc{};
+    auto r = std::from_chars(s.data(), s.data() + s.size(), *i);
+    return r.ec == std::errc{} && r.ptr == s.end();
   };
 
   int opt;
