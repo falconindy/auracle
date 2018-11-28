@@ -3,27 +3,32 @@
 
 #include "package.hh"
 
-#include <variant>
-
 namespace aur {
 
-template <typename T>
-class StatusOr : public std::variant<std::string, T> {
+template <typename ResponseT>
+class ResponseWrapper {
  public:
-  using std::variant<std::string, T>::variant;
+  ResponseWrapper(ResponseT value, int status, std::string error)
+      : value_(std::move(value)), status_(status), error_(std::move(error)) {}
 
-  StatusOr(const StatusOr&) = delete;
-  StatusOr& operator=(const StatusOr&) = delete;
+  ResponseWrapper(const ResponseWrapper&) = delete;
+  ResponseWrapper& operator=(const ResponseWrapper&) = delete;
 
-  StatusOr(StatusOr&&) = default;
-  StatusOr& operator=(StatusOr&&) = default;
+  ResponseWrapper(ResponseWrapper&&) = default;
+  ResponseWrapper& operator=(ResponseWrapper&&) = default;
 
-  bool ok() const { return std::holds_alternative<T>(*this); }
+  const ResponseT& value() const { return value_; }
+  ResponseT&& value() { return std::move(value_); }
 
-  const std::string& error() const { return std::get<std::string>(*this); }
+  const std::string& error() const { return error_; }
+  int status() const { return status_; }
 
-  const T& value() const { return std::get<T>(*this); }
-  T&& value() { return std::move(std::get<T>(*this)); }
+  bool ok() const { return error_.empty(); }
+
+ private:
+  ResponseT value_;
+  int status_;
+  std::string error_;
 };
 
 struct CloneResponse {

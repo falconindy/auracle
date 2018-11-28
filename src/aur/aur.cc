@@ -30,7 +30,7 @@ bool ConsumePrefix(std::string_view* view, std::string_view prefix) {
 
 class ResponseHandler {
  public:
-  ResponseHandler() = default;
+  explicit ResponseHandler(Aur* aur) : aur_(aur) {}
   virtual ~ResponseHandler() = default;
 
   ResponseHandler(const ResponseHandler&) = delete;
@@ -59,17 +59,21 @@ class ResponseHandler {
     return 0;
   }
 
-  int RunCallback(const std::string& error) {
-    int r = Run(error);
+  int RunCallback(int status, const std::string& error) {
+    int r = Run(status, error);
     delete this;
     return r;
   }
+
+  Aur* aur() const { return aur_; }
 
   std::string body;
   char error_buffer[CURL_ERROR_SIZE]{};
 
  private:
-  virtual int Run(const std::string& error) = 0;
+  virtual int Run(int status, const std::string& error) = 0;
+
+  Aur* aur_;
 };
 
 template <typename ResponseT, typename CallbackT>
@@ -78,23 +82,16 @@ class TypedResponseHandler : public ResponseHandler {
   using CallbackType = CallbackT;
 
   constexpr TypedResponseHandler(Aur* aur, CallbackT callback)
-      : aur_(aur), callback_(std::move(callback)) {}
-
-  Aur* aur() const { return aur_; }
+      : ResponseHandler(aur), callback_(std::move(callback)) {}
 
  protected:
   virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
 
  private:
-  int Run(const std::string& error) override {
-    if (!error.empty()) {
-      return callback_(error);
-    }
-
-    return callback_(MakeResponse());
+  int Run(int status, const std::string& error) override {
+    return callback_(ResponseWrapper(MakeResponse(), status, error));
   }
 
-  Aur* aur_;
   const CallbackT callback_;
 };
 
@@ -106,14 +103,15 @@ using RawResponseHandler =
 class CloneResponseHandler
     : public TypedResponseHandler<CloneResponse, Aur::CloneResponseCallback> {
  public:
-  using TypedResponseHandler<CloneResponse,
-                             Aur::CloneResponseCallback>::TypedResponseHandler;
+  CloneResponseHandler(Aur* aur, Aur::CloneResponseCallback callback,
+                       std::string operation)
+      : TypedResponseHandler(aur, std::move(callback)),
+        operation_(std::move(operation)) {}
 
-  void SetOperation(std::string operation) {
-    operation_ = std::move(operation);
+ protected:
+  CloneResponse MakeResponse() override {
+    return CloneResponse(std::move(operation_));
   }
-
-  CloneResponse MakeResponse() override { return {std::move(operation_)}; }
 
  private:
   std::string operation_;
@@ -344,18 +342,14 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 
     std::string error;
-    if (result == CURLE_OK) {
-      if (response_code != 200) {
-        error = "HTTP " + std::to_string(response_code);
-      }
-    } else {
+    if (result != CURLE_OK) {
       error = handler->error_buffer;
       if (error.empty()) {
         error = curl_easy_strerror(result);
       }
     }
 
-    r = handler->RunCallback(error);
+    r = handler->RunCallback(response_code, error);
   } else {
     delete handler;
   }
@@ -473,24 +467,21 @@ int Aur::OnCloneExit(sd_event_source* source, const siginfo_t* si,
                  std::to_string(si->si_status));
   }
 
-  return handler->RunCallback(error);
+  return handler->RunCallback(si->si_status, error);
 }
 
 void Aur::QueueCloneRequest(const CloneRequest& request,
                             const CloneResponseCallback& callback) {
-  auto response_handler = new CloneResponseHandler(this, callback);
-
   const bool update = fs::exists(fs::path(request.reponame()) / ".git");
-  if (update) {
-    response_handler->SetOperation("update");
-  } else {
-    response_handler->SetOperation("clone");
-  }
+
+  auto response_handler =
+      new CloneResponseHandler(this, callback, update ? "update" : "clone");
 
   int pid = fork();
   if (pid < 0) {
-    response_handler->RunCallback("failed to fork new process for git: " +
-                                  std::string(strerror(errno)));
+    response_handler->RunCallback(
+        -errno,
+        "failed to fork new process for git: " + std::string(strerror(errno)));
     return;
   }
 

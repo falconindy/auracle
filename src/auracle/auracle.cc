@@ -167,7 +167,7 @@ bool ChdirIfNeeded(const fs::path& target) {
 }
 
 const std::string& GetRpcError(
-    const aur::StatusOr<aur::RpcResponse>& response) {
+    const aur::ResponseWrapper<aur::RpcResponse>& response) {
   if (!response.ok()) {
     return response.error();
   }
@@ -200,7 +200,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
 
   aur_.QueueRpcRequest(
       info_request, [this, state, want{std::move(args)}](
-                        aur::StatusOr<aur::RpcResponse> response) {
+                        aur::ResponseWrapper<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return -EIO;
@@ -262,7 +262,8 @@ int Auracle::Info(const std::vector<std::string>& args,
 
   std::vector<aur::Package> packages;
   aur_.QueueRpcRequest(
-      aur::InfoRequest(args), [&](aur::StatusOr<aur::RpcResponse> response) {
+      aur::InfoRequest(args),
+      [&](aur::ResponseWrapper<aur::RpcResponse> response) {
         const auto& error = GetRpcError(response);
         if (!error.empty()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
@@ -337,7 +338,7 @@ int Auracle::Search(const std::vector<std::string>& args,
     }
 
     aur_.QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
-                         [&](aur::StatusOr<aur::RpcResponse> response) {
+                         [&](aur::ResponseWrapper<aur::RpcResponse> response) {
                            const auto& error = GetRpcError(response);
                            if (!error.empty()) {
                              std::cerr << "error: request failed for '" << arg
@@ -384,7 +385,8 @@ int Auracle::Clone(const std::vector<std::string>& args,
   PackageIterator iter(options.recurse, [this, &ret](const aur::Package& p) {
     aur_.QueueCloneRequest(
         aur::CloneRequest(p.pkgbase),
-        [&ret, pkgbase{p.pkgbase}](aur::StatusOr<aur::CloneResponse> response) {
+        [&ret, pkgbase{p.pkgbase}](
+            aur::ResponseWrapper<aur::CloneResponse> response) {
           if (response.ok()) {
             std::cout << response.value().operation << " complete: "
                       << (fs::current_path() / pkgbase).string() << "\n";
@@ -424,7 +426,7 @@ int Auracle::Download(const std::vector<std::string>& args,
   PackageIterator iter(options.recurse, [this](const aur::Package& p) {
     aur_.QueueTarballRequest(
         aur::RawRequest(aur::RawRequest::UrlForTarball(p)),
-        [pkgbase{p.pkgbase}](aur::StatusOr<aur::RawResponse> response) {
+        [pkgbase{p.pkgbase}](aur::ResponseWrapper<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
             return -EIO;
@@ -466,7 +468,7 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
   int resultcount = 0;
   aur_.QueueRpcRequest(
       aur::InfoRequest(args),
-      [this, &resultcount](aur::StatusOr<aur::RpcResponse> response) {
+      [this, &resultcount](aur::ResponseWrapper<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 0;
@@ -480,12 +482,26 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
           aur_.QueuePkgbuildRequest(
               aur::RawRequest(
                   aur::RawRequest::UrlForSourceFile(pkg, "PKGBUILD")),
-              [print_header,
-               pkgbase{pkg.pkgbase}](aur::StatusOr<aur::RawResponse> response) {
+              [print_header, pkgbase{pkg.pkgbase}](
+                  aur::ResponseWrapper<aur::RawResponse> response) {
                 if (!response.ok()) {
                   std::cerr << "error: request failed: " << response.error()
                             << "\n";
                   return -EIO;
+                }
+
+                switch (response.status()) {
+                  case 200:
+                    break;
+                  case 404:
+                    std::cerr
+                        << "error: file 'PKGBUILD' not found for package '"
+                        << pkgbase << "'\n";
+                    return -ENOENT;
+                  default:
+                    std::cerr << "error: unexpected HTTP response "
+                              << response.status() << "\n";
+                    return -EIO;
                 }
 
                 if (print_header) {
@@ -565,7 +581,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
   }
 
   aur_.QueueRpcRequest(
-      info_request, [&](aur::StatusOr<aur::RpcResponse> response) {
+      info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return -EIO;
@@ -596,7 +612,7 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
   for (const auto& arg : args) {
     aur_.QueueRawRpcRequest(
         aur::SearchRequest(options.search_by, arg),
-        [](aur::StatusOr<aur::RawResponse> response) {
+        [](aur::ResponseWrapper<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
             return -EIO;
@@ -613,7 +629,8 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
 int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
   aur_.QueueRawRpcRequest(
-      aur::InfoRequest(args), [](aur::StatusOr<aur::RawResponse> response) {
+      aur::InfoRequest(args),
+      [](aur::ResponseWrapper<aur::RawResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return -EIO;

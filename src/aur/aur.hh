@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include <curl/curl.h>
@@ -18,9 +19,10 @@ namespace aur {
 
 class Aur {
  public:
-  using RpcResponseCallback = std::function<int(StatusOr<RpcResponse>)>;
-  using RawResponseCallback = std::function<int(StatusOr<RawResponse>)>;
-  using CloneResponseCallback = std::function<int(StatusOr<CloneResponse>)>;
+  using RpcResponseCallback = std::function<int(ResponseWrapper<RpcResponse>)>;
+  using RawResponseCallback = std::function<int(ResponseWrapper<RawResponse>)>;
+  using CloneResponseCallback =
+      std::function<int(ResponseWrapper<CloneResponse>)>;
 
   // Construct a new Aur object, rooted at the given URL, e.g.
   // https://aur.archlinux.org.
