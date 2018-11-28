@@ -74,6 +74,12 @@ B<firstsubmitted>, or B<lastmodified>.
 
 This option defaults to sorting by B<name> in ascending order.
 
+=item B<--show-file=>I<FILE>
+
+Name of the file to fetch with the B<show> command.
+
+This option defaults to B<PKGBUILD>.
+
 =item B<-C >I<DIR>, B<--chdir=>I<DIR>
 
 Change directory to I<DIR> before downloading and extracting tarballs.
@@ -115,10 +121,6 @@ to download dependencies of packages.
 
 Pass one to many arguments to perform an info query.
 
-=item B<pkgbuild> I<PACKAGES>...
-
-Pass one to many arguments to print the PKGBUILDs for the given packages.
-
 =item B<rawinfo> I<PACKAGES>...
 
 Dump the raw JSON response from the AUR for an info request.
@@ -136,6 +138,11 @@ the POSIX extended regex specification.
 
 B<NOTE>: the AUR does not actually support searching by regular expressions
 and support in auracle is implemented on a best-effort basis.
+
+=item B<show> I<PACKAGES>...
+
+Pass one to many arguments to print source files for the given packages. The
+file fetched is controlled by the B<--show-file> flag.
 
 =item B<sync> [I<PACKAGES>...]
 

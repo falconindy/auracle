@@ -17,7 +17,7 @@ _auracle() {
   local -A OPTS=(
          [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
                 [ARG]='-C --chdir --searchby --connect-timeout --max-connections --color
-                       --sort --rsort'
+                       --sort --rsort --show-file'
   )
 
   if __contains_word "$prev" ${OPTS[ARG]}; then
@@ -47,7 +47,7 @@ _auracle() {
   fi
 
   local -A VERBS=(
-      [AUR_PACKAGES]='buildorder clone download pkgbuild info rawinfo'
+      [AUR_PACKAGES]='buildorder clone download show info rawinfo'
     [LOCAL_PACKAGES]='sync'
               [NONE]='search rawsearch'
   )

@@ -67,6 +67,7 @@ class Auracle {
     bool recurse = false;
     bool allow_regex = true;
     bool quiet = false;
+    std::string show_file = "PKGBUILD";
     sort::Sorter sorter =
         sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
   };
@@ -78,8 +79,7 @@ class Auracle {
   int Download(const std::vector<std::string>& args,
                const CommandOptions& options);
   int Info(const std::vector<std::string>& args, const CommandOptions& options);
-  int Pkgbuild(const std::vector<std::string>& args,
-               const CommandOptions& options);
+  int Show(const std::vector<std::string>& args, const CommandOptions& options);
   int RawInfo(const std::vector<std::string>& args,
               const CommandOptions& options);
   int RawSearch(const std::vector<std::string>& args,

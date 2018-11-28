@@ -48,20 +48,15 @@ class Aur {
   void QueueRpcRequest(const RpcRequest& request,
                        const RpcResponseCallback& callback);
 
-  // Asynchronously issue an RPC request. The callback will be invoked when the
+  // Asynchronously issue a raw request. The callback will be invoked when the
   // call completes.
-  void QueueRawRpcRequest(const RpcRequest& request,
-                          const RawResponseCallback& callback);
+  void QueueRawRequest(const Request& request,
+                       const RawResponseCallback& callback);
 
   // Asynchronously issue a download request. The callback will be invoked when
   // the call completes.
   void QueueTarballRequest(const RawRequest& request,
                            const RawResponseCallback& callback);
-
-  // Asynchronous issue a PKGBUILD request. The callbcak will be invoked when
-  // the call complete.
-  void QueuePkgbuildRequest(const RawRequest& request,
-                            const RawResponseCallback& callback);
 
   // Clone a git repository.
   void QueueCloneRequest(const CloneRequest& request,

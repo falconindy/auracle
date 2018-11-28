@@ -508,8 +508,8 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   active_requests_.emplace(child);
 }
 
-void Aur::QueueRawRpcRequest(const RpcRequest& request,
-                             const RawResponseCallback& callback) {
+void Aur::QueueRawRequest(const Request& request,
+                          const RawResponseCallback& callback) {
   QueueRequest<RawRequestTraits>(request, callback);
 }
 
@@ -521,11 +521,6 @@ void Aur::QueueRpcRequest(const RpcRequest& request,
 void Aur::QueueTarballRequest(const RawRequest& request,
                               const RawResponseCallback& callback) {
   QueueRequest<TarballRequestTraits>(request, callback);
-}
-
-void Aur::QueuePkgbuildRequest(const RawRequest& request,
-                               const RawResponseCallback& callback) {
-  QueueRequest<RawRequestTraits>(request, callback);
 }
 
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }

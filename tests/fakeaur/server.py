@@ -22,7 +22,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         handlers = {
             '/rpc': self.handle_rpc,
             '/cgit/aur.git/snapshot': self.handle_download,
-            '/cgit/aur.git/plain/PKGBUILD': self.handle_pkgbuild,
+            '/cgit/aur.git/plain/': self.handle_source_file,
         }
 
         url = urllib.parse.urlparse(self.path)
@@ -121,10 +121,15 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.respond(headers=headers, response=gzip.compress(f.read()))
 
 
-    def handle_pkgbuild(self, url):
+    def handle_source_file(self, url):
         queryparams = urllib.parse.parse_qs(url.query)
         pkgname = self.last_of(queryparams.get('h'))
-        self.respond(response=self.make_pkgbuild(pkgname))
+
+        source_file = os.path.basename(url.path)
+        if source_file == 'PKGBUILD':
+            self.respond(response=self.make_pkgbuild(pkgname))
+        else:
+            self.respond(status_code=404)
 
 
     def respond(self, status_code=200, headers=[], response=None):

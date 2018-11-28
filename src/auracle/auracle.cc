@@ -459,8 +459,8 @@ int Auracle::Download(const std::vector<std::string>& args,
   return 0;
 }
 
-int Auracle::Pkgbuild(const std::vector<std::string>& args,
-                      const CommandOptions&) {
+int Auracle::Show(const std::vector<std::string>& args,
+                  const CommandOptions& options) {
   if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
@@ -468,7 +468,7 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
   int resultcount = 0;
   aur_.QueueRpcRequest(
       aur::InfoRequest(args),
-      [this, &resultcount](aur::ResponseWrapper<aur::RpcResponse> response) {
+      [&](aur::ResponseWrapper<aur::RpcResponse> response) {
         if (!response.ok()) {
           std::cerr << "error: request failed: " << response.error() << "\n";
           return 0;
@@ -479,10 +479,10 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
         const bool print_header = resultcount > 1;
 
         for (const auto& pkg : response.value().results) {
-          aur_.QueuePkgbuildRequest(
+          aur_.QueueRawRequest(
               aur::RawRequest(
-                  aur::RawRequest::UrlForSourceFile(pkg, "PKGBUILD")),
-              [print_header, pkgbase{pkg.pkgbase}](
+                  aur::RawRequest::UrlForSourceFile(pkg, options.show_file)),
+              [&options, print_header, pkgbase{pkg.pkgbase}](
                   aur::ResponseWrapper<aur::RawResponse> response) {
                 if (!response.ok()) {
                   std::cerr << "error: request failed: " << response.error()
@@ -494,9 +494,9 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
                   case 200:
                     break;
                   case 404:
-                    std::cerr
-                        << "error: file 'PKGBUILD' not found for package '"
-                        << pkgbase << "'\n";
+                    std::cerr << "error: file '" << options.show_file
+                              << "' not found for package '" << pkgbase
+                              << "'\n";
                     return -ENOENT;
                   default:
                     std::cerr << "error: unexpected HTTP response "
@@ -505,7 +505,8 @@ int Auracle::Pkgbuild(const std::vector<std::string>& args,
                 }
 
                 if (print_header) {
-                  std::cout << "### BEGIN " << pkgbase << "/PKGBUILD\n";
+                  std::cout << "### BEGIN " << pkgbase << "/"
+                            << options.show_file << "\n";
                 }
                 std::cout << response.value().bytes << "\n";
                 return 0;
@@ -610,7 +611,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
 int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
-    aur_.QueueRawRpcRequest(
+    aur_.QueueRawRequest(
         aur::SearchRequest(options.search_by, arg),
         [](aur::ResponseWrapper<aur::RawResponse> response) {
           if (!response.ok()) {
@@ -628,7 +629,7 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
 
 int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
-  aur_.QueueRawRpcRequest(
+  aur_.QueueRawRequest(
       aur::InfoRequest(args),
       [](aur::ResponseWrapper<aur::RawResponse> response) {
         if (!response.ok()) {

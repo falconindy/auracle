@@ -41,6 +41,7 @@ __attribute__((noreturn)) void usage() {
       "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
       "      --sort=KEY           Sort results in ascending order by KEY\n"
       "      --rsort=KEY          Sort results in descending order by KEY\n"
+      "      --show-file=FILE     File to dump with 'show' command\n"
       "  -C DIR, --chdir=DIR      Change directory to DIR before downloading\n"
       "\n"
       "Commands:\n"
@@ -48,10 +49,10 @@ __attribute__((noreturn)) void usage() {
       "  clone                    Clone or update git repos for packages\n"
       "  download                 Download tarball snapshots\n"
       "  info                     Show detailed information\n"
-      "  pkgbuild                 Show PKGBUILDs\n"
       "  rawinfo                  Dump unformatted JSON for info query\n"
       "  rawsearch                Dump unformatted JSON for search query\n"
       "  search                   Search for packages\n"
+      "  show                     Dump package source file\n"
       "  sync                     Check for updates for foreign packages\n",
       stdout);
   exit(0);
@@ -74,6 +75,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
     ARG_SORT,
     ARG_RSORT,
     ARG_PACMAN_CONFIG,
+    ARG_SHOW_FILE,
   };
 
   static constexpr struct option opts[] = {
@@ -88,6 +90,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       { "max-connections", required_argument, nullptr, ARG_MAX_CONNECTIONS },
       { "rsort",           required_argument, nullptr, ARG_RSORT },
       { "searchby",        required_argument, nullptr, ARG_SEARCHBY },
+      { "show-file",       required_argument, nullptr, ARG_SHOW_FILE },
       { "sort",            required_argument, nullptr, ARG_SORT },
       { "version",         no_argument,       nullptr, ARG_VERSION },
 
@@ -183,13 +186,16 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         }
         break;
       case ARG_BASEURL:
-        flags->baseurl = std::string(sv_optarg);
+        flags->baseurl = optarg;
         break;
       case ARG_PACMAN_CONFIG:
-        flags->pacman_config = std::string(sv_optarg);
+        flags->pacman_config = optarg;
         break;
       case ARG_VERSION:
         version();
+        break;
+      case ARG_SHOW_FILE:
+        flags->command_options.show_file = optarg;
         break;
       default:
         return false;
@@ -242,10 +248,10 @@ int main(int argc, char** argv) {
           {"clone", &auracle::Auracle::Clone},
           {"download", &auracle::Auracle::Download},
           {"info", &auracle::Auracle::Info},
-          {"pkgbuild", &auracle::Auracle::Pkgbuild},
           {"rawinfo", &auracle::Auracle::RawInfo},
           {"rawsearch", &auracle::Auracle::RawSearch},
           {"search", &auracle::Auracle::Search},
+          {"show", &auracle::Auracle::Show},
           {"sync", &auracle::Auracle::Sync},
       };
 

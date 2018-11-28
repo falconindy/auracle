@@ -5,7 +5,7 @@ import auracle_test
 class TestPkgbuild(auracle_test.TestCase):
 
     def testSinglePkgbuild(self):
-        p = self.Auracle(['pkgbuild', 'auracle-git'])
+        p = self.Auracle(['show', 'auracle-git'])
         self.assertEqual(p.returncode, 0)
 
         pkgbuild = p.stdout.decode()
@@ -19,7 +19,7 @@ class TestPkgbuild(auracle_test.TestCase):
 
 
     def testMultiplePkgbuilds(self):
-        p = self.Auracle(['pkgbuild', 'auracle-git', 'pkgfile-git'])
+        p = self.Auracle(['show', 'auracle-git', 'pkgfile-git'])
         self.assertEqual(p.returncode, 0)
 
         pkgbuilds = p.stdout.decode()
@@ -29,12 +29,19 @@ class TestPkgbuild(auracle_test.TestCase):
 
 
     def testPkgbuildNotFound(self):
-        p = self.Auracle(['pkgbuild', 'totesnotfoundpackage'])
+        p = self.Auracle(['show', 'totesnotfoundpackage'])
         self.assertNotEqual(p.returncode, 0)
 
         self.assertCountEqual(self.request_uris, [
             '/rpc?v=5&type=info&arg[]=totesnotfoundpackage',
         ])
+
+
+    def testFileNotFound(self):
+        p = self.Auracle(['show', '--show-file=NOTAPKGBUILD', 'auracle-git'])
+        self.assertNotEqual(p.returncode, 0)
+
+        self.assertIn('not found for package', p.stderr.decode())
 
 
 if __name__ == '__main__':

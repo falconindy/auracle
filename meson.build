@@ -143,10 +143,10 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
     'tests/clone.py',
     'tests/download.py',
     'tests/info.py',
-    'tests/pkgbuild.py',
     'tests/raw_query.py',
     'tests/regex_search.py',
     'tests/search.py',
+    'tests/show.py',
     'tests/sort.py',
     'tests/sync.py',
   ]
