@@ -166,13 +166,28 @@ bool ChdirIfNeeded(const fs::path& target) {
   return true;
 }
 
-const std::string& GetRpcError(
+const std::string GetRpcError(
     const aur::ResponseWrapper<aur::RpcResponse>& response) {
-  if (!response.ok()) {
+  if (!response.error().empty()) {
     return response.error();
   }
 
+  if (response.status() != 200) {
+    return "unexpected HTTP status code " + std::to_string(response.status());
+  }
+
   return response.value().error;
+}
+
+bool RpcResponseIsFailure(
+    const aur::ResponseWrapper<aur::RpcResponse>& response) {
+  const auto error = GetRpcError(response);
+  if (error.empty()) {
+    return false;
+  }
+
+  std::cerr << "error: " << error << "\n";
+  return true;
 }
 
 }  // namespace
@@ -201,8 +216,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
   aur_.QueueRpcRequest(
       info_request, [this, state, want{std::move(args)}](
                         aur::ResponseWrapper<aur::RpcResponse> response) {
-        if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error() << "\n";
+        if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
 
@@ -261,20 +275,19 @@ int Auracle::Info(const std::vector<std::string>& args,
   }
 
   std::vector<aur::Package> packages;
-  aur_.QueueRpcRequest(
-      aur::InfoRequest(args),
-      [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-        const auto& error = GetRpcError(response);
-        if (!error.empty()) {
-          std::cerr << "error: request failed: " << response.error() << "\n";
-        } else {
-          auto results = std::move(response.value().results);
-          std::copy(std::make_move_iterator(results.begin()),
-                    std::make_move_iterator(results.end()),
-                    std::back_inserter(packages));
-        }
-        return 0;
-      });
+  aur_.QueueRpcRequest(aur::InfoRequest(args),
+                       [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+                         if (RpcResponseIsFailure(response)) {
+                           return -EIO;
+                         }
+
+                         auto results = std::move(response.value().results);
+                         std::copy(std::make_move_iterator(results.begin()),
+                                   std::make_move_iterator(results.end()),
+                                   std::back_inserter(packages));
+
+                         return 0;
+                       });
 
   auto r = aur_.Wait();
   if (r < 0) {
@@ -339,10 +352,7 @@ int Auracle::Search(const std::vector<std::string>& args,
 
     aur_.QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
                          [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-                           const auto& error = GetRpcError(response);
-                           if (!error.empty()) {
-                             std::cerr << "error: request failed for '" << arg
-                                       << "': " << error << "\n";
+                           if (RpcResponseIsFailure(response)) {
                              return -EIO;
                            }
 
@@ -469,9 +479,8 @@ int Auracle::Show(const std::vector<std::string>& args,
   aur_.QueueRpcRequest(
       aur::InfoRequest(args),
       [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-        if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error() << "\n";
-          return 0;
+        if (RpcResponseIsFailure(response)) {
+          return -EIO;
         }
 
         resultcount = response.value().resultcount;
@@ -583,8 +592,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
 
   aur_.QueueRpcRequest(
       info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-        if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error() << "\n";
+        if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
 
