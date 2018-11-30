@@ -61,9 +61,8 @@ feature requests, or bug reports, please file issues.
 
 Building auracle requires:
 
-* A C++17 capable compiler
+* A C++17 compiler
 * meson
-* nlohmann-json
 * libsystemd
 * libalpm
 * libarchive
