@@ -435,7 +435,7 @@ int Auracle::Download(const std::vector<std::string>& args,
 
   PackageIterator iter(options.recurse, [this](const aur::Package& p) {
     aur_.QueueTarballRequest(
-        aur::RawRequest(aur::RawRequest::UrlForTarball(p)),
+        aur::RawRequest::ForTarball(p),
         [pkgbase{p.pkgbase}](aur::ResponseWrapper<aur::RawResponse> response) {
           if (!response.ok()) {
             std::cerr << "error: request failed: " << response.error() << "\n";
@@ -489,8 +489,7 @@ int Auracle::Show(const std::vector<std::string>& args,
 
         for (const auto& pkg : response.value().results) {
           aur_.QueueRawRequest(
-              aur::RawRequest(
-                  aur::RawRequest::UrlForSourceFile(pkg, options.show_file)),
+              aur::RawRequest::ForSourceFile(pkg, options.show_file),
               [&options, print_header, pkgbase{pkg.pkgbase}](
                   aur::ResponseWrapper<aur::RawResponse> response) {
                 if (!response.ok()) {

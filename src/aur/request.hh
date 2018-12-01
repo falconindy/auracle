@@ -22,19 +22,22 @@ class Request {
 // A class describing a GET request for an arbitrary URL on the AUR.
 class RawRequest : public Request {
  public:
-  static std::string UrlForTarball(const Package& package);
-  static std::string UrlForSourceFile(const Package& package,
-                                      const std::string& filename);
+  static RawRequest ForTarball(const Package& package);
+  static RawRequest ForSourceFile(const Package& package,
+                                  const std::string& filename);
 
   explicit RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
 
   RawRequest(const RawRequest&) = delete;
   RawRequest& operator=(const RawRequest&) = delete;
 
+  RawRequest(RawRequest&&) = default;
+  RawRequest& operator=(RawRequest&&) = default;
+
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
  private:
-  const std::string urlpath_;
+  std::string urlpath_;
 };
 
 // A class describing a url for a git repo hosted on the AUR.

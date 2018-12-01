@@ -100,7 +100,9 @@ TEST(RequestTest, BuildsRawRequests) {
 TEST(RequestTest, UrlForSourceFileEscapesReponame) {
   aur::Package p;
   p.pkgbase = "libc++";
-  auto url = aur::RawRequest::UrlForSourceFile(p, "PKGBUILD");
+  auto request = aur::RawRequest::ForSourceFile(p, "PKGBUILD");
+
+  auto url = request.Build(kBaseUrl)[0];
 
   EXPECT_THAT(url, EndsWith("/PKGBUILD?h=libc%2B%2B"));
 }

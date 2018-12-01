@@ -122,15 +122,15 @@ RpcRequest::RpcRequest(
       approx_max_length_(approx_max_length) {}
 
 // static
-std::string RawRequest::UrlForTarball(const Package& package) {
-  return package.aur_urlpath;
+RawRequest RawRequest::ForTarball(const Package& package) {
+  return RawRequest(package.aur_urlpath);
 }
 
 // static
-std::string RawRequest::UrlForSourceFile(const Package& package,
-                                         const std::string& filename) {
-  return StrCat("/cgit/aur.git/plain/", filename,
-                "?h=", UrlEscape(package.pkgbase));
+RawRequest RawRequest::ForSourceFile(const Package& package,
+                                     const std::string& filename) {
+  return RawRequest(StrCat("/cgit/aur.git/plain/", filename,
+                           "?h=", UrlEscape(package.pkgbase)));
 }
 
 std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
