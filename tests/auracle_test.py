@@ -104,6 +104,7 @@ class TestCase(unittest.TestCase):
             'AURACLE_TEST_TMPDIR': self.tempdir,
             'AURACLE_DEBUG': 'requests:{}'.format(self.requests_file),
             'LC_TIME': 'C',
+            'TZ': 'UTC',
         }
 
         cmdline = [
