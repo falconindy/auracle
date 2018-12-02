@@ -17,7 +17,7 @@ _auracle() {
   local -A OPTS=(
          [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
                 [ARG]='-C --chdir --searchby --connect-timeout --max-connections --color
-                       --sort --rsort --show-file'
+                       --sort --rsort --show-file -F --format'
   )
 
   if __contains_word "$prev" ${OPTS[ARG]}; then

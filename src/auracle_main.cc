@@ -44,6 +44,7 @@ __attribute__((noreturn)) void usage() {
       "      --rsort=KEY          Sort results in descending order by KEY\n"
       "      --show-file=FILE     File to dump with 'show' command\n"
       "  -C DIR, --chdir=DIR      Change directory to DIR before downloading\n"
+      "  -F FMT, --format=FMT     Specify custom output for search and info\n"
       "\n"
       "Commands:\n"
       "  buildorder               Show build order\n"
