@@ -7,7 +7,6 @@
 #include <string>
 #include <unordered_set>
 #include <variant>
-#include <vector>
 
 #include <curl/curl.h>
 #include <systemd/sd-event.h>

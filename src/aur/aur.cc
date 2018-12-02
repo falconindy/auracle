@@ -7,6 +7,7 @@
 #include <cstring>
 #include <filesystem>
 #include <string_view>
+#include <vector>
 
 namespace fs = std::filesystem;
 

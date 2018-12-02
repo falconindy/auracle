@@ -1,6 +1,7 @@
 #include "package_cache.hh"
 
 #include <algorithm>
+#include <unordered_set>
 
 namespace auracle {
 

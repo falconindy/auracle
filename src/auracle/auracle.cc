@@ -7,9 +7,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
-#include <memory>
 #include <regex>
-#include <string>
 #include <string_view>
 
 #include "aur/response.hh"
@@ -334,7 +332,7 @@ int Auracle::Search(const std::vector<std::string>& args,
     }
   }
 
-  const auto matches = [&patterns, &options](const aur::Package& p) -> bool {
+  const auto matches = [&patterns, &options](const aur::Package& p) {
     return std::all_of(patterns.begin(), patterns.end(),
                        [&p, &options](const std::regex& re) {
                          switch (options.search_by) {
