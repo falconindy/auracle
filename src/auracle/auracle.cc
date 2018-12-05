@@ -225,7 +225,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
           return -EIO;
         }
 
-        auto results = std::move(response.value().results);
+        auto results = response.value().results;
 
         for (const auto& p :
              NotFoundPackages(want, results, state->package_cache)) {
@@ -286,7 +286,7 @@ int Auracle::Info(const std::vector<std::string>& args,
                            return -EIO;
                          }
 
-                         auto results = std::move(response.value().results);
+                         auto results = response.value().results;
                          std::copy(std::make_move_iterator(results.begin()),
                                    std::make_move_iterator(results.end()),
                                    std::back_inserter(packages));
@@ -365,7 +365,7 @@ int Auracle::Search(const std::vector<std::string>& args,
                              return -EIO;
                            }
 
-                           auto results = std::move(response.value().results);
+                           auto results = response.value().results;
                            std::copy_if(
                                std::make_move_iterator(results.begin()),
                                std::make_move_iterator(results.end()),
