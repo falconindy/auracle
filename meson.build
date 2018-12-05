@@ -30,10 +30,6 @@ endif
 add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
 add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
 
-libfmt_sp = subproject('fmt')
-libfmt = libfmt_sp.get_variable('lib')
-libfmt_inc = libfmt_sp.get_variable('inc')
-
 libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
@@ -41,6 +37,11 @@ libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
 stdcppfs = cpp.find_library('stdc++fs')
+
+libfmt = dependency('fmt', required : false)
+if not libfmt.found()
+  libfmt = subproject('fmt').get_variable('fmt_dep')
+endif
 
 pod2man = find_program('pod2man')
 
@@ -74,10 +75,9 @@ libauracle = static_library(
     '''.split()),
     include_directories : [
       include_directories('src'),
-      libfmt_inc,
     ],
-    link_with : [libaur, libfmt],
-    dependencies : [libarchive, libalpm, stdcppfs])
+    link_with : [libaur],
+    dependencies : [libalpm, libarchive, libfmt, stdcppfs])
 
 auracle = executable(
     'auracle',
