@@ -11,9 +11,10 @@ __contains_word () {
 }
 
 _auracle() {
-  local cur=${COMP_WORDS[COMP_CWORD]} prev=${COMP_WORDS[COMP_CWORD-1]}
-  local i verb comps mode
+  local cur prev words cword split
+  _init_completion -s || return
 
+  local i verb comps
   local -A OPTS=(
          [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
                 [ARG]='-C --chdir --searchby --connect-timeout --max-connections --color
