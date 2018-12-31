@@ -1,6 +1,6 @@
 #include "format.hh"
 
-#include <fmt/format.h>
+#include <fmt/printf.h>
 #include <iomanip>
 #include <sstream>
 #include <string_view>
