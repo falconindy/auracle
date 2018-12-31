@@ -8,7 +8,6 @@ import os.path
 import sys
 import tarfile
 import tempfile
-import time
 import urllib.parse
 
 
@@ -31,7 +30,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             if url.path.startswith(path):
                 return handler(url)
 
-        self.respond(404)
+        return self.respond(status_code=404)
 
 
     @staticmethod
@@ -39,7 +38,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         return l[-1] if l else None
 
 
-    def make_json_reply(self, querytype, results=[], error=None):
+    def make_json_reply(self, querytype, results, error=None):
         return json.dumps({
             'version': AUR_SERVER_VERSION,
             'type': querytype,
@@ -54,13 +53,12 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
 
     def lookup_response(self, querytype, fragment):
-        f = os.path.join(DBROOT, querytype, fragment)
-        if not os.path.exists(f):
-            # empty reply
-            return self.make_json_reply(querytype)
-
-        with open(f) as replyfile:
-            return replyfile.read().strip().encode()
+        path = os.path.join(DBROOT, querytype, fragment)
+        try:
+            with open(path) as f:
+                return f.read().strip().encode()
+        except FileNotFoundError:
+            return self.make_json_reply(querytype, [])
 
 
     def handle_rpc_info(self, args):
@@ -71,14 +69,14 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             # extract the results from each DB file
             results.extend(json.loads(reply)['results'])
 
-        self.respond(response=self.make_json_reply('multiinfo', results))
+        return self.respond(response=self.make_json_reply('multiinfo', results))
 
 
     def handle_rpc_search(self, arg, by):
         reply = self.lookup_response(
                 'search', '{}|{}'.format(by, arg) if by else arg)
 
-        self.respond(response=reply)
+        return self.respond(response=reply)
 
 
     def handle_rpc(self, url):
@@ -91,7 +89,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.handle_rpc_search(self.last_of(queryparams.get('arg')),
                                    self.last_of(queryparams.get('by')))
         else:
-            self.respond(response=self.make_json_reply(
+            return self.respond(response=self.make_json_reply(
                 'error', error='Incorrect request type specified.'))
 
 
@@ -100,8 +98,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
         # error injection for specific package name
         if pkgname == 'yaourt':
-            self.respond(response=b'you should use a better AUR helper')
-            return
+            return self.respond(response=b'you should use a better AUR helper')
 
         with tempfile.NamedTemporaryFile() as f:
             with tarfile.open(f.name, mode='w') as tar:
@@ -111,14 +108,14 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
                 t.size = len(b)
                 tar.addfile(t, io.BytesIO(b))
 
-            headers = [
-                    (
-                        'content-disposition',
-                        'inline, filename={}.tar.gz'.format(pkgname),
-                    )
-            ]
+            headers = [(
+                'content-disposition',
+                'inline, filename={}.tar.gz'.format(pkgname),
+            )]
 
-            self.respond(headers=headers, response=gzip.compress(f.read()))
+            response = gzip.compress(f.read())
+
+            return self.respond(headers=headers, response=response)
 
 
     def handle_source_file(self, url):
@@ -127,9 +124,9 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
         source_file = os.path.basename(url.path)
         if source_file == 'PKGBUILD':
-            self.respond(response=self.make_pkgbuild(pkgname))
+            return self.respond(response=self.make_pkgbuild(pkgname))
         else:
-            self.respond(status_code=404)
+            return self.respond(status_code=404)
 
 
     def respond(self, status_code=200, headers=[], response=None):
@@ -144,19 +141,19 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
 
 def Serve(queue=None, port=0):
-    serve = http.server.HTTPServer(('localhost', port), FakeAurHandler)
-    sockname = serve.socket.getsockname()
+    server = http.server.HTTPServer(('localhost', port), FakeAurHandler)
+    endpoint = 'http://[{}]:{}'.format(*server.socket.getsockname())
 
     if queue:
-        queue.put(sockname)
+        queue.put(endpoint)
     else:
-        print('serving on http://{}:{}'.format(*sockname))
+        print('serving on {}'.format(endpoint))
 
     try:
-        serve.serve_forever()
+        server.serve_forever()
     except KeyboardInterrupt:
         pass
-    serve.server_close()
+    server.server_close()
 
 
 if __name__ == '__main__':
