@@ -215,7 +215,7 @@ void Update(const auracle::Pacman::Package& from, const aur::Package& to,
             bool ignored) {
   namespace t = terminal;
 
-  fmt::print("{} {} -> {} {}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
+  fmt::print("{} {} -> {}{}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
              t::BoldGreen(to.version), ignored ? " [ignored]" : "");
 }
 
