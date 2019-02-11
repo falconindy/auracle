@@ -25,6 +25,10 @@ void from_json(const nlohmann::json& j, RpcResponse& r) {
 
 // static
 RpcResponse::RpcResponse(const std::string& json_bytes) {
+  if (json_bytes.empty()) {
+    return;
+  }
+
   *this = nlohmann::json::parse(json_bytes);
 }
 
