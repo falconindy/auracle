@@ -13,7 +13,7 @@ namespace {
 std::string UrlEscape(const std::string_view sv) {
   char* ptr = curl_easy_escape(nullptr, sv.data(), sv.size());
   std::string escaped(ptr);
-  free(ptr);
+  curl_free(ptr);
 
   return escaped;
 }
