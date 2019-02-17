@@ -76,7 +76,7 @@ void RpcRequest::AddArg(const std::string& key, const std::string& value) {
 }
 
 std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
-  const auto next_span = [&](const std::string_view& s) {
+  const auto next_span = [&](std::string_view s) -> std::string_view {
     // No chopping needed.
     if (s.size() <= approx_max_length_) {
       return s;
