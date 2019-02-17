@@ -142,12 +142,12 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
 def Serve(queue=None, port=0):
     server = http.server.HTTPServer(('localhost', port), FakeAurHandler)
-    endpoint = 'http://[{}]:{}'.format(*server.socket.getsockname())
+    endpoint = 'http://{}:{}'.format(*server.socket.getsockname())
 
     if queue:
         queue.put(endpoint)
     else:
-        print('serving on {}'.format(endpoint))
+        print('serving on', endpoint)
 
     try:
         server.serve_forever()
