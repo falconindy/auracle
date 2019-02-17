@@ -15,6 +15,8 @@ constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
 constexpr char kPacmanConf[] = "/etc/pacman.conf";
 
 struct Flags {
+  bool ParseFromArgv(int* argc, char*** argv);
+
   std::string baseurl = kAurBaseurl;
   std::string pacman_config = kPacmanConf;
   int max_connections = 5;
@@ -65,7 +67,7 @@ __attribute__((noreturn)) void version() {
   exit(0);
 }
 
-bool ParseFlags(int* argc, char*** argv, Flags* flags) {
+bool Flags::ParseFromArgv(int* argc, char*** argv) {
   enum {
     ARG_COLOR = 1000,
     ARG_CONNECT_TIMEOUT,
@@ -118,17 +120,17 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
       case 'h':
         usage();
       case 'q':
-        flags->command_options.quiet = true;
+        command_options.quiet = true;
         break;
       case 'r':
-        flags->command_options.recurse = true;
+        command_options.recurse = true;
         break;
       case 'C':
         if (sv_optarg.empty()) {
           std::cerr << "error: meaningless option: -C ''\n";
           return false;
         }
-        flags->command_options.directory = optarg;
+        command_options.directory = optarg;
         break;
       case 'F': {
         std::string error;
@@ -137,34 +139,32 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
                     << "): " << sv_optarg << "\n";
           return false;
         }
-        flags->command_options.format = optarg;
+        command_options.format = optarg;
         break;
       }
       case ARG_LITERAL:
-        flags->command_options.allow_regex = false;
+        command_options.allow_regex = false;
         break;
       case ARG_SEARCHBY:
         using SearchBy = aur::SearchRequest::SearchBy;
 
-        flags->command_options.search_by =
+        command_options.search_by =
             aur::SearchRequest::ParseSearchBy(sv_optarg);
-        if (flags->command_options.search_by == SearchBy::INVALID) {
+        if (command_options.search_by == SearchBy::INVALID) {
           std::cerr << "error: invalid arg to --searchby: " << sv_optarg
                     << "\n";
           return false;
         }
         break;
       case ARG_CONNECT_TIMEOUT:
-        if (!stoi(sv_optarg, &flags->connect_timeout) ||
-            flags->max_connections < 0) {
+        if (!stoi(sv_optarg, &connect_timeout) || max_connections < 0) {
           std::cerr << "error: invalid value to --connect-timeout: "
                     << sv_optarg << "\n";
           return false;
         }
         break;
       case ARG_MAX_CONNECTIONS:
-        if (!stoi(sv_optarg, &flags->max_connections) ||
-            flags->max_connections < 0) {
+        if (!stoi(sv_optarg, &max_connections) || max_connections < 0) {
           std::cerr << "error: invalid value to --max-connections: "
                     << sv_optarg << "\n";
           return false;
@@ -172,43 +172,43 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
         break;
       case ARG_COLOR:
         if (sv_optarg == "auto") {
-          flags->color = terminal::WantColor::AUTO;
+          color = terminal::WantColor::AUTO;
         } else if (sv_optarg == "never") {
-          flags->color = terminal::WantColor::NO;
+          color = terminal::WantColor::NO;
         } else if (sv_optarg == "always") {
-          flags->color = terminal::WantColor::YES;
+          color = terminal::WantColor::YES;
         } else {
           std::cerr << "error: invalid arg to --color: " << sv_optarg << "\n";
           return false;
         }
         break;
       case ARG_SORT:
-        flags->command_options.sorter =
+        command_options.sorter =
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_ASC);
-        if (flags->command_options.sorter == nullptr) {
+        if (command_options.sorter == nullptr) {
           std::cerr << "error: invalid arg to --sort: " << sv_optarg << "\n";
           return false;
         }
         break;
       case ARG_RSORT:
-        flags->command_options.sorter =
+        command_options.sorter =
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_DESC);
-        if (flags->command_options.sorter == nullptr) {
+        if (command_options.sorter == nullptr) {
           std::cerr << "error: invalid arg to --rsort: " << sv_optarg << "\n";
           return false;
         }
         break;
       case ARG_BASEURL:
-        flags->baseurl = optarg;
+        baseurl = optarg;
         break;
       case ARG_PACMAN_CONFIG:
-        flags->pacman_config = optarg;
+        pacman_config = optarg;
         break;
       case ARG_VERSION:
         version();
         break;
       case ARG_SHOW_FILE:
-        flags->command_options.show_file = optarg;
+        command_options.show_file = optarg;
         break;
       default:
         return false;
@@ -225,7 +225,7 @@ bool ParseFlags(int* argc, char*** argv, Flags* flags) {
 
 int main(int argc, char** argv) {
   Flags flags;
-  if (!ParseFlags(&argc, &argv, &flags)) {
+  if (!flags.ParseFromArgv(&argc, &argv)) {
     return 1;
   }
 
