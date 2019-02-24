@@ -15,6 +15,11 @@ namespace aur {
 
 namespace {
 
+std::string_view GetEnv(const char* name) {
+  auto value = getenv(name);
+  return std::string_view(value ? value : "");
+}
+
 template <typename TimeRes, typename ClockType>
 auto TimepointTo(std::chrono::time_point<ClockType> tp) {
   return std::chrono::time_point_cast<TimeRes>(tp).time_since_epoch().count();
@@ -138,15 +143,12 @@ Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
 
   sd_event_default(&event_);
 
-  const auto debug = getenv("AURACLE_DEBUG");
-  if (debug) {
-    std::string_view sv(debug);
-    if (ConsumePrefix(&sv, "requests:")) {
-      debug_level_ = DEBUG_REQUESTS;
-      debug_stream_.open(std::string(sv), std::ofstream::trunc);
-    } else {
-      debug_level_ = DEBUG_VERBOSE_STDERR;
-    }
+  std::string_view debug = GetEnv("AURACLE_DEBUG");
+  if (ConsumePrefix(&debug, "requests:")) {
+    debug_level_ = DEBUG_REQUESTS;
+    debug_stream_.open(std::string(debug), std::ofstream::trunc);
+  } else {
+    debug_level_ = DEBUG_VERBOSE_STDERR;
   }
 }
 
