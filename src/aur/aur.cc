@@ -138,12 +138,15 @@ Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
 
   sd_event_default(&event_);
 
-  std::string_view debug(getenv("AURACLE_DEBUG"));
-  if (ConsumePrefix(&debug, "requests:")) {
-    debug_level_ = DEBUG_REQUESTS;
-    debug_stream_.open(std::string(debug), std::ofstream::trunc);
-  } else if (!debug.empty()) {
-    debug_level_ = DEBUG_VERBOSE_STDERR;
+  const auto debug = getenv("AURACLE_DEBUG");
+  if (debug) {
+    std::string_view sv(debug);
+    if (ConsumePrefix(&sv, "requests:")) {
+      debug_level_ = DEBUG_REQUESTS;
+      debug_stream_.open(std::string(sv), std::ofstream::trunc);
+    } else {
+      debug_level_ = DEBUG_VERBOSE_STDERR;
+    }
   }
 }
 
