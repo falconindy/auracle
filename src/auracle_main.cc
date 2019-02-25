@@ -114,7 +114,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
 
   int opt;
   while ((opt = getopt_long(*argc, *argv, "C:F:hqr", opts, nullptr)) != -1) {
-    std::string_view sv_optarg(optarg);
+    std::string_view sv_optarg(optarg ? optarg : "");
 
     switch (opt) {
       case 'h':
