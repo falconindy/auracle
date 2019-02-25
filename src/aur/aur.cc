@@ -147,7 +147,7 @@ Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
   if (ConsumePrefix(&debug, "requests:")) {
     debug_level_ = DEBUG_REQUESTS;
     debug_stream_.open(std::string(debug), std::ofstream::trunc);
-  } else {
+  } else if (!debug.empty()) {
     debug_level_ = DEBUG_VERBOSE_STDERR;
   }
 }
