@@ -25,7 +25,7 @@ class SortTest(auracle_test.TestCase):
         v = []
         for line in p.stdout.decode().splitlines():
             if line.startswith('Popularity'):
-                v.append(float(line.rsplit(':')[-1].strip()))
+                v.append(float(line.rsplit(':')[-3].strip()))
 
         self.assertTrue(all(v[i] >= v[i+1] for i in range(len(v) -1)))
 
@@ -38,7 +38,7 @@ class SortTest(auracle_test.TestCase):
         v = []
         for line in p.stdout.decode().splitlines():
             if line.startswith('aur/'):
-                v.append(int(line.split()[-2][1:-1]))
+                v.append(int(line.split()[2][1:-1]))
 
         self.assertTrue(all(v[i] <= v[i+1] for i in range(len(v) -1)))
 
@@ -51,7 +51,7 @@ class SortTest(auracle_test.TestCase):
         v = []
         for line in p.stdout.decode().splitlines():
             if line.startswith('aur/'):
-                v.append(int(line.split()[-2][1:-1]))
+                v.append(int(line.split()[2][1:-1]))
 
         self.assertTrue(all(v[i] >= v[i+1] for i in range(len(v) -1)))
 
