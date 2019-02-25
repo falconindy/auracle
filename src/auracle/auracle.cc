@@ -40,9 +40,11 @@ void FormatNameOnly(const std::vector<aur::Package>& packages) {
   }
 }
 
-void FormatShort(const std::vector<aur::Package>& packages) {
+void FormatShort(const std::vector<aur::Package>& packages,
+                const auracle::Pacman* pacman) {
   for (const auto& p : packages) {
-    format::Short(p);
+    auto local_pkg = pacman->GetLocalPackage(p.name);
+    format::Short(p, local_pkg ? &local_pkg.value() : nullptr);
   }
 }
 
@@ -382,7 +384,7 @@ int Auracle::Search(const std::vector<std::string>& args,
   } else if (options.quiet) {
     FormatNameOnly(packages);
   } else {
-    FormatShort(packages);
+    FormatShort(packages, pacman_);
   }
 
   return 0;

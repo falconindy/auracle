@@ -143,17 +143,28 @@ void NameOnly(const aur::Package& package) {
   fmt::print(terminal::Bold("{}\n"), package.name);
 }
 
-void Short(const aur::Package& package) {
+void Short(const aur::Package& package,
+          const auracle::Pacman::Package* local_package) {
   namespace t = terminal;
 
+  const auto l = local_package;
   const auto& p = package;
   const auto ood_color = p.out_of_date > std::chrono::seconds::zero()
                              ? &t::BoldRed
                              : &t::BoldGreen;
 
-  fmt::print("{}{} {} ({}, {})\n    {}\n", t::BoldMagenta("aur/"),
+  std::string installed_package;
+  if (l != nullptr) {
+    const auto local_ver_color =
+        auracle::Pacman::Vercmp(l->pkgver, p.version) < 0 ? &t::BoldRed
+                                                          : &t::BoldGreen;
+    installed_package =
+        fmt::format("[installed: {}]", local_ver_color(l->pkgver));
+  }
+
+  fmt::print("{}{} {} ({}, {}) {}\n    {}\n", t::BoldMagenta("aur/"),
              t::Bold(p.name), ood_color(p.version), p.votes, p.popularity,
-             p.description);
+             installed_package, p.description);
 }
 
 void Long(const aur::Package& package,
