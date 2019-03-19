@@ -9,8 +9,7 @@
 namespace format {
 
 void NameOnly(const aur::Package& package);
-void Update(const auracle::Pacman::Package& from, const aur::Package& to,
-            bool ignored);
+void Update(const auracle::Pacman::Package& from, const aur::Package& to);
 void Short(const aur::Package& package);
 void Long(const aur::Package& package,
           const auracle::Pacman::Package* local_package);
