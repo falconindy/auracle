@@ -46,10 +46,8 @@ bool IsSection(const std::string& s) {
 
 namespace auracle {
 
-Pacman::Pacman(alpm_handle_t* alpm, std::vector<std::string> ignored_packages)
-    : alpm_(alpm),
-      local_db_(alpm_get_localdb(alpm_)),
-      ignored_packages_(std::move(ignored_packages)) {}
+Pacman::Pacman(alpm_handle_t* alpm)
+    : alpm_(alpm), local_db_(alpm_get_localdb(alpm_)) {}
 
 Pacman::~Pacman() { alpm_release(alpm_); }
 
@@ -59,7 +57,6 @@ struct ParseState {
   std::string rootdir = "/";
 
   std::string section;
-  std::vector<std::string> ignorepkgs;
   std::vector<std::string> repos;
 };
 
@@ -92,12 +89,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     trim(&value);
 
     if (state->section == "options") {
-      if (key == "IgnorePkg") {
-        std::istringstream iss(value);
-        std::copy(std::istream_iterator<std::string>(iss),
-                  std::istream_iterator<std::string>(),
-                  std::back_inserter(state->ignorepkgs));
-      } else if (key == "DBPath") {
+      if (key == "DBPath") {
         state->dbpath = value;
       } else if (key == "RootDir") {
         state->rootdir = value;
@@ -145,15 +137,7 @@ std::unique_ptr<Pacman> Pacman::NewFromConfig(const std::string& config_file) {
                          static_cast<alpm_siglevel_t>(0));
   }
 
-  return std::unique_ptr<Pacman>(
-      new Pacman(state.alpm, std::move(state.ignorepkgs)));
-}
-
-bool Pacman::ShouldIgnorePackage(const std::string& package) const {
-  return std::find_if(ignored_packages_.cbegin(), ignored_packages_.cend(),
-                      [&package](const std::string& p) {
-                        return fnmatch(p.c_str(), package.c_str(), 0) == 0;
-                      }) != ignored_packages_.cend();
+  return std::unique_ptr<Pacman>(new Pacman(state.alpm));
 }
 
 std::string Pacman::RepoForPackage(const std::string& package) const {

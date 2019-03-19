@@ -202,10 +202,6 @@ void Auracle::IteratePackages(std::vector<std::string> args,
   aur::InfoRequest info_request;
 
   for (const auto& arg : args) {
-    if (pacman_->ShouldIgnorePackage(arg)) {
-      continue;
-    }
-
     if (state->package_cache.LookupByPkgname(arg) != nullptr) {
       continue;
     }
@@ -614,7 +610,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
             if (options.quiet) {
               format::NameOnly(r);
             } else {
-              format::Update(*iter, r, pacman_->ShouldIgnorePackage(r.name));
+              format::Update(*iter, r);
             }
           }
         }

@@ -211,12 +211,11 @@ void Long(const aur::Package& package,
   fmt::print("\n");
 }
 
-void Update(const auracle::Pacman::Package& from, const aur::Package& to,
-            bool ignored) {
+void Update(const auracle::Pacman::Package& from, const aur::Package& to) {
   namespace t = terminal;
 
-  fmt::print("{} {} -> {}{}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
-             t::BoldGreen(to.version), ignored ? " [ignored]" : "");
+  fmt::print("{} {} -> {}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
+             t::BoldGreen(to.version));
 }
 
 void FormatCustomTo(std::string* out, const std::string& format,
