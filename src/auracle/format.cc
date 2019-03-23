@@ -215,7 +215,7 @@ void Long(const aur::Package& package,
                          p.maintainer.empty() ? "(orphan)" : p.maintainer));
   fmt::print("{}", Field("Submitted", p.submitted_s));
   fmt::print("{}", Field("Last Modified", p.modified_s));
-  if (p.out_of_date != std::chrono::seconds{}) {
+  if (p.out_of_date != std::chrono::seconds::zero()) {
     fmt::print("{}", Field("Out of Date", p.out_of_date));
   }
   fmt::print("{}", Field("Description", p.description));
