@@ -73,16 +73,18 @@ libauracle = static_library(
       src/auracle/sort.cc src/auracle/sort.hh
       src/auracle/terminal.cc src/auracle/terminal.hh
     '''.split()),
-    include_directories : [
-      include_directories('src'),
-    ],
+    include_directories : include_directories(
+      'src',
+    ),
     link_with : [libaur],
     dependencies : [libalpm, libarchive, libfmt, stdcppfs])
 
 auracle = executable(
     'auracle',
     files('src/auracle_main.cc'),
-    include_directories : include_directories('src'),
+    include_directories : include_directories(
+      'src',
+    ),
     link_with : [libauracle],
     install : true)
 
