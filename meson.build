@@ -49,7 +49,7 @@ python = import('python')
 py3 = python.find_installation('python3')
 
 libaur = static_library(
-    'libaur',
+    'aur',
     files('''
       src/aur/aur.cc src/aur/aur.hh
       src/aur/package.cc src/aur/package.hh
@@ -64,7 +64,7 @@ libaur = static_library(
     dependencies : [libcurl, libsystemd])
 
 libauracle = static_library(
-    'libauracle',
+    'auracle',
     files('''
       src/auracle/auracle.cc src/auracle/auracle.hh
       src/auracle/format.cc src/auracle/format.hh
