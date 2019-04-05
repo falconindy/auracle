@@ -107,7 +107,7 @@ class Auracle {
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
   aur::Aur aur_;
-  Pacman* const pacman_;
+  Pacman* pacman_;
 };
 
 }  // namespace auracle

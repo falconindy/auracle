@@ -103,7 +103,7 @@ class Aur {
   static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
                          void* userdata);
 
-  const std::string baseurl_;
+  std::string baseurl_;
 
   long connect_timeout_ = 10;
 
