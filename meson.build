@@ -61,7 +61,7 @@ libaur = static_library(
       'src',
       'third_party/nlohmann_json',
     ),
-    dependencies : [libcurl, libsystemd])
+    dependencies : [libcurl, libsystemd, stdcppfs])
 
 libauracle = static_library(
     'auracle',
