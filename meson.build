@@ -108,6 +108,11 @@ install_data(
   rename : ['auracle'],
   install_dir : join_paths(get_option('datadir'), 'bash-completion/completions'))
 
+install_data(
+  files('extra/zsh_completion'),
+  rename : ['_auracle'],
+  install_dir : join_paths(get_option('datadir'), 'zsh/site-functions'))
+
 run_target(
   'fmt',
   command : [
