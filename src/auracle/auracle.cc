@@ -208,11 +208,6 @@ void Auracle::IteratePackages(std::vector<std::string> args,
       continue;
     }
 
-    if (const auto repo = pacman_->RepoForPackage(arg); !repo.empty()) {
-      std::cout << arg << " is available in " << repo << "\n";
-      continue;
-    }
-
     info_request.AddArg(arg);
   }
 
@@ -227,7 +222,9 @@ void Auracle::IteratePackages(std::vector<std::string> args,
 
         for (const auto& p :
              NotFoundPackages(want, results, state->package_cache)) {
-          std::cerr << "no results found for " << p << "\n";
+          if (!pacman_->HasPackage(p)) {
+            std::cerr << "no results found for " << p << "\n";
+          }
         }
 
         for (auto& result : results) {
@@ -255,10 +252,6 @@ void Auracle::IteratePackages(std::vector<std::string> args,
             for (const auto* deparray :
                  {&p->depends, &p->makedepends, &p->checkdepends}) {
               for (const auto& dep : *deparray) {
-                if (pacman_->HasPackage(dep.depstring)) {
-                  continue;
-                }
-
                 alldeps.push_back(dep.name);
               }
             }
@@ -590,8 +583,8 @@ int Auracle::Sync(const std::vector<std::string>& args,
                   const CommandOptions& options) {
   aur::InfoRequest info_request;
 
-  const auto foreign_pkgs = pacman_->ForeignPackages();
-  for (const auto& pkg : foreign_pkgs) {
+  auto local_pkgs = pacman_->LocalPackages();
+  for (const auto& pkg : local_pkgs) {
     if (args.empty() ||
         std::find(args.cbegin(), args.cend(), pkg.pkgname) != args.cend()) {
       info_request.AddArg(pkg.pkgname);
@@ -606,7 +599,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
 
         for (const auto& r : response.value().results) {
           auto iter = std::find_if(
-              foreign_pkgs.cbegin(), foreign_pkgs.cend(),
+              local_pkgs.cbegin(), local_pkgs.cend(),
               [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
           if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
             if (options.quiet) {

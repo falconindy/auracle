@@ -42,10 +42,7 @@ class Pacman {
 
   bool DependencyIsSatisfied(const std::string& package) const;
 
-  // A list of installed packages which are not found in any currently enabled
-  // Sync DB.
-  std::vector<Package> ForeignPackages() const;
-
+  std::vector<Package> LocalPackages() const;
   std::optional<Package> GetLocalPackage(const std::string& name) const;
 
  private:

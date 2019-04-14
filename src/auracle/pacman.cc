@@ -168,16 +168,13 @@ std::optional<Pacman::Package> Pacman::GetLocalPackage(
   return Package{alpm_pkg_get_name(pkg), alpm_pkg_get_version(pkg)};
 }
 
-std::vector<Pacman::Package> Pacman::ForeignPackages() const {
+std::vector<Pacman::Package> Pacman::LocalPackages() const {
   std::vector<Package> packages;
 
   for (auto i = alpm_db_get_pkgcache(local_db_); i != nullptr; i = i->next) {
     const auto pkg = static_cast<alpm_pkg_t*>(i->data);
-    std::string pkgname(alpm_pkg_get_name(pkg));
 
-    if (RepoForPackage(pkgname).empty()) {
-      packages.emplace_back(std::move(pkgname), alpm_pkg_get_version(pkg));
-    }
+    packages.emplace_back(alpm_pkg_get_name(pkg), alpm_pkg_get_version(pkg));
   }
 
   return packages;
