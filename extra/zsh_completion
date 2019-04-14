@@ -1,61 +1,59 @@
 #compdef auracle
 
-_auracle() {
-  local curcontext=$curcontext state line
+local curcontext=$curcontext state line
 
-  _arguments -S \
-    {--help,-h}'[Show help]' \
-    '--version[Show software version]' \
-    {--quiet,-q}'[Output less, when possible]' \
-    {--recurse,-r}'[Recurse through dependencies on download]' \
-    '--literal[Disallow regex in searches]' \
-    '--searchby=[Change search-by dimension]: :(name name-desc maintainer depends makedepends optdepends checkdepends)' \
-    '--connect-timeout=[Set connection timeout in seconds]' \
-    '--max-connections=[Limit active connections]' \
-    '--color=[Control colored output]: :(auto never always)' \
-    {--chdir=,-C+}'[Change directory before downloading]:directory:_files -/' \
-    {--format=,-F+}'[Specify custom output for search and info]' \
-    '(--rsort)--sort=[Sort results in ascending order]: :(name popularity votes firstsubmitted lastmodified)' \
-    '(--sort)--rsort=[Sort results in descending order]: :(name popularity votes firstsubmitted lastmodified)' \
-    "--show-file=[File to dump with 'show' command]" \
-    '(-): :->command' \
-    '*:: :->option-or-argument'
+_arguments -S \
+  {--help,-h}'[Show help]' \
+  '--version[Show software version]' \
+  {--quiet,-q}'[Output less, when possible]' \
+  {--recurse,-r}'[Recurse through dependencies on download]' \
+  '--literal[Disallow regex in searches]' \
+  '--searchby=[Change search-by dimension]: :(name name-desc maintainer depends makedepends optdepends checkdepends)' \
+  '--connect-timeout=[Set connection timeout in seconds]' \
+  '--max-connections=[Limit active connections]' \
+  '--color=[Control colored output]: :(auto never always)' \
+  {--chdir=,-C+}'[Change directory before downloading]:directory:_files -/' \
+  {--format=,-F+}'[Specify custom output for search and info]' \
+  '(--rsort)--sort=[Sort results in ascending order]: :(name popularity votes firstsubmitted lastmodified)' \
+  '(--sort)--rsort=[Sort results in descending order]: :(name popularity votes firstsubmitted lastmodified)' \
+  "--show-file=[File to dump with 'show' command]" \
+  '(-): :->command' \
+  '*:: :->option-or-argument'
 
-  case $state in
+case $state in
 
-    (command)
-      local -a commands
-      commands=(
-        'buildorder:Show build order'
-        'clone:Clone or update git repos for packages'
-        'download:Download tarball snapshots'
-        'info:Show detailed information'
-        'rawinfo:Dump unformatted JSON for info query'
-        'rawsearch:Dump unformatted JSON for search query'
-        'search:Search for packages'
-        'show:Dump package source file'
-        'sync:Check for updates for foreign packages')
-      _describe -t commands command commands
-      ;;
+  (command)
+    local -a commands
+    commands=(
+      'buildorder:Show build order'
+      'clone:Clone or update git repos for packages'
+      'download:Download tarball snapshots'
+      'info:Show detailed information'
+      'rawinfo:Dump unformatted JSON for info query'
+      'rawsearch:Dump unformatted JSON for search query'
+      'search:Search for packages'
+      'show:Dump package source file'
+      'sync:Check for updates for foreign packages')
+    _describe -t commands command commands
+    ;;
 
-    (option-or-argument)
-      curcontext=${curcontext%:*}-$line[1]:
-      local prefix=$PREFIX
-      local -a packages
-      case $line[1] in
-        (buildorder|clone|download|info|rawinfo|show)
-          [[ $compstate[quote] = [\'\"] ]] && prefix=$compstate[quote]$PREFIX$compstate[quote]
-          packages=(${(f)"$(auracle search --quiet "${(Q)prefix}" 2> /dev/null)"})
-          _describe -t packages package packages
-          ;;
-        (sync)
-          packages=(${(f)"$(pacman -Qmq 2> /dev/null)"})
-          _describe -t packages package packages
-          ;;
-      esac
-      ;;
+  (option-or-argument)
+    curcontext=${curcontext%:*}-$line[1]:
+    local prefix=$PREFIX
+    local -a packages
+    case $line[1] in
+      (buildorder|clone|download|info|rawinfo|show)
+        [[ $compstate[quote] = [\'\"] ]] && prefix=$compstate[quote]$PREFIX$compstate[quote]
+        packages=(${(f)"$(auracle search --quiet "${(Q)prefix}" 2> /dev/null)"})
+        _describe -t packages package packages
+        ;;
+      (sync)
+        packages=(${(f)"$(pacman -Qmq 2> /dev/null)"})
+        _describe -t packages package packages
+        ;;
+    esac
+    ;;
 
-  esac
+esac
 
-  return 0
-}
+return 0
