@@ -9,14 +9,14 @@ _auracle() {
     {--quiet,-q}'[Output less, when possible]' \
     {--recurse,-r}'[Recurse through dependencies on download]' \
     '--literal[Disallow regex in searches]' \
-    '--searchby=[Change search-by dimension]:search by:(name name-desc maintainer depends makedepends optdepends checkdepends)' \
+    '--searchby=[Change search-by dimension]: :(name name-desc maintainer depends makedepends optdepends checkdepends)' \
     '--connect-timeout=[Set connection timeout in seconds]' \
     '--max-connections=[Limit active connections]' \
-    '--color=[Control colored output]::(auto never always)' \
+    '--color=[Control colored output]: :(auto never always)' \
     {--chdir=,-C+}'[Change directory before downloading]:directory:_files -/' \
     {--format=,-F+}'[Specify custom output for search and info]' \
-    '(--rsort)--sort=[Sort results in ascending order]:sort by:(name popularity votes firstsubmitted lastmodified)' \
-    '(--sort)--rsort=[Sort results in descending order]:sort by:(name popularity votes firstsubmitted lastmodified)' \
+    '(--rsort)--sort=[Sort results in ascending order]: :(name popularity votes firstsubmitted lastmodified)' \
+    '(--sort)--rsort=[Sort results in descending order]: :(name popularity votes firstsubmitted lastmodified)' \
     "--show-file=[File to dump with 'show' command]" \
     '(-): :->command' \
     '*:: :->option-or-argument'
