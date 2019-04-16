@@ -19,8 +19,14 @@ class Request {
   virtual std::vector<std::string> Build(const std::string& baseurl) const = 0;
 };
 
+class HttpRequest : public Request {
+ public:
+  using QueryParam = std::pair<std::string, std::string>;
+  using QueryParams = std::vector<QueryParam>;
+};
+
 // A class describing a GET request for an arbitrary URL on the AUR.
-class RawRequest : public Request {
+class RawRequest : public HttpRequest {
  public:
   static RawRequest ForTarball(const Package& package);
   static RawRequest ForSourceFile(const Package& package,
@@ -49,37 +55,42 @@ class CloneRequest : public Request {
   CloneRequest(const CloneRequest&) = delete;
   CloneRequest& operator=(const CloneRequest&) = delete;
 
+  CloneRequest(CloneRequest&&) = default;
+  CloneRequest& operator=(CloneRequest&&) = default;
+
   const std::string& reponame() const { return reponame_; }
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
  private:
-  const std::string reponame_;
+  std::string reponame_;
 };
 
 // A base class describing a GET request to the RPC endpoint of the AUR.
-class RpcRequest : public Request {
+class RpcRequest : public HttpRequest {
  public:
   // Upper limit for HTTP/1.1 on aur.archlinux.org is somewhere in the 8000s,
   // but closer to 4k for HTTP2. Let's stick with something that works for both.
   static constexpr int kMaxUriLength = 4000;
 
-  RpcRequest(
-      const std::vector<std::pair<std::string, std::string>>& base_params,
-      long unsigned approx_max_length = kMaxUriLength);
+  RpcRequest(const HttpRequest::QueryParams& base_params,
+             long unsigned approx_max_length = kMaxUriLength);
 
   RpcRequest(const RpcRequest&) = delete;
   RpcRequest& operator=(const RpcRequest&) = delete;
+
+  RpcRequest(RpcRequest&&) = default;
+  RpcRequest& operator=(RpcRequest&&) = default;
 
   std::vector<std::string> Build(const std::string& baseurl) const override;
 
   void AddArg(const std::string& key, const std::string& value);
 
  private:
-  const std::string base_querystring_;
-  const long unsigned approx_max_length_;
+  std::string base_querystring_;
+  long unsigned approx_max_length_;
 
-  std::vector<std::pair<std::string, std::string>> args_;
+  HttpRequest::QueryParams args_;
 };
 
 class InfoRequest : public RpcRequest {
@@ -92,6 +103,9 @@ class InfoRequest : public RpcRequest {
 
   InfoRequest(const InfoRequest&) = delete;
   InfoRequest& operator=(const InfoRequest&) = delete;
+
+  InfoRequest(InfoRequest&&) = default;
+  InfoRequest& operator=(InfoRequest&&) = default;
 
   InfoRequest() : RpcRequest({{"v", "5"}, {"type", "info"}}) {}
 

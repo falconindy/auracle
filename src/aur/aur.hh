@@ -50,7 +50,7 @@ class Aur {
 
   // Asynchronously issue a raw request. The callback will be invoked when the
   // call completes.
-  void QueueRawRequest(const Request& request,
+  void QueueRawRequest(const HttpRequest& request,
                        const RawResponseCallback& callback);
 
   // Asynchronously issue a download request. The callback will be invoked when
@@ -71,7 +71,7 @@ class Aur {
       std::unordered_set<std::variant<CURL*, sd_event_source*>>;
 
   template <typename RequestType>
-  void QueueRequest(
+  void QueueHttpRequest(
       const Request& request,
       const typename RequestType::ResponseHandlerType::CallbackType& callback);
 

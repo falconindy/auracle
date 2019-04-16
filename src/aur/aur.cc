@@ -424,7 +424,7 @@ struct TarballRequestTraits {
 };
 
 template <typename RequestTraits>
-void Aur::QueueRequest(
+void Aur::QueueHttpRequest(
     const Request& request,
     const typename RequestTraits::ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request.Build(baseurl_)) {
@@ -514,19 +514,19 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   active_requests_.emplace(child);
 }
 
-void Aur::QueueRawRequest(const Request& request,
+void Aur::QueueRawRequest(const HttpRequest& request,
                           const RawResponseCallback& callback) {
-  QueueRequest<RawRequestTraits>(request, callback);
+  QueueHttpRequest<RawRequestTraits>(request, callback);
 }
 
 void Aur::QueueRpcRequest(const RpcRequest& request,
                           const RpcResponseCallback& callback) {
-  QueueRequest<RpcRequestTraits>(request, callback);
+  QueueHttpRequest<RpcRequestTraits>(request, callback);
 }
 
 void Aur::QueueTarballRequest(const RawRequest& request,
                               const RawResponseCallback& callback) {
-  QueueRequest<TarballRequestTraits>(request, callback);
+  QueueHttpRequest<TarballRequestTraits>(request, callback);
 }
 
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }

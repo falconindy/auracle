@@ -49,8 +49,7 @@ std::string StrCat(const Pieces&... args) {
   return out;
 }
 
-void QueryParamFormatter(std::string* out,
-                         const std::pair<std::string, std::string>& kv) {
+void QueryParamFormatter(std::string* out, const HttpRequest::QueryParam& kv) {
   StrAppend(out, kv.first, "=", UrlEscape(kv.second));
 }
 
@@ -114,9 +113,8 @@ std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
   return requests;
 }
 
-RpcRequest::RpcRequest(
-    const std::vector<std::pair<std::string, std::string>>& base_params,
-    long unsigned approx_max_length)
+RpcRequest::RpcRequest(const HttpRequest::QueryParams& base_params,
+                       long unsigned approx_max_length)
     : base_querystring_(StrJoin(base_params.begin(), base_params.end(), "&",
                                 &QueryParamFormatter)),
       approx_max_length_(approx_max_length) {}
