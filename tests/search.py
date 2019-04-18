@@ -66,5 +66,15 @@ class TestSearch(auracle_test.TestCase):
         ])
 
 
+
+    def testLiteralSearchWithShortTerm(self):
+        p = self.Auracle(['search', '--literal', 'a'])
+        self.assertEqual(p.returncode, 1)
+
+        self.assertListEqual(self.request_uris, [
+            '/rpc?v=5&type=search&by=name-desc&arg=a',
+        ])
+
+
 if __name__ == '__main__':
     auracle_test.main()

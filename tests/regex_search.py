@@ -32,14 +32,5 @@ class TestRegexSearch(auracle_test.TestCase):
         ])
 
 
-    def testLiteralSearch(self):
-        p = self.Auracle(['search', '--literal', '^aurac.+'])
-        self.assertEqual(p.returncode, 0)
-
-        self.assertListEqual(self.request_uris, [
-            '/rpc?v=5&type=search&by=name-desc&arg=%5Eaurac.%2B',
-        ])
-
-
 if __name__ == '__main__':
     auracle_test.main()

@@ -73,6 +73,10 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
 
     def handle_rpc_search(self, arg, by):
+        if len(arg) < 2:
+            return self.respond(response=self.make_json_reply(
+                'error', error='Query arg too small.'))
+
         reply = self.lookup_response(
                 'search', '{}|{}'.format(by, arg) if by else arg)
 

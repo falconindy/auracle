@@ -119,12 +119,8 @@ std::vector<std::string> NotFoundPackages(
   return missing;
 }
 
-std::string GetSearchFragment(const std::string& s, bool allow_regex) {
+std::string GetSearchFragment(const std::string& s) {
   static constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
-
-  if (!allow_regex) {
-    return s;
-  }
 
   int span = 0;
   const char* argstr;
@@ -343,11 +339,14 @@ int Auracle::Search(const std::vector<std::string>& args,
 
   std::vector<aur::Package> packages;
   for (const auto& arg : args) {
-    auto frag = GetSearchFragment(arg, options.allow_regex);
-    if (frag.empty()) {
-      std::cerr << "error: search string '" << arg
-                << "' insufficient for searching by regular expression.\n";
-      return -EINVAL;
+    std::string frag = arg;
+    if (options.allow_regex) {
+      frag = GetSearchFragment(arg);
+      if (frag.empty() && options.allow_regex) {
+        std::cerr << "error: search string '" << arg
+                  << "' insufficient for searching by regular expression.\n";
+        return -EINVAL;
+      }
     }
 
     aur_.QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
