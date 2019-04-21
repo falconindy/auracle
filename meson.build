@@ -1,6 +1,7 @@
 project('auracle', 'cpp',
         version : '0',
         license : 'MIT',
+        meson_version : '>=0.50',
         default_options : [
           'cpp_std=c++17',
         ])
@@ -57,10 +58,10 @@ libaur = static_library(
       src/aur/response.cc src/aur/response.hh
       src/aur/json_internal.hh
     '''.split()),
-    include_directories : include_directories(
+    include_directories : [
       'src',
       'third_party/nlohmann_json',
-    ),
+    ],
     dependencies : [libcurl, libsystemd, stdcppfs])
 
 libauracle = static_library(
@@ -73,18 +74,18 @@ libauracle = static_library(
       src/auracle/sort.cc src/auracle/sort.hh
       src/auracle/terminal.cc src/auracle/terminal.hh
     '''.split()),
-    include_directories : include_directories(
+    include_directories : [
       'src',
-    ),
+    ],
     link_with : [libaur],
     dependencies : [libalpm, libarchive, libfmt, stdcppfs])
 
 auracle = executable(
     'auracle',
     files('src/auracle_main.cc'),
-    include_directories : include_directories(
+    include_directories : [
       'src',
-    ),
+    ],
     link_with : [libauracle],
     install : true)
 
