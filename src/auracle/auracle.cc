@@ -274,8 +274,7 @@ int Auracle::Info(const std::vector<std::string>& args,
                          }
 
                          auto results = response.value().results;
-                         std::copy(std::make_move_iterator(results.begin()),
-                                   std::make_move_iterator(results.end()),
+                         std::move(results.begin(), results.end(),
                                    std::back_inserter(packages));
 
                          return 0;
@@ -590,29 +589,41 @@ int Auracle::Sync(const std::vector<std::string>& args,
     }
   }
 
+  std::vector<aur::Package> packages;
   aur_.QueueRpcRequest(
       info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
 
-        for (const auto& r : response.value().results) {
-          auto iter = std::find_if(
-              local_pkgs.cbegin(), local_pkgs.cend(),
-              [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
-          if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
-            if (options.quiet) {
-              format::NameOnly(r);
-            } else {
-              format::Update(*iter, r);
-            }
-          }
-        }
+        auto results = response.value().results;
+        std::move(results.begin(), results.end(), std::back_inserter(packages));
 
         return 0;
       });
 
-  return aur_.Wait();
+  auto r = aur_.Wait();
+  if (r < 0) {
+    return r;
+  }
+
+  std::sort(packages.begin(), packages.end(),
+            sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC));
+
+  for (const auto& r : packages) {
+    auto iter = std::find_if(
+        local_pkgs.cbegin(), local_pkgs.cend(),
+        [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
+    if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
+      if (options.quiet) {
+        format::NameOnly(r);
+      } else {
+        format::Update(*iter, r);
+      }
+    }
+  }
+
+  return !packages.empty();
 }
 
 int Auracle::RawSearch(const std::vector<std::string>& args,
