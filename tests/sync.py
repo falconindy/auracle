@@ -22,5 +22,10 @@ class TestDownload(auracle_test.TestCase):
             '/rpc?v=5&type=info&arg[]=auracle-git'])
 
 
+    def testExitsNonZeroWithoutUpgrades(self):
+        p = self.Auracle(['sync', '--quiet', 'ocaml'])
+        self.assertEqual(p.returncode, 1)
+
+
 if __name__ == '__main__':
     auracle_test.main()

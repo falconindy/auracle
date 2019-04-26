@@ -610,11 +610,13 @@ int Auracle::Sync(const std::vector<std::string>& args,
   std::sort(packages.begin(), packages.end(),
             sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC));
 
+  bool updates_available = false;
   for (const auto& r : packages) {
     auto iter = std::find_if(
         local_pkgs.cbegin(), local_pkgs.cend(),
         [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
     if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
+      updates_available = true;
       if (options.quiet) {
         format::NameOnly(r);
       } else {
@@ -623,7 +625,11 @@ int Auracle::Sync(const std::vector<std::string>& args,
     }
   }
 
-  return !packages.empty();
+  if (!updates_available) {
+    return -ENOENT;
+  }
+
+  return 0;
 }
 
 int Auracle::RawSearch(const std::vector<std::string>& args,
