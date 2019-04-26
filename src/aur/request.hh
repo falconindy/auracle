@@ -69,9 +69,8 @@ class CloneRequest : public Request {
 // A base class describing a GET request to the RPC endpoint of the AUR.
 class RpcRequest : public HttpRequest {
  public:
-  // Upper limit for HTTP/1.1 on aur.archlinux.org is somewhere in the 8000s,
-  // but closer to 4k for HTTP2. Let's stick with something that works for both.
-  static constexpr int kMaxUriLength = 4000;
+  // Upper limit on aur.archlinux.org seems to be somewhere around 8k.
+  static constexpr int kMaxUriLength = 8000;
 
   RpcRequest(const HttpRequest::QueryParams& base_params,
              long unsigned approx_max_length = kMaxUriLength);
