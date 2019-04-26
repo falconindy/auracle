@@ -102,8 +102,6 @@ class Auracle {
     PackageCache package_cache;
   };
 
-  int SendRawRpc(const aur::RpcRequest* request);
-
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
   aur::Aur aur_;
