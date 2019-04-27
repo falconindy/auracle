@@ -14,7 +14,7 @@ class TestBuildOrder(auracle_test.TestCase):
             'AUR ocaml-sexplib0 ocaml-sexplib0',
             'AUR ocaml-base ocaml-base',
             'AUR ocaml-stdio ocaml-stdio',
-            'AUR ocaml-configurator ocaml-configurator',
+            'TARGETAUR ocaml-configurator ocaml-configurator',
        ])
 
 
@@ -28,13 +28,13 @@ class TestBuildOrder(auracle_test.TestCase):
             'AUR ocaml-sexplib0 ocaml-sexplib0',
             'AUR ocaml-base ocaml-base',
             'AUR ocaml-stdio ocaml-stdio',
-            'AUR ocaml-configurator ocaml-configurator',
+            'TARGETAUR ocaml-configurator ocaml-configurator',
             'REPOS zlib',
             'REPOS gmp',
             'REPOS ocaml-findlib',
             'AUR ocaml-zarith ocaml-zarith',
             'REPOS ocamlbuild',
-            'AUR ocaml-cryptokit ocaml-cryptokit',
+            'TARGETAUR ocaml-cryptokit ocaml-cryptokit',
        ])
 
 
@@ -47,7 +47,7 @@ class TestBuildOrder(auracle_test.TestCase):
             'AUR ocaml-sexplib0 ocaml-sexplib0',
             'AUR ocaml-base ocaml-base',
             'AUR ocaml-stdio ocaml-stdio',
-            'AUR ocaml-configurator ocaml-configurator',
+            'TARGETAUR ocaml-configurator ocaml-configurator',
         ])
 
 
@@ -69,7 +69,7 @@ class TestBuildOrder(auracle_test.TestCase):
             'AUR ocaml-sexplib0 ocaml-sexplib0',
             'AUR ocaml-base ocaml-base',
             'AUR ocaml-stdio ocaml-stdio',
-            'AUR ocaml-configurator ocaml-configurator',
+            'TARGETAUR ocaml-configurator ocaml-configurator',
             'AUR ocaml-pcre ocaml-pcre',
             'AUR ocamlnet ocamlnet',
             'REPOS curl',
@@ -90,7 +90,27 @@ class TestBuildOrder(auracle_test.TestCase):
             'REPOS jbuilder',
             'AUR ocaml-sqlite3 ocaml-sqlite3',
             'AUR ocaml-ounit ocaml-ounit',
-            'AUR google-drive-ocamlfuse google-drive-ocamlfuse',
+            'TARGETAUR google-drive-ocamlfuse google-drive-ocamlfuse',
+        ])
+
+
+    # Fix dependencies here to avoid unknowns. Unknown deps should be handled
+    # in a separate test.
+    def testSatisfiedPackage(self):
+        p = self.Auracle(['buildorder', 'auracle-git'])
+        self.assertEqual(p.returncode, 0)
+        self.assertListEqual(p.stdout.decode().strip().splitlines(), [
+            'UNKNOWN pacman',
+            'UNKNOWN libarchive.so',
+            'REPOS libcurl.so',
+            'UNKNOWN libsystemd.so',
+            'UNKNOWN meson',
+            'UNKNOWN git',
+            'UNKNOWN cmake',
+            'AUR nlohmann-json nlohmann-json',
+            'UNKNOWN gtest',
+            'UNKNOWN gmock',
+            'TARGETAUR auracle-git auracle-git'
         ])
 
 

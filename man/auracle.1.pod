@@ -109,7 +109,9 @@ B<UNKNOWN>    The dependency was unable to be found anywhere. This might indicat
 =back
 
 Additionally, both of B<AUR> and B<REPOS> can be prefixed with B<SATISFIED> to
-indicate that the dependency is already installed.
+indicate that the dependency is already installed. B<AUR> may be prefixed with
+B<TARGET> to indicate that the package was explicitly specified on the
+commandline.
 
 =item B<clone> I<PACKAGES>...
 

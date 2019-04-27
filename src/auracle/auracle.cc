@@ -570,11 +570,15 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     const bool satisfied = pacman_->DependencyIsSatisfied(p.first);
     const bool from_aur = p.second != nullptr;
     const bool unknown = !from_aur && !pacman_->HasPackage(p.first);
+    const bool is_target =
+        std::find(args.begin(), args.end(), p.first) != args.end();
 
     if (unknown) {
       std::cout << "UNKNOWN";
     } else {
-      if (satisfied) {
+      if (is_target) {
+        std::cout << "TARGET";
+      } else if (satisfied) {
         std::cout << "SATISFIED";
       }
 
