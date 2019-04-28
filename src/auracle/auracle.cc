@@ -655,20 +655,25 @@ int Auracle::Sync(const std::vector<std::string>& args,
   return 0;
 }
 
+namespace {
+
+int RawSearchDone(aur::ResponseWrapper<aur::RawResponse> response) {
+  if (!response.ok()) {
+    std::cerr << "error: request failed: " << response.error() << "\n";
+    return -EIO;
+  }
+
+  std::cout << response.value().bytes << "\n";
+  return 0;
+}
+
+}  // namespace
+
 int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
-    aur_.QueueRawRequest(
-        aur::SearchRequest(options.search_by, arg),
-        [](aur::ResponseWrapper<aur::RawResponse> response) {
-          if (!response.ok()) {
-            std::cerr << "error: request failed: " << response.error() << "\n";
-            return -EIO;
-          }
-
-          std::cout << response.value().bytes << "\n";
-          return 0;
-        });
+    aur_.QueueRawRequest(aur::SearchRequest(options.search_by, arg),
+                         &RawSearchDone);
   }
 
   return aur_.Wait();
@@ -676,17 +681,7 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
 
 int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
-  aur_.QueueRawRequest(
-      aur::InfoRequest(args),
-      [](aur::ResponseWrapper<aur::RawResponse> response) {
-        if (!response.ok()) {
-          std::cerr << "error: request failed: " << response.error() << "\n";
-          return -EIO;
-        }
-
-        std::cout << response.value().bytes << "\n";
-        return 0;
-      });
+  aur_.QueueRawRequest(aur::InfoRequest(args), &RawSearchDone);
 
   return aur_.Wait();
 }
