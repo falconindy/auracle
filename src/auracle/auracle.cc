@@ -108,7 +108,7 @@ std::vector<std::string> NotFoundPackages(
     }
 
     if (std::find_if(got.cbegin(), got.cend(), [&p](const aur::Package& pkg) {
-          return pkg.name == std::string(p);
+          return pkg.name == p;
         }) != got.cend()) {
       continue;
     }
@@ -119,7 +119,7 @@ std::vector<std::string> NotFoundPackages(
   return missing;
 }
 
-std::string GetSearchFragment(const std::string& s) {
+std::string_view GetSearchFragment(std::string_view s) {
   static constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
 
   int span = 0;
@@ -136,7 +136,7 @@ std::string GetSearchFragment(const std::string& s) {
     if (strchr("[{", *argstr) != nullptr) {
       argstr = strpbrk(argstr + span, "]}");
       if (argstr == nullptr) {
-        return std::string();
+        return std::string_view();
       }
       continue;
     }
@@ -147,10 +147,10 @@ std::string GetSearchFragment(const std::string& s) {
   }
 
   if (span < 2) {
-    return std::string();
+    return std::string_view();
   }
 
-  return std::string(argstr, span);
+  return std::string_view(argstr, span);
 }
 
 bool ChdirIfNeeded(const fs::path& target) {
@@ -338,7 +338,7 @@ int Auracle::Search(const std::vector<std::string>& args,
 
   std::vector<aur::Package> packages;
   for (const auto& arg : args) {
-    std::string frag = arg;
+    std::string_view frag = arg;
     if (options.allow_regex) {
       frag = GetSearchFragment(arg);
       if (frag.empty() && options.allow_regex) {

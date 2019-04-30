@@ -16,7 +16,7 @@ class Request {
  public:
   virtual ~Request() = default;
 
-  virtual std::vector<std::string> Build(const std::string& baseurl) const = 0;
+  virtual std::vector<std::string> Build(std::string_view baseurl) const = 0;
 };
 
 class HttpRequest : public Request {
@@ -30,7 +30,7 @@ class RawRequest : public HttpRequest {
  public:
   static RawRequest ForTarball(const Package& package);
   static RawRequest ForSourceFile(const Package& package,
-                                  const std::string& filename);
+                                  std::string_view filename);
 
   explicit RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
 
@@ -40,7 +40,7 @@ class RawRequest : public HttpRequest {
   RawRequest(RawRequest&&) = default;
   RawRequest& operator=(RawRequest&&) = default;
 
-  std::vector<std::string> Build(const std::string& baseurl) const override;
+  std::vector<std::string> Build(std::string_view baseurl) const override;
 
  private:
   std::string urlpath_;
@@ -60,7 +60,7 @@ class CloneRequest : public Request {
 
   const std::string& reponame() const { return reponame_; }
 
-  std::vector<std::string> Build(const std::string& baseurl) const override;
+  std::vector<std::string> Build(std::string_view baseurl) const override;
 
  private:
   std::string reponame_;
@@ -81,9 +81,9 @@ class RpcRequest : public HttpRequest {
   RpcRequest(RpcRequest&&) = default;
   RpcRequest& operator=(RpcRequest&&) = default;
 
-  std::vector<std::string> Build(const std::string& baseurl) const override;
+  std::vector<std::string> Build(std::string_view baseurl) const override;
 
-  void AddArg(const std::string& key, const std::string& value);
+  void AddArg(std::string_view key, std::string_view value);
 
  private:
   std::string base_querystring_;
@@ -108,7 +108,7 @@ class InfoRequest : public RpcRequest {
 
   InfoRequest() : RpcRequest({{"v", "5"}, {"type", "info"}}) {}
 
-  void AddArg(const std::string& arg) { RpcRequest::AddArg("arg[]", arg); }
+  void AddArg(std::string_view arg) { RpcRequest::AddArg("arg[]", arg); }
 };
 
 class SearchRequest : public RpcRequest {
@@ -149,7 +149,7 @@ class SearchRequest : public RpcRequest {
     return SearchBy::INVALID;
   }
 
-  SearchRequest(SearchBy by, const std::string& arg)
+  SearchRequest(SearchBy by, std::string_view arg)
       : RpcRequest({
             {"v", "5"},
             {"type", "search"},

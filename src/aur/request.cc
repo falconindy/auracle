@@ -70,11 +70,11 @@ std::string StrJoin(Iterator begin, Iterator end, std::string_view s,
 
 }  // namespace
 
-void RpcRequest::AddArg(const std::string& key, const std::string& value) {
+void RpcRequest::AddArg(std::string_view key, std::string_view value) {
   args_.emplace_back(key, value);
 }
 
-std::vector<std::string> RpcRequest::Build(const std::string& baseurl) const {
+std::vector<std::string> RpcRequest::Build(std::string_view baseurl) const {
   const auto next_span = [&](std::string_view s) -> std::string_view {
     // No chopping needed.
     if (s.size() <= approx_max_length_) {
@@ -126,16 +126,16 @@ RawRequest RawRequest::ForTarball(const Package& package) {
 
 // static
 RawRequest RawRequest::ForSourceFile(const Package& package,
-                                     const std::string& filename) {
+                                     std::string_view filename) {
   return RawRequest(StrCat("/cgit/aur.git/plain/", filename,
                            "?h=", UrlEscape(package.pkgbase)));
 }
 
-std::vector<std::string> RawRequest::Build(const std::string& baseurl) const {
+std::vector<std::string> RawRequest::Build(std::string_view baseurl) const {
   return {StrCat(baseurl, urlpath_)};
 }
 
-std::vector<std::string> CloneRequest::Build(const std::string& baseurl) const {
+std::vector<std::string> CloneRequest::Build(std::string_view baseurl) const {
   return {StrCat(baseurl, "/", reponame_)};
 }
 
