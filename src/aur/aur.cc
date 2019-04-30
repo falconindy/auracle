@@ -127,15 +127,15 @@ class CloneResponseHandler
 
 Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
   curl_global_init(CURL_GLOBAL_SSL);
-  curl_ = curl_multi_init();
+  curl_multi_ = curl_multi_init();
 
-  curl_multi_setopt(curl_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+  curl_multi_setopt(curl_multi_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
 
-  curl_multi_setopt(curl_, CURLMOPT_SOCKETFUNCTION, &Aur::SocketCallback);
-  curl_multi_setopt(curl_, CURLMOPT_SOCKETDATA, this);
+  curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETFUNCTION, &Aur::SocketCallback);
+  curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETDATA, this);
 
-  curl_multi_setopt(curl_, CURLMOPT_TIMERFUNCTION, &Aur::TimerCallback);
-  curl_multi_setopt(curl_, CURLMOPT_TIMERDATA, this);
+  curl_multi_setopt(curl_multi_, CURLMOPT_TIMERFUNCTION, &Aur::TimerCallback);
+  curl_multi_setopt(curl_multi_, CURLMOPT_TIMERDATA, this);
 
   sigset_t ss{};
   sigaddset(&ss, SIGCHLD);
@@ -153,7 +153,7 @@ Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
 }
 
 Aur::~Aur() {
-  curl_multi_cleanup(curl_);
+  curl_multi_cleanup(curl_multi_);
   curl_global_cleanup();
 
   sd_event_source_unref(timer_);
@@ -227,7 +227,7 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
   };
   std::uint32_t events = action_to_revents(action);
 
-  if (iter != aur->active_io_.end()) {
+  if (io != nullptr) {
     if (sd_event_source_set_io_events(io, events) < 0) {
       return -1;
     }
@@ -262,11 +262,11 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
 // static
 int Aur::OnCurlIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
-  int action, k = 0;
 
   // Throwing an exception here would indicate a bug in Aur::SocketCallback.
   auto translated_fd = aur->translate_fds_[fd];
 
+  int action;
   if ((revents & (EPOLLIN | EPOLLOUT)) == (EPOLLIN | EPOLLOUT)) {
     action = CURL_POLL_INOUT;
   } else if (revents & EPOLLIN) {
@@ -277,8 +277,9 @@ int Aur::OnCurlIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
     action = 0;
   }
 
-  if (curl_multi_socket_action(aur->curl_, translated_fd, action, &k) !=
-      CURLM_OK) {
+  int unused;
+  if (curl_multi_socket_action(aur->curl_multi_, translated_fd, action,
+                               &unused) != CURLM_OK) {
     return -EINVAL;
   }
 
@@ -288,10 +289,10 @@ int Aur::OnCurlIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
 // static
 int Aur::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
-  int k = 0;
 
-  if (curl_multi_socket_action(aur->curl_, CURL_SOCKET_TIMEOUT, 0, &k) !=
-      CURLM_OK) {
+  int unused;
+  if (curl_multi_socket_action(aur->curl_multi_, CURL_SOCKET_TIMEOUT, 0,
+                               &unused) != CURLM_OK) {
     return -EINVAL;
   }
 
@@ -333,11 +334,6 @@ int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
   return 0;
 }
 
-void Aur::StartRequest(CURL* curl) {
-  curl_multi_add_handle(curl_, curl);
-  active_requests_.emplace(curl);
-}
-
 int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   ResponseHandler* handler;
   curl_easy_getinfo(curl, CURLINFO_PRIVATE, &handler);
@@ -361,7 +357,7 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
   }
 
   active_requests_.erase(curl);
-  curl_multi_remove_handle(curl_, curl);
+  curl_multi_remove_handle(curl_multi_, curl);
   curl_easy_cleanup(curl);
 
   return r;
@@ -376,7 +372,7 @@ int Aur::FinishRequest(sd_event_source* source) {
 int Aur::CheckFinished() {
   for (;;) {
     int unused;
-    auto msg = curl_multi_info_read(curl_, &unused);
+    auto msg = curl_multi_info_read(curl_multi_, &unused);
     if (msg == nullptr || msg->msg != CURLMSG_DONE) {
       break;
     }
@@ -425,7 +421,7 @@ struct TarballRequestTraits {
 
 template <typename RequestTraits>
 void Aur::QueueHttpRequest(
-    const Request& request,
+    const HttpRequest& request,
     const typename RequestTraits::ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request.Build(baseurl_)) {
     auto curl = curl_easy_init();
@@ -456,7 +452,8 @@ void Aur::QueueHttpRequest(
         break;
     }
 
-    StartRequest(curl);
+    curl_multi_add_handle(curl_multi_, curl);
+    active_requests_.emplace(curl);
   }
 }
 
@@ -532,7 +529,7 @@ void Aur::QueueTarballRequest(const RawRequest& request,
 void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }
 
 void Aur::SetMaxConnections(long connections) {
-  curl_multi_setopt(curl_, CURLMOPT_MAX_TOTAL_CONNECTIONS, connections);
+  curl_multi_setopt(curl_multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, connections);
 }
 
 }  // namespace aur

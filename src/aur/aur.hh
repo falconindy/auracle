@@ -72,10 +72,9 @@ class Aur {
 
   template <typename RequestType>
   void QueueHttpRequest(
-      const Request& request,
+      const HttpRequest& request,
       const typename RequestType::ResponseHandlerType::CallbackType& callback);
 
-  void StartRequest(CURL* curl);
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
   int FinishRequest(sd_event_source* source);
 
@@ -107,7 +106,7 @@ class Aur {
 
   long connect_timeout_ = 10;
 
-  CURLM* curl_;
+  CURLM* curl_multi_;
   ActiveRequests active_requests_;
   std::unordered_map<int, sd_event_source*> active_io_;
   std::unordered_map<int, int> translate_fds_;
