@@ -144,17 +144,17 @@ void NameOnly(const aur::Package& package) {
 }
 
 void Short(const aur::Package& package,
-           const auracle::Pacman::Package* local_package) {
+           const std::optional<auracle::Pacman::Package>& local_package) {
   namespace t = terminal;
 
-  const auto l = local_package;
+  const auto& l = local_package;
   const auto& p = package;
   const auto ood_color = p.out_of_date > std::chrono::seconds::zero()
                              ? &t::BoldRed
                              : &t::BoldGreen;
 
   std::string installed_package;
-  if (l != nullptr) {
+  if (l) {
     const auto local_ver_color =
         auracle::Pacman::Vercmp(l->pkgver, p.version) < 0 ? &t::BoldRed
                                                           : &t::BoldGreen;
@@ -168,10 +168,10 @@ void Short(const aur::Package& package,
 }
 
 void Long(const aur::Package& package,
-          const auracle::Pacman::Package* local_package) {
+          const std::optional<auracle::Pacman::Package>& local_package) {
   namespace t = terminal;
 
-  const auto l = local_package;
+  const auto& l = local_package;
   const auto& p = package;
 
   const auto ood_color = p.out_of_date > std::chrono::seconds::zero()
@@ -179,7 +179,7 @@ void Long(const aur::Package& package,
                              : &t::BoldGreen;
 
   std::string installed_package;
-  if (l != nullptr) {
+  if (l) {
     const auto local_ver_color =
         auracle::Pacman::Vercmp(l->pkgver, p.version) < 0 ? &t::BoldRed
                                                           : &t::BoldGreen;
@@ -229,11 +229,11 @@ void Update(const auracle::Pacman::Package& from, const aur::Package& to) {
              t::BoldGreen(to.version));
 }
 
-void FormatCustomTo(std::string* out, const std::string& format,
+void FormatCustomTo(std::string& out, const std::string& format,
                     const aur::Package& package) {
   // clang-format off
   fmt::format_to(
-      std::back_inserter(*out), format,
+      std::back_inserter(out), format,
       fmt::arg("name", package.name),
       fmt::arg("description", package.description),
       fmt::arg("maintainer", package.maintainer),
@@ -265,7 +265,7 @@ void FormatCustomTo(std::string* out, const std::string& format,
 void Custom(const std::string& format, const aur::Package& package) {
   std::string out;
 
-  FormatCustomTo(&out, format, package);
+  FormatCustomTo(out, format, package);
 
   fmt::print("{}\n", out);
 }
@@ -273,7 +273,7 @@ void Custom(const std::string& format, const aur::Package& package) {
 bool FormatIsValid(const std::string format, std::string* error) {
   try {
     std::string out;
-    FormatCustomTo(&out, std::string(format), aur::Package());
+    FormatCustomTo(out, std::string(format), aur::Package());
   } catch (const fmt::v5::format_error& e) {
     error->assign(e.what());
     return false;

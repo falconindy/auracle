@@ -29,8 +29,7 @@ int ErrorNotEnoughArgs() {
 void FormatLong(const std::vector<aur::Package>& packages,
                 const auracle::Pacman* pacman) {
   for (const auto& p : packages) {
-    auto local_pkg = pacman->GetLocalPackage(p.name);
-    format::Long(p, local_pkg ? &local_pkg.value() : nullptr);
+    format::Long(p, pacman->GetLocalPackage(p.name));
   }
 }
 
@@ -43,8 +42,7 @@ void FormatNameOnly(const std::vector<aur::Package>& packages) {
 void FormatShort(const std::vector<aur::Package>& packages,
                  const auracle::Pacman* pacman) {
   for (const auto& p : packages) {
-    auto local_pkg = pacman->GetLocalPackage(p.name);
-    format::Short(p, local_pkg ? &local_pkg.value() : nullptr);
+    format::Short(p, pacman->GetLocalPackage(p.name));
   }
 }
 
