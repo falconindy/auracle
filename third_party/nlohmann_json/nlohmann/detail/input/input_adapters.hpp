@@ -1,7 +1,9 @@
 #pragma once
 
+#include <array> // array
 #include <cassert> // assert
 #include <cstddef> // size_t
+#include <cstdio> //FILE *
 #include <cstring> // strlen
 #include <istream> // istream
 #include <iterator> // begin, end, iterator_traits, random_access_iterator_tag, distance, next
@@ -11,6 +13,7 @@
 #include <type_traits> // enable_if, is_base_of, is_pointer, is_integral, remove_pointer
 #include <utility> // pair, declval
 
+#include <nlohmann/detail/iterators/iterator_traits.hpp>
 #include <nlohmann/detail/macro_scope.hpp>
 
 namespace nlohmann
@@ -46,6 +49,35 @@ struct input_adapter_protocol
 using input_adapter_t = std::shared_ptr<input_adapter_protocol>;
 
 /*!
+Input adapter for stdio file access. This adapter read only 1 byte and do not use any
+ buffer. This adapter is a very low level adapter.
+*/
+class file_input_adapter : public input_adapter_protocol
+{
+  public:
+    explicit file_input_adapter(std::FILE* f)  noexcept
+        : m_file(f)
+    {}
+
+    // make class move-only
+    file_input_adapter(const file_input_adapter&) = delete;
+    file_input_adapter(file_input_adapter&&) = default;
+    file_input_adapter& operator=(const file_input_adapter&) = delete;
+    file_input_adapter& operator=(file_input_adapter&&) = default;
+    ~file_input_adapter() override = default;
+
+    std::char_traits<char>::int_type get_character() noexcept override
+    {
+        return std::fgetc(m_file);
+    }
+
+  private:
+    /// the file pointer to read from
+    std::FILE* m_file;
+};
+
+
+/*!
 Input adapter for a (caching) istream. Ignores a UFT Byte Order Mark at
 beginning of input. Does not support changing the underlying std::streambuf
 in mid-input. Maintains underlying std::istream and std::streambuf to support
@@ -60,8 +92,8 @@ class input_stream_adapter : public input_adapter_protocol
     ~input_stream_adapter() override
     {
         // clear stream flags; we use underlying streambuf I/O, do not
-        // maintain ifstream flags
-        is.clear();
+        // maintain ifstream flags, except eof
+        is.clear(is.rdstate() & std::ios::eofbit);
     }
 
     explicit input_stream_adapter(std::istream& i)
@@ -79,7 +111,13 @@ class input_stream_adapter : public input_adapter_protocol
     // end up as the same value, eg. 0xFFFFFFFF.
     std::char_traits<char>::int_type get_character() override
     {
-        return sb.sbumpc();
+        auto res = sb.sbumpc();
+        // set eof manually, as we don't use the istream interface.
+        if (res == EOF)
+        {
+            is.clear(is.rdstate() | std::ios::eofbit);
+        }
+        return res;
     }
 
   private:
@@ -124,7 +162,11 @@ template<typename WideStringType, size_t T>
 struct wide_string_input_helper
 {
     // UTF-32
-    static void fill_buffer(const WideStringType& str, size_t& current_wchar, std::array<std::char_traits<char>::int_type, 4>& utf8_bytes, size_t& utf8_bytes_index, size_t& utf8_bytes_filled)
+    static void fill_buffer(const WideStringType& str,
+                            size_t& current_wchar,
+                            std::array<std::char_traits<char>::int_type, 4>& utf8_bytes,
+                            size_t& utf8_bytes_index,
+                            size_t& utf8_bytes_filled)
     {
         utf8_bytes_index = 0;
 
@@ -136,39 +178,39 @@ struct wide_string_input_helper
         else
         {
             // get the current character
-            const auto wc = static_cast<int>(str[current_wchar++]);
+            const auto wc = static_cast<unsigned int>(str[current_wchar++]);
 
             // UTF-32 to UTF-8 encoding
             if (wc < 0x80)
             {
-                utf8_bytes[0] = wc;
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(wc);
                 utf8_bytes_filled = 1;
             }
             else if (wc <= 0x7FF)
             {
-                utf8_bytes[0] = 0xC0 | ((wc >> 6) & 0x1F);
-                utf8_bytes[1] = 0x80 | (wc & 0x3F);
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(0xC0u | ((wc >> 6u) & 0x1Fu));
+                utf8_bytes[1] = static_cast<std::char_traits<char>::int_type>(0x80u | (wc & 0x3Fu));
                 utf8_bytes_filled = 2;
             }
             else if (wc <= 0xFFFF)
             {
-                utf8_bytes[0] = 0xE0 | ((wc >> 12) & 0x0F);
-                utf8_bytes[1] = 0x80 | ((wc >> 6) & 0x3F);
-                utf8_bytes[2] = 0x80 | (wc & 0x3F);
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(0xE0u | ((wc >> 12u) & 0x0Fu));
+                utf8_bytes[1] = static_cast<std::char_traits<char>::int_type>(0x80u | ((wc >> 6u) & 0x3Fu));
+                utf8_bytes[2] = static_cast<std::char_traits<char>::int_type>(0x80u | (wc & 0x3Fu));
                 utf8_bytes_filled = 3;
             }
             else if (wc <= 0x10FFFF)
             {
-                utf8_bytes[0] = 0xF0 | ((wc >> 18) & 0x07);
-                utf8_bytes[1] = 0x80 | ((wc >> 12) & 0x3F);
-                utf8_bytes[2] = 0x80 | ((wc >> 6) & 0x3F);
-                utf8_bytes[3] = 0x80 | (wc & 0x3F);
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(0xF0u | ((wc >> 18u) & 0x07u));
+                utf8_bytes[1] = static_cast<std::char_traits<char>::int_type>(0x80u | ((wc >> 12u) & 0x3Fu));
+                utf8_bytes[2] = static_cast<std::char_traits<char>::int_type>(0x80u | ((wc >> 6u) & 0x3Fu));
+                utf8_bytes[3] = static_cast<std::char_traits<char>::int_type>(0x80u | (wc & 0x3Fu));
                 utf8_bytes_filled = 4;
             }
             else
             {
                 // unknown character
-                utf8_bytes[0] = wc;
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(wc);
                 utf8_bytes_filled = 1;
             }
         }
@@ -179,7 +221,11 @@ template<typename WideStringType>
 struct wide_string_input_helper<WideStringType, 2>
 {
     // UTF-16
-    static void fill_buffer(const WideStringType& str, size_t& current_wchar, std::array<std::char_traits<char>::int_type, 4>& utf8_bytes, size_t& utf8_bytes_index, size_t& utf8_bytes_filled)
+    static void fill_buffer(const WideStringType& str,
+                            size_t& current_wchar,
+                            std::array<std::char_traits<char>::int_type, 4>& utf8_bytes,
+                            size_t& utf8_bytes_index,
+                            size_t& utf8_bytes_filled)
     {
         utf8_bytes_index = 0;
 
@@ -191,44 +237,44 @@ struct wide_string_input_helper<WideStringType, 2>
         else
         {
             // get the current character
-            const auto wc = static_cast<int>(str[current_wchar++]);
+            const auto wc = static_cast<unsigned int>(str[current_wchar++]);
 
             // UTF-16 to UTF-8 encoding
             if (wc < 0x80)
             {
-                utf8_bytes[0] = wc;
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(wc);
                 utf8_bytes_filled = 1;
             }
             else if (wc <= 0x7FF)
             {
-                utf8_bytes[0] = 0xC0 | ((wc >> 6));
-                utf8_bytes[1] = 0x80 | (wc & 0x3F);
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(0xC0u | ((wc >> 6u)));
+                utf8_bytes[1] = static_cast<std::char_traits<char>::int_type>(0x80u | (wc & 0x3Fu));
                 utf8_bytes_filled = 2;
             }
             else if (0xD800 > wc or wc >= 0xE000)
             {
-                utf8_bytes[0] = 0xE0 | ((wc >> 12));
-                utf8_bytes[1] = 0x80 | ((wc >> 6) & 0x3F);
-                utf8_bytes[2] = 0x80 | (wc & 0x3F);
+                utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(0xE0u | ((wc >> 12u)));
+                utf8_bytes[1] = static_cast<std::char_traits<char>::int_type>(0x80u | ((wc >> 6u) & 0x3Fu));
+                utf8_bytes[2] = static_cast<std::char_traits<char>::int_type>(0x80u | (wc & 0x3Fu));
                 utf8_bytes_filled = 3;
             }
             else
             {
                 if (current_wchar < str.size())
                 {
-                    const auto wc2 = static_cast<int>(str[current_wchar++]);
-                    const int charcode = 0x10000 + (((wc & 0x3FF) << 10) | (wc2 & 0x3FF));
-                    utf8_bytes[0] = 0xf0 | (charcode >> 18);
-                    utf8_bytes[1] = 0x80 | ((charcode >> 12) & 0x3F);
-                    utf8_bytes[2] = 0x80 | ((charcode >> 6) & 0x3F);
-                    utf8_bytes[3] = 0x80 | (charcode & 0x3F);
+                    const auto wc2 = static_cast<unsigned int>(str[current_wchar++]);
+                    const auto charcode = 0x10000u + (((wc & 0x3FFu) << 10u) | (wc2 & 0x3FFu));
+                    utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(0xF0u | (charcode >> 18u));
+                    utf8_bytes[1] = static_cast<std::char_traits<char>::int_type>(0x80u | ((charcode >> 12u) & 0x3Fu));
+                    utf8_bytes[2] = static_cast<std::char_traits<char>::int_type>(0x80u | ((charcode >> 6u) & 0x3Fu));
+                    utf8_bytes[3] = static_cast<std::char_traits<char>::int_type>(0x80u | (charcode & 0x3Fu));
                     utf8_bytes_filled = 4;
                 }
                 else
                 {
                     // unknown character
                     ++current_wchar;
-                    utf8_bytes[0] = wc;
+                    utf8_bytes[0] = static_cast<std::char_traits<char>::int_type>(wc);
                     utf8_bytes_filled = 1;
                 }
             }
@@ -240,7 +286,7 @@ template<typename WideStringType>
 class wide_string_input_adapter : public input_adapter_protocol
 {
   public:
-    explicit wide_string_input_adapter(const WideStringType& w)  noexcept
+    explicit wide_string_input_adapter(const WideStringType& w) noexcept
         : str(w)
     {}
 
@@ -287,7 +333,8 @@ class input_adapter
 {
   public:
     // native support
-
+    input_adapter(std::FILE* file)
+        : ia(std::make_shared<file_input_adapter>(file)) {}
     /// input adapter for input stream
     input_adapter(std::istream& i)
         : ia(std::make_shared<input_stream_adapter>(i)) {}
@@ -331,7 +378,7 @@ class input_adapter
     /// input adapter for iterator range with contiguous storage
     template<class IteratorType,
              typename std::enable_if<
-                 std::is_same<typename std::iterator_traits<IteratorType>::iterator_category, std::random_access_iterator_tag>::value,
+                 std::is_same<typename iterator_traits<IteratorType>::iterator_category, std::random_access_iterator_tag>::value,
                  int>::type = 0>
     input_adapter(IteratorType first, IteratorType last)
     {
@@ -350,7 +397,7 @@ class input_adapter
 
         // assertion to check that each element is 1 byte long
         static_assert(
-            sizeof(typename std::iterator_traits<IteratorType>::value_type) == 1,
+            sizeof(typename iterator_traits<IteratorType>::value_type) == 1,
             "each element in the iterator range must have the size of 1 byte");
 
         const auto len = static_cast<size_t>(std::distance(first, last));
@@ -374,7 +421,7 @@ class input_adapter
     /// input adapter for contiguous container
     template<class ContiguousContainer, typename
              std::enable_if<not std::is_pointer<ContiguousContainer>::value and
-                            std::is_base_of<std::random_access_iterator_tag, typename std::iterator_traits<decltype(std::begin(std::declval<ContiguousContainer const>()))>::iterator_category>::value,
+                            std::is_base_of<std::random_access_iterator_tag, typename iterator_traits<decltype(std::begin(std::declval<ContiguousContainer const>()))>::iterator_category>::value,
                             int>::type = 0>
     input_adapter(const ContiguousContainer& c)
         : input_adapter(std::begin(c), std::end(c)) {}
