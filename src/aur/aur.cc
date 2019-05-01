@@ -130,6 +130,7 @@ Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
   curl_multi_ = curl_multi_init();
 
   curl_multi_setopt(curl_multi_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
+  curl_multi_setopt(curl_multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, 5L);
 
   curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETFUNCTION, &Aur::SocketCallback);
   curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETDATA, this);
@@ -437,7 +438,7 @@ void Aur::QueueHttpRequest(
     curl_easy_setopt(curl, CURLOPT_PRIVATE, response_handler);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, response_handler->error_buffer);
     curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestTraits::kEncoding);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout_);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
 
     switch (debug_level_) {
@@ -524,12 +525,6 @@ void Aur::QueueRpcRequest(const RpcRequest& request,
 void Aur::QueueTarballRequest(const RawRequest& request,
                               const RawResponseCallback& callback) {
   QueueHttpRequest<TarballRequestTraits>(request, callback);
-}
-
-void Aur::SetConnectTimeout(long timeout) { connect_timeout_ = timeout; }
-
-void Aur::SetMaxConnections(long connections) {
-  curl_multi_setopt(curl_multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, connections);
 }
 
 }  // namespace aur

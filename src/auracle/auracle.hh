@@ -24,16 +24,6 @@ class Auracle {
       return *this;
     }
 
-    Options& set_max_connections(int max_connections) {
-      this->max_connections = max_connections;
-      return *this;
-    }
-
-    Options& set_connection_timeout(int connection_timeout) {
-      this->connection_timeout = connection_timeout;
-      return *this;
-    }
-
     Options& set_quiet(bool quiet) {
       this->quiet = quiet;
       return *this;
@@ -42,15 +32,10 @@ class Auracle {
     std::string aur_baseurl;
     Pacman* pacman = nullptr;
     bool quiet = false;
-    int max_connections = 0;
-    int connection_timeout = 0;
   };
 
   explicit Auracle(Options options)
-      : aur_(options.aur_baseurl), pacman_(options.pacman) {
-    aur_.SetMaxConnections(options.max_connections);
-    aur_.SetConnectTimeout(options.connection_timeout);
-  }
+      : aur_(options.aur_baseurl), pacman_(options.pacman) {}
 
   ~Auracle() = default;
 

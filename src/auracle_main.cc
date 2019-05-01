@@ -19,8 +19,6 @@ struct Flags {
 
   std::string baseurl = kAurBaseurl;
   std::string pacman_config = kPacmanConf;
-  int max_connections = 5;
-  int connect_timeout = 10;
   terminal::WantColor color = terminal::WantColor::AUTO;
 
   auracle::Auracle::CommandOptions command_options;
@@ -39,8 +37,6 @@ __attribute__((noreturn)) void usage() {
       "  -r, --recurse            Recurse through dependencies on download\n"
       "      --literal            Disallow regex in searches\n"
       "      --searchby=BY        Change search-by dimension\n"
-      "      --connect-timeout=N  Set connection timeout in seconds\n"
-      "      --max-connections=N  Limit active connections\n"
       "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
       "      --sort=KEY           Sort results in ascending order by KEY\n"
       "      --rsort=KEY          Sort results in descending order by KEY\n"
@@ -70,9 +66,7 @@ __attribute__((noreturn)) void version() {
 bool Flags::ParseFromArgv(int* argc, char*** argv) {
   enum {
     ARG_COLOR = 1000,
-    ARG_CONNECT_TIMEOUT,
     ARG_LITERAL,
-    ARG_MAX_CONNECTIONS,
     ARG_SEARCHBY,
     ARG_VERSION,
     ARG_BASEURL,
@@ -89,9 +83,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
       { "recurse",         no_argument,       nullptr, 'r' },
       { "chdir",           required_argument, nullptr, 'C' },
       { "color",           required_argument, nullptr, ARG_COLOR },
-      { "connect-timeout", required_argument, nullptr, ARG_CONNECT_TIMEOUT },
       { "literal",         no_argument,       nullptr, ARG_LITERAL },
-      { "max-connections", required_argument, nullptr, ARG_MAX_CONNECTIONS },
       { "rsort",           required_argument, nullptr, ARG_RSORT },
       { "searchby",        required_argument, nullptr, ARG_SEARCHBY },
       { "show-file",       required_argument, nullptr, ARG_SHOW_FILE },
@@ -105,11 +97,6 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
       { "pacmanconfig",    required_argument, nullptr, ARG_PACMAN_CONFIG },
       {},
       // clang-format on
-  };
-
-  const auto stoi = [](std::string_view s, int* i) -> bool {
-    auto r = std::from_chars(s.data(), s.data() + s.size(), *i);
-    return r.ec == std::errc{} && r.ptr == s.end();
   };
 
   int opt;
@@ -153,20 +140,6 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         if (command_options.search_by == SearchBy::INVALID) {
           std::cerr << "error: invalid arg to --searchby: " << sv_optarg
                     << "\n";
-          return false;
-        }
-        break;
-      case ARG_CONNECT_TIMEOUT:
-        if (!stoi(sv_optarg, &connect_timeout) || max_connections < 0) {
-          std::cerr << "error: invalid value to --connect-timeout: "
-                    << sv_optarg << "\n";
-          return false;
-        }
-        break;
-      case ARG_MAX_CONNECTIONS:
-        if (!stoi(sv_optarg, &max_connections) || max_connections < 0) {
-          std::cerr << "error: invalid value to --max-connections: "
-                    << sv_optarg << "\n";
           return false;
         }
         break;
@@ -245,9 +218,7 @@ int main(int argc, char** argv) {
 
   auracle::Auracle auracle(auracle::Auracle::Options()
                                .set_aur_baseurl(flags.baseurl)
-                               .set_pacman(pacman.get())
-                               .set_connection_timeout(flags.connect_timeout)
-                               .set_max_connections(flags.max_connections));
+                               .set_pacman(pacman.get()));
 
   const std::string_view action(argv[1]);
   const std::vector<std::string> args(argv + 2, argv + argc);

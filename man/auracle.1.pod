@@ -24,14 +24,6 @@ to a terminal.
 
 This option defaults to I<auto>.
 
-=item B<--connect-timeout=>
-
-Pass an integer to specify a connection timeout, in seconds, for each
-connection made to the AUR. A singled failed connection will result in the
-entire operation failing. If zero, there will be no connection timeout.
-
-This option defaults to 10 seconds.
-
 =item B<-h>, B<--help>
 
 Print a short help text and exit.
@@ -40,13 +32,6 @@ Print a short help text and exit.
 
 When used with the B<search> command, interpret all search terms as literal,
 rather than as regular expressions.
-
-=item B<--max-connections=>I<N>
-
-Pass an integer value to limit the number of simultaneous connections to the
-AUR backend. If zero, there will be no connection limit.
-
-This option defaults to 5.
 
 =item B<--quiet>
 
