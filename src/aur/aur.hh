@@ -35,14 +35,6 @@ class Aur {
   Aur(Aur&&) = default;
   Aur& operator=(Aur&&) = default;
 
-  // Sets the maximum number of allowed simultaneous connections open to the AUR
-  // server at any given time. Set to 0 to specify unlimited connections.
-  void SetMaxConnections(long connections);
-
-  // Sets the connection timeout, in seconds for each connection to the AUR
-  // server. Set to 0 to specify no timeout.
-  void SetConnectTimeout(long timeout);
-
   // Asynchronously issue an RPC request. The callback will be invoked when the
   // call completes.
   void QueueRpcRequest(const RpcRequest& request,
