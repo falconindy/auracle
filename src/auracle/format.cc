@@ -270,10 +270,10 @@ void Custom(const std::string& format, const aur::Package& package) {
   fmt::print("{}\n", out);
 }
 
-bool FormatIsValid(const std::string format, std::string* error) {
+bool FormatIsValid(const std::string& format, std::string* error) {
   try {
     std::string out;
-    FormatCustomTo(out, std::string(format), aur::Package());
+    FormatCustomTo(out, format, aur::Package());
   } catch (const fmt::v5::format_error& e) {
     error->assign(e.what());
     return false;

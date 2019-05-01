@@ -16,7 +16,7 @@ void Long(const aur::Package& package,
           const std::optional<auracle::Pacman::Package>& local_package);
 void Custom(const std::string& format, const aur::Package& package);
 
-bool FormatIsValid(const std::string format, std::string* error);
+bool FormatIsValid(const std::string& format, std::string* error);
 
 }  // namespace format
 
