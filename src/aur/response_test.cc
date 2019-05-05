@@ -4,7 +4,6 @@
 #include "gtest/gtest.h"
 
 using testing::Field;
-using testing::IsEmpty;
 using testing::UnorderedElementsAre;
 
 TEST(ResponseTest, ParsesJson) {
@@ -33,6 +32,12 @@ TEST(ResponseTest, ParsesJson) {
           "libarchive.so",
           "libcurl.so"
         ],
+        "Groups": [
+          "whydoestheaurhavegroups"
+        ],
+        "CheckDepends": [
+          "python"
+        ],
         "MakeDepends": [
           "meson",
           "git",
@@ -54,7 +59,9 @@ TEST(ResponseTest, ParsesJson) {
         "OptDepends": [
           "awesomeness"
         ],
-        "Keywords": []
+        "Keywords": [
+          "aur"
+        ]
       }
     ]
   })";
@@ -90,10 +97,13 @@ TEST(ResponseTest, ParsesJson) {
                   Field(&aur::Dependency::depstring, "meson"),
                   Field(&aur::Dependency::depstring, "git"),
                   Field(&aur::Dependency::depstring, "nlohmann-json")));
+  EXPECT_THAT(result.checkdepends, UnorderedElementsAre(Field(
+                                       &aur::Dependency::depstring, "python")));
   EXPECT_THAT(result.optdepends, UnorderedElementsAre("awesomeness"));
   EXPECT_THAT(result.conflicts, UnorderedElementsAre("auracle"));
   EXPECT_THAT(result.replaces, UnorderedElementsAre("cower", "cower-git"));
   EXPECT_THAT(result.provides, UnorderedElementsAre("auracle"));
   EXPECT_THAT(result.licenses, UnorderedElementsAre("MIT"));
-  EXPECT_THAT(result.keywords, IsEmpty());
+  EXPECT_THAT(result.keywords, UnorderedElementsAre("aur"));
+  EXPECT_THAT(result.groups, UnorderedElementsAre("whydoestheaurhavegroups"));
 }
