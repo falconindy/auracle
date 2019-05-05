@@ -37,60 +37,36 @@ void from_json(const nlohmann::json& j, Dependency& d) {
 }
 
 void from_json(const nlohmann::json& j, Package& p) {
-  for (const auto& iter : j.items()) {
-    const auto& key = iter.key();
-    const auto& value = iter.value();
+  // clang-format off
+  static const auto& callbacks = *new CallbackMap<Package>{
+    { "CheckDepends",     MakeValueCallback(&Package::checkdepends) },
+    { "Conflicts",        MakeValueCallback(&Package::conflicts) },
+    { "Depends",          MakeValueCallback(&Package::depends) },
+    { "Description",      MakeValueCallback(&Package::description) },
+    { "FirstSubmitted",   MakeValueCallback(&Package::submitted_s) },
+    { "Groups",           MakeValueCallback(&Package::groups) },
+    { "ID",               MakeValueCallback(&Package::package_id) },
+    { "Keywords",         MakeValueCallback(&Package::keywords) },
+    { "LastModified",     MakeValueCallback(&Package::modified_s) },
+    { "License",          MakeValueCallback(&Package::licenses) },
+    { "Maintainer",       MakeValueCallback(&Package::maintainer) },
+    { "MakeDepends",      MakeValueCallback(&Package::makedepends) },
+    { "Name",             MakeValueCallback(&Package::name) },
+    { "NumVotes",         MakeValueCallback(&Package::votes) },
+    { "OptDepends",       MakeValueCallback(&Package::optdepends) },
+    { "OutOfDate",        MakeValueCallback(&Package::out_of_date) },
+    { "PackageBase",      MakeValueCallback(&Package::pkgbase) },
+    { "PackageBaseID",    MakeValueCallback(&Package::pkgbase_id) },
+    { "Popularity",       MakeValueCallback(&Package::popularity) },
+    { "Provides",         MakeValueCallback(&Package::provides) },
+    { "Replaces",         MakeValueCallback(&Package::replaces) },
+    { "URL",              MakeValueCallback(&Package::upstream_url) },
+    { "URLPath",          MakeValueCallback(&Package::aur_urlpath) },
+    { "Version",          MakeValueCallback(&Package::version) },
+  };
+  // clang-format on
 
-    if (key == "Name") {
-      from_json(value, p.name);
-    } else if (key == "Description") {
-      from_json(value, p.description);
-    } else if (key == "Maintainer") {
-      from_json(value, p.maintainer);
-    } else if (key == "PackageBase") {
-      from_json(value, p.pkgbase);
-    } else if (key == "URL") {
-      from_json(value, p.upstream_url);
-    } else if (key == "URLPath") {
-      from_json(value, p.aur_urlpath);
-    } else if (key == "Version") {
-      from_json(value, p.version);
-    } else if (key == "Conflicts") {
-      from_json(value, p.conflicts);
-    } else if (key == "Groups") {
-      from_json(value, p.groups);
-    } else if (key == "Keywords") {
-      from_json(value, p.keywords);
-    } else if (key == "License") {
-      from_json(value, p.licenses);
-    } else if (key == "OptDepends") {
-      from_json(value, p.optdepends);
-    } else if (key == "Provides") {
-      from_json(value, p.provides);
-    } else if (key == "Replaces") {
-      from_json(value, p.replaces);
-    } else if (key == "CheckDepends") {
-      from_json(value, p.checkdepends);
-    } else if (key == "Depends") {
-      from_json(value, p.depends);
-    } else if (key == "MakeDepends") {
-      from_json(value, p.makedepends);
-    } else if (key == "ID") {
-      from_json(value, p.package_id);
-    } else if (key == "PackageBaseID") {
-      from_json(value, p.pkgbase_id);
-    } else if (key == "NumVotes") {
-      from_json(value, p.votes);
-    } else if (key == "Popularity") {
-      from_json(value, p.popularity);
-    } else if (key == "FirstSubmitted") {
-      from_json(value, p.submitted_s);
-    } else if (key == "LastModified") {
-      from_json(value, p.modified_s);
-    } else if (key == "OutOfDate") {
-      from_json(value, p.out_of_date);
-    }
-  }
+  DeserializeJsonObject(j, callbacks, p);
 }
 
 }  // namespace aur

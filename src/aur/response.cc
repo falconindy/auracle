@@ -5,22 +5,17 @@
 namespace aur {
 
 void from_json(const nlohmann::json& j, RpcResponse& r) {
-  for (const auto& iter : j.items()) {
-    const auto& key = iter.key();
-    const auto& value = iter.value();
+  // clang-format off
+  static const auto& callbacks = *new CallbackMap<RpcResponse>{
+    { "type",         MakeValueCallback(&RpcResponse::type) },
+    { "error",        MakeValueCallback(&RpcResponse::error) },
+    { "resultcount",  MakeValueCallback(&RpcResponse::resultcount) },
+    { "version",      MakeValueCallback(&RpcResponse::version) },
+    { "results",      MakeValueCallback(&RpcResponse::results) },
+  };
+  // clang-format on
 
-    if (key == "type") {
-      from_json(value, r.type);
-    } else if (key == "error") {
-      from_json(value, r.error);
-    } else if (key == "resultcount") {
-      from_json(value, r.resultcount);
-    } else if (key == "version") {
-      from_json(value, r.version);
-    } else if (key == "results") {
-      from_json(value, r.results);
-    }
-  }
+  DeserializeJsonObject(j, callbacks, r);
 }
 
 // static
