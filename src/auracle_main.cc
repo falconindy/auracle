@@ -228,23 +228,26 @@ int main(int argc, char** argv) {
                                const std::vector<std::string>& args,
                                const auracle::Auracle::CommandOptions& options)>
       cmds{
-          {"buildorder", &auracle::Auracle::BuildOrder},
-          {"clone", &auracle::Auracle::Clone},
-          {"download", &auracle::Auracle::Download},
-          {"info", &auracle::Auracle::Info},
-          {"rawinfo", &auracle::Auracle::RawInfo},
-          {"rawsearch", &auracle::Auracle::RawSearch},
-          {"search", &auracle::Auracle::Search},
-          {"show", &auracle::Auracle::Show},
-          {"sync", &auracle::Auracle::Sync},
+          // clang-format off
+          {"buildorder",  &auracle::Auracle::BuildOrder},
+          {"clone",       &auracle::Auracle::Clone},
+          {"download",    &auracle::Auracle::Download},
+          {"info",        &auracle::Auracle::Info},
+          {"rawinfo",     &auracle::Auracle::RawInfo},
+          {"rawsearch",   &auracle::Auracle::RawSearch},
+          {"search",      &auracle::Auracle::Search},
+          {"show",        &auracle::Auracle::Show},
+          {"sync",        &auracle::Auracle::Sync},
+          // clang-format on
       };
 
-  if (const auto iter = cmds.find(action); iter != cmds.end()) {
-    return (auracle.*iter->second)(args, flags.command_options) < 0 ? 1 : 0;
+  const auto iter = cmds.find(action);
+  if (iter == cmds.end()) {
+    std::cerr << "Unknown action " << action << "\n";
+    return 1;
   }
 
-  std::cerr << "Unknown action " << action << "\n";
-  return 1;
+  return (auracle.*iter->second)(args, flags.command_options) < 0 ? 1 : 0;
 }
 
 /* vim: set et ts=2 sw=2: */
