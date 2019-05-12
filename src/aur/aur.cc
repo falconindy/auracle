@@ -125,7 +125,7 @@ class CloneResponseHandler
 
 }  // namespace
 
-Aur::Aur(std::string baseurl) : baseurl_(std::move(baseurl)) {
+Aur::Aur(Options options) : options_(std::move(options)) {
   curl_global_init(CURL_GLOBAL_SSL);
   curl_multi_ = curl_multi_init();
 
@@ -424,7 +424,7 @@ template <typename RequestTraits>
 void Aur::QueueHttpRequest(
     const HttpRequest& request,
     const typename RequestTraits::ResponseHandlerType::CallbackType& callback) {
-  for (const auto& r : request.Build(baseurl_)) {
+  for (const auto& r : request.Build(options_.baseurl)) {
     auto curl = curl_easy_init();
 
     auto response_handler =
@@ -439,7 +439,7 @@ void Aur::QueueHttpRequest(
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, response_handler->error_buffer);
     curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestTraits::kEncoding);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Auracle/0");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, options_.useragent.c_str());
 
     switch (debug_level_) {
       case DEBUG_NONE:
@@ -490,7 +490,7 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   }
 
   if (pid == 0) {
-    const auto url = request.Build(baseurl_)[0];
+    const auto url = request.Build(options_.baseurl)[0];
 
     std::vector<const char*> cmd{"git"};
     if (update) {

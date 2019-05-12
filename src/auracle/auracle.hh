@@ -34,8 +34,7 @@ class Auracle {
     bool quiet = false;
   };
 
-  explicit Auracle(Options options)
-      : aur_(options.aur_baseurl), pacman_(options.pacman) {}
+  explicit Auracle(Options options);
 
   ~Auracle() = default;
 

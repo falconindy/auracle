@@ -24,9 +24,31 @@ class Aur {
   using CloneResponseCallback =
       std::function<int(ResponseWrapper<CloneResponse>)>;
 
+  struct Options {
+    Options() = default;
+
+    Options(const Options&) = default;
+    Options& operator=(const Options&) = default;
+
+    Options(Options&&) = default;
+    Options& operator=(Options&&) = default;
+
+    Options& set_baseurl(std::string baseurl) {
+      this->baseurl = std::move(baseurl);
+      return *this;
+    }
+    std::string baseurl;
+
+    Options& set_useragent(std::string useragent) {
+      this->useragent = std::move(useragent);
+      return *this;
+    }
+    std::string useragent;
+  };
+
   // Construct a new Aur object, rooted at the given URL, e.g.
   // https://aur.archlinux.org.
-  explicit Aur(std::string baseurl);
+  explicit Aur(Options options = Options());
   ~Aur();
 
   Aur(const Aur&) = delete;
@@ -94,7 +116,7 @@ class Aur {
   static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
                          void* userdata);
 
-  std::string baseurl_;
+  Options options_;
 
   long connect_timeout_ = 10;
 

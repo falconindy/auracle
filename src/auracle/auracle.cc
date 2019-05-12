@@ -193,6 +193,12 @@ bool RpcResponseIsFailure(
 
 }  // namespace
 
+Auracle::Auracle(Options options)
+    : aur_(aur::Aur::Options()
+               .set_baseurl(options.aur_baseurl)
+               .set_useragent("Auracle/" PACKAGE_VERSION)),
+      pacman_(options.pacman) {}
+
 void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
   aur::InfoRequest info_request;

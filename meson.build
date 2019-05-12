@@ -7,7 +7,7 @@ project('auracle', 'cpp',
         ])
 
 conf = configuration_data()
-conf.set('PACKAGE_VERSION', meson.project_version())
+conf.set_quoted('PACKAGE_VERSION', meson.project_version())
 
 cpp = meson.get_compiler('cpp')
 
