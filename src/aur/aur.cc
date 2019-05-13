@@ -196,9 +196,12 @@ void Aur::CancelAll() {
 int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
                         void*) {
   auto aur = static_cast<Aur*>(userdata);
+  return aur->DispatchSocketCallback(s, action);
+}
 
-  auto iter = aur->active_io_.find(s);
-  sd_event_source* io = iter != aur->active_io_.end() ? iter->second : nullptr;
+int Aur::DispatchSocketCallback(curl_socket_t s, int action) {
+  auto iter = active_io_.find(s);
+  sd_event_source* io = iter != active_io_.end() ? iter->second : nullptr;
 
   if (action == CURL_POLL_REMOVE) {
     if (io != nullptr) {
@@ -207,8 +210,8 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
       sd_event_source_set_enabled(io, SD_EVENT_OFF);
       sd_event_source_unref(io);
 
-      aur->active_io_.erase(iter);
-      aur->translate_fds_.erase(fd);
+      active_io_.erase(iter);
+      translate_fds_.erase(fd);
 
       close(fd);
     }
@@ -248,13 +251,12 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
       return -1;
     }
 
-    if (sd_event_add_io(aur->event_, &io, fd, events, &Aur::OnCurlIO, aur) <
-        0) {
+    if (sd_event_add_io(event_, &io, fd, events, &Aur::OnCurlIO, this) < 0) {
       return -1;
     }
 
-    aur->active_io_.emplace(s, io);
-    aur->translate_fds_.emplace(fd, s);
+    active_io_.emplace(s, io);
+    translate_fds_.emplace(fd, s);
   }
 
   return 0;
@@ -303,10 +305,13 @@ int Aur::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
 // static
 int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
+  return aur->DispatchTimerCallback(timeout_ms);
+}
 
+int Aur::DispatchTimerCallback(long timeout_ms) {
   if (timeout_ms < 0) {
-    if (aur->timer_ != nullptr) {
-      if (sd_event_source_set_enabled(aur->timer_, SD_EVENT_OFF) < 0) {
+    if (timer_ != nullptr) {
+      if (sd_event_source_set_enabled(timer_, SD_EVENT_OFF) < 0) {
         return -1;
       }
     }
@@ -317,17 +322,17 @@ int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
   auto usec = TimepointTo<std::chrono::microseconds>(
       std::chrono::steady_clock::now() + std::chrono::milliseconds(timeout_ms));
 
-  if (aur->timer_ != nullptr) {
-    if (sd_event_source_set_time(aur->timer_, usec) < 0) {
+  if (timer_ != nullptr) {
+    if (sd_event_source_set_time(timer_, usec) < 0) {
       return -1;
     }
 
-    if (sd_event_source_set_enabled(aur->timer_, SD_EVENT_ONESHOT) < 0) {
+    if (sd_event_source_set_enabled(timer_, SD_EVENT_ONESHOT) < 0) {
       return -1;
     }
   } else {
-    if (sd_event_add_time(aur->event_, &aur->timer_, CLOCK_MONOTONIC, usec, 0,
-                          &Aur::OnCurlTimer, aur) < 0) {
+    if (sd_event_add_time(event_, &timer_, CLOCK_MONOTONIC, usec, 0,
+                          &Aur::OnCurlTimer, this) < 0) {
       return -1;
     }
   }

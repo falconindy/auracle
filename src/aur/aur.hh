@@ -109,7 +109,11 @@ class Aur {
 
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
                             void* userdata, void* socketp);
+  int DispatchSocketCallback(curl_socket_t s, int action);
+
   static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
+  int DispatchTimerCallback(long timeout_ms);
+
   static int OnCurlIO(sd_event_source* s, int fd, uint32_t revents,
                       void* userdata);
   static int OnCurlTimer(sd_event_source* s, uint64_t usec, void* userdata);
