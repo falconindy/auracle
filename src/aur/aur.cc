@@ -146,10 +146,10 @@ Aur::Aur(Options options) : options_(std::move(options)) {
 
   std::string_view debug = GetEnv("AURACLE_DEBUG");
   if (ConsumePrefix(&debug, "requests:")) {
-    debug_level_ = DEBUG_REQUESTS;
+    debug_level_ = DebugLevel::REQUESTS;
     debug_stream_.open(std::string(debug), std::ofstream::trunc);
   } else if (!debug.empty()) {
-    debug_level_ = DEBUG_VERBOSE_STDERR;
+    debug_level_ = DebugLevel::VERBOSE_STDERR;
   }
 }
 
@@ -442,13 +442,13 @@ void Aur::QueueHttpRequest(
     curl_easy_setopt(curl, CURLOPT_USERAGENT, options_.useragent.c_str());
 
     switch (debug_level_) {
-      case DEBUG_NONE:
+      case DebugLevel::NONE:
         break;
-      case DEBUG_REQUESTS:
+      case DebugLevel::REQUESTS:
         curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &RH::DebugCallback);
         curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_stream_);
         [[fallthrough]];
-      case DEBUG_VERBOSE_STDERR:
+      case DebugLevel::VERBOSE_STDERR:
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
         break;
     }

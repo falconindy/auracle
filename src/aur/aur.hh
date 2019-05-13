@@ -96,15 +96,15 @@ class Aur {
   void CancelAll();
   void Cancel(const ActiveRequests::value_type& request);
 
-  enum DebugLevel {
+  enum class DebugLevel {
     // No debugging.
-    DEBUG_NONE,
+    NONE,
 
     // Enable Curl's verbose output to stderr
-    DEBUG_VERBOSE_STDERR,
+    VERBOSE_STDERR,
 
     // Enable Curl debug handler, write outbound requests made to a file
-    DEBUG_REQUESTS,
+    REQUESTS,
   };
 
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
@@ -118,8 +118,6 @@ class Aur {
 
   Options options_;
 
-  long connect_timeout_ = 10;
-
   CURLM* curl_multi_;
   ActiveRequests active_requests_;
   std::unordered_map<int, sd_event_source*> active_io_;
@@ -129,7 +127,7 @@ class Aur {
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
 
-  DebugLevel debug_level_ = DEBUG_NONE;
+  DebugLevel debug_level_ = DebugLevel::NONE;
   std::ofstream debug_stream_;
 };
 
