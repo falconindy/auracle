@@ -5,12 +5,12 @@ import auracle_test
 class SortTest(auracle_test.TestCase):
 
     def testSortInfoByPopularity(self):
-        p = self.Auracle(['--sort', 'popularity', 'info',
+        r = self.Auracle(['--sort', 'popularity', 'info',
             'auracle-git', 'pkgfile-git', 'nlohmann-json'])
-        self.assertEqual(p.returncode, 0)
+        self.assertEqual(r.process.returncode, 0)
 
         v = []
-        for line in p.stdout.decode().splitlines():
+        for line in r.process.stdout.decode().splitlines():
             if line.startswith('Popularity'):
                 v.append(float(line.rsplit(':')[-1].strip()))
 
@@ -18,12 +18,12 @@ class SortTest(auracle_test.TestCase):
 
 
     def testRSortInfoByPopularity(self):
-        p = self.Auracle(['--rsort', 'popularity', 'search',
+        r = self.Auracle(['--rsort', 'popularity', 'search',
             'auracle-git', 'pkgfile-git', 'nlohmann-json'])
-        self.assertEqual(p.returncode, 0)
+        self.assertEqual(r.process.returncode, 0)
 
         v = []
-        for line in p.stdout.decode().splitlines():
+        for line in r.process.stdout.decode().splitlines():
             if line.startswith('Popularity'):
                 v.append(float(line.rsplit(':')[-3].strip()))
 
@@ -31,12 +31,12 @@ class SortTest(auracle_test.TestCase):
 
 
     def testSortSearchByVotes(self):
-        p = self.Auracle(['--sort', 'votes', 'search',
+        r = self.Auracle(['--sort', 'votes', 'search',
             '--searchby=maintainer', 'falconindy'])
-        self.assertEqual(p.returncode, 0)
+        self.assertEqual(r.process.returncode, 0)
 
         v = []
-        for line in p.stdout.decode().splitlines():
+        for line in r.process.stdout.decode().splitlines():
             if line.startswith('aur/'):
                 v.append(int(line.split()[2][1:-1]))
 
@@ -44,12 +44,12 @@ class SortTest(auracle_test.TestCase):
 
 
     def testRSortSearchByVotes(self):
-        p = self.Auracle(['--rsort', 'votes', 'search',
+        r = self.Auracle(['--rsort', 'votes', 'search',
             '--searchby=maintainer', 'falconindy'])
-        self.assertEqual(p.returncode, 0)
+        self.assertEqual(r.process.returncode, 0)
 
         v = []
-        for line in p.stdout.decode().splitlines():
+        for line in r.process.stdout.decode().splitlines():
             if line.startswith('aur/'):
                 v.append(int(line.split()[2][1:-1]))
 
@@ -57,15 +57,15 @@ class SortTest(auracle_test.TestCase):
 
 
     def testSortByInvalidKey(self):
-        p = self.Auracle(['--sort', 'nonsense', 'search', 'aura'])
-        self.assertNotEqual(p.returncode, 0)
-        self.assertCountEqual(self.requests_sent, [])
+        r = self.Auracle(['--sort', 'nonsense', 'search', 'aura'])
+        self.assertNotEqual(r.process.returncode, 0)
+        self.assertCountEqual(r.requests_sent, [])
 
 
     def testRSortByInvalidKey(self):
-        p = self.Auracle(['--rsort', 'nonsense', 'search', 'aura'])
-        self.assertNotEqual(p.returncode, 0)
-        self.assertCountEqual(self.requests_sent, [])
+        r = self.Auracle(['--rsort', 'nonsense', 'search', 'aura'])
+        self.assertNotEqual(r.process.returncode, 0)
+        self.assertCountEqual(r.requests_sent, [])
 
 
 if __name__ == '__main__':

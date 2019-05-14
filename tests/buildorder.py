@@ -6,9 +6,9 @@ import auracle_test
 class TestBuildOrder(auracle_test.TestCase):
 
     def testSinglePackage(self):
-        p = self.Auracle(['buildorder', 'ocaml-configurator'])
-        self.assertEqual(p.returncode, 0)
-        self.assertListEqual(p.stdout.decode().strip().splitlines(), [
+        r = self.Auracle(['buildorder', 'ocaml-configurator'])
+        self.assertEqual(r.process.returncode, 0)
+        self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
             'SATISFIEDREPOS ocaml',
             'REPOS dune',
             'AUR ocaml-sexplib0 ocaml-sexplib0',
@@ -19,10 +19,10 @@ class TestBuildOrder(auracle_test.TestCase):
 
 
     def testMultiplePackage(self):
-        p = self.Auracle([
+        r = self.Auracle([
             'buildorder', 'ocaml-configurator', 'ocaml-cryptokit'])
-        self.assertEqual(p.returncode, 0)
-        self.assertListEqual(p.stdout.decode().strip().splitlines(), [
+        self.assertEqual(r.process.returncode, 0)
+        self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
             'SATISFIEDREPOS ocaml',
             'REPOS dune',
             'AUR ocaml-sexplib0 ocaml-sexplib0',
@@ -39,9 +39,9 @@ class TestBuildOrder(auracle_test.TestCase):
 
 
     def testDuplicatePackage(self):
-        p = self.Auracle(['buildorder'] + 2 * ['ocaml-configurator'])
-        self.assertEqual(p.returncode, 0)
-        self.assertListEqual(p.stdout.decode().strip().splitlines(), [
+        r = self.Auracle(['buildorder'] + 2 * ['ocaml-configurator'])
+        self.assertEqual(r.process.returncode, 0)
+        self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
             'SATISFIEDREPOS ocaml',
             'REPOS dune',
             'AUR ocaml-sexplib0 ocaml-sexplib0',
@@ -52,10 +52,10 @@ class TestBuildOrder(auracle_test.TestCase):
 
 
     def testOverlappingSubtrees(self):
-        p = self.Auracle([
+        r = self.Auracle([
             'buildorder', 'google-drive-ocamlfuse', 'ocaml-configurator'])
-        self.assertEqual(p.returncode, 0)
-        self.assertListEqual(p.stdout.decode().strip().splitlines(), [
+        self.assertEqual(r.process.returncode, 0)
+        self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
             'SATISFIEDREPOS ocaml',
             'REPOS ocaml-findlib',
             'AUR camlidl camlidl',
@@ -97,9 +97,9 @@ class TestBuildOrder(auracle_test.TestCase):
     # Fix dependencies here to avoid unknowns. Unknown deps should be handled
     # in a separate test.
     def testSatisfiedPackage(self):
-        p = self.Auracle(['buildorder', 'auracle-git'])
-        self.assertEqual(p.returncode, 0)
-        self.assertListEqual(p.stdout.decode().strip().splitlines(), [
+        r = self.Auracle(['buildorder', 'auracle-git'])
+        self.assertEqual(r.process.returncode, 0)
+        self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
             'UNKNOWN pacman',
             'UNKNOWN libarchive.so',
             'REPOS libcurl.so',

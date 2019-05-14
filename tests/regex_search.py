@@ -6,26 +6,26 @@ import auracle_test
 class TestRegexSearch(auracle_test.TestCase):
 
     def testFragmentTooShort(self):
-        p = self.Auracle(['search', 'f'])
-        self.assertNotEqual(p.returncode, 0)
+        r = self.Auracle(['search', 'f'])
+        self.assertNotEqual(r.process.returncode, 0)
         self.assertIn('insufficient for searching by regular expression',
-                p.stderr.decode())
+                r.process.stderr.decode())
 
 
     def testInvalidRegex(self):
-        p = self.Auracle(['search', '*invalid'])
-        self.assertNotEqual(p.returncode, 0)
-        self.assertIn('invalid regex', p.stderr.decode())
+        r = self.Auracle(['search', '*invalid'])
+        self.assertNotEqual(r.process.returncode, 0)
+        self.assertIn('invalid regex', r.process.stderr.decode())
 
 
     def testMultipleSearchesWithFiltering(self):
-        p = self.Auracle([
+        r = self.Auracle([
             'search', '--quiet', '^aurac.+', '.le-git$', 'auracle'
         ])
-        self.assertEqual(p.returncode, 0)
-        self.assertEqual('auracle-git', p.stdout.decode().strip())
+        self.assertEqual(r.process.returncode, 0)
+        self.assertEqual('auracle-git', r.process.stdout.decode().strip())
 
-        self.assertCountEqual(self.request_uris, [
+        self.assertCountEqual(r.request_uris, [
             '/rpc?v=5&type=search&by=name-desc&arg=aurac',
             '/rpc?v=5&type=search&by=name-desc&arg=le-git',
             '/rpc?v=5&type=search&by=name-desc&arg=auracle',

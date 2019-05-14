@@ -51,15 +51,34 @@ class TimeLoggingTestResult(unittest.runner.TextTestResult):
             self.getDescription(test), elapsed))
 
 
+class AuracleRunResult(object):
+    def _ProcessDebugOutput(self, requests_file):
+        requests_sent = []
+
+        with open(requests_file) as f:
+            header_text = []
+            for line in f.read().splitlines():
+                if line:
+                    header_text.append(line)
+                else:
+                    requests_sent.append(HTTPRequest(header_text))
+                    header_text = []
+
+        return requests_sent
+
+
+    def __init__(self, process, request_log):
+        self.process = process
+        self.requests_sent = self._ProcessDebugOutput(request_log)
+        self.request_uris = list(r.path for r in self.requests_sent)
+
+
 class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.build_dir = FindMesonBuildDir()
         self._tempdir = tempfile.TemporaryDirectory()
         self.tempdir = self._tempdir.name
-
-        self.requests_file = tempfile.NamedTemporaryFile(
-                dir=self.tempdir, prefix='requests-', delete=False).name
 
         q = multiprocessing.Queue()
         self.server = multiprocessing.Process(
@@ -72,21 +91,6 @@ class TestCase(unittest.TestCase):
 
     def tearDown(self):
         self.server.terminate()
-
-
-    def _ProcessDebugOutput(self):
-        self.requests_sent = []
-
-        with open(self.requests_file) as f:
-            header_text = []
-            for line in f.read().splitlines():
-                if line:
-                    header_text.append(line)
-                else:
-                    self.requests_sent.append(HTTPRequest(header_text))
-                    header_text = []
-
-        self.request_uris = [r.path for r in self.requests_sent]
 
 
     def _WritePacmanConf(self):
@@ -104,11 +108,14 @@ class TestCase(unittest.TestCase):
 
 
     def Auracle(self, args):
+        requests_file = tempfile.NamedTemporaryFile(
+                dir=self.tempdir, prefix='requests-', delete=False).name
+
         env = {
             'PATH': '{}/fakeaur:{}'.format(
                 os.path.dirname(os.path.realpath(__file__)), os.getenv('PATH')),
             'AURACLE_TEST_TMPDIR': self.tempdir,
-            'AURACLE_DEBUG': 'requests:{}'.format(self.requests_file),
+            'AURACLE_DEBUG': 'requests:{}'.format(requests_file),
             'LC_TIME': 'C',
             'TZ': 'UTC',
         }
@@ -121,11 +128,9 @@ class TestCase(unittest.TestCase):
             '--chdir', self.tempdir,
         ] + args
 
-        p = subprocess.run(cmdline, env=env, capture_output=True)
-
-        self._ProcessDebugOutput()
-
-        return p
+        return AuracleRunResult(
+                subprocess.run(cmdline, env=env, capture_output=True),
+                requests_file)
 
 
     def assertPkgbuildExists(self, pkgname, git=False):

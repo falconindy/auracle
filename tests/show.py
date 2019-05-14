@@ -5,43 +5,43 @@ import auracle_test
 class TestPkgbuild(auracle_test.TestCase):
 
     def testSinglePkgbuild(self):
-        p = self.Auracle(['show', 'auracle-git'])
-        self.assertEqual(p.returncode, 0)
+        r = self.Auracle(['show', 'auracle-git'])
+        self.assertEqual(r.process.returncode, 0)
 
-        pkgbuild = p.stdout.decode()
+        pkgbuild = r.process.stdout.decode()
 
         self.assertIn('pkgname=auracle-git', pkgbuild)
 
-        self.assertCountEqual(self.request_uris, [
+        self.assertCountEqual(r.request_uris, [
             '/rpc?v=5&type=info&arg[]=auracle-git',
             '/cgit/aur.git/plain/PKGBUILD?h=auracle-git'
         ])
 
 
     def testMultiplePkgbuilds(self):
-        p = self.Auracle(['show', 'auracle-git', 'pkgfile-git'])
-        self.assertEqual(p.returncode, 0)
+        r = self.Auracle(['show', 'auracle-git', 'pkgfile-git'])
+        self.assertEqual(r.process.returncode, 0)
 
-        pkgbuilds = p.stdout.decode()
+        pkgbuilds = r.process.stdout.decode()
 
         self.assertIn('### BEGIN auracle-git/PKGBUILD', pkgbuilds)
         self.assertIn('### BEGIN pkgfile-git/PKGBUILD', pkgbuilds)
 
 
     def testPkgbuildNotFound(self):
-        p = self.Auracle(['show', 'totesnotfoundpackage'])
-        self.assertNotEqual(p.returncode, 0)
+        r = self.Auracle(['show', 'totesnotfoundpackage'])
+        self.assertNotEqual(r.process.returncode, 0)
 
-        self.assertCountEqual(self.request_uris, [
+        self.assertCountEqual(r.request_uris, [
             '/rpc?v=5&type=info&arg[]=totesnotfoundpackage',
         ])
 
 
     def testFileNotFound(self):
-        p = self.Auracle(['show', '--show-file=NOTAPKGBUILD', 'auracle-git'])
-        self.assertNotEqual(p.returncode, 0)
+        r = self.Auracle(['show', '--show-file=NOTAPKGBUILD', 'auracle-git'])
+        self.assertNotEqual(r.process.returncode, 0)
 
-        self.assertIn('not found for package', p.stderr.decode())
+        self.assertIn('not found for package', r.process.stderr.decode())
 
 
 if __name__ == '__main__':
