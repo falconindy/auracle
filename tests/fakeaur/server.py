@@ -38,7 +38,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         return l[-1] if l else None
 
 
-    def make_json_reply(self, querytype, results, error=None):
+    def make_json_reply(self, querytype, results=[], error=None):
         return json.dumps({
             'version': AUR_SERVER_VERSION,
             'type': querytype,
@@ -46,6 +46,14 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             'results': results,
             'error': error,
         }).encode()
+
+
+    def make_package_reply(self, querytype, results):
+        return self.make_json_reply(querytype, results)
+
+
+    def make_error_reply(self, error_message):
+        return self.make_json_reply('error', [], error_message)
 
 
     def make_pkgbuild(self, pkgname):
@@ -58,7 +66,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             with open(path) as f:
                 return f.read().strip().encode()
         except FileNotFoundError:
-            return self.make_json_reply(querytype, [])
+            return self.make_package_reply(querytype, [])
 
 
     def handle_rpc_info(self, args):
@@ -69,13 +77,14 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             # extract the results from each DB file
             results.extend(json.loads(reply)['results'])
 
-        return self.respond(response=self.make_json_reply('multiinfo', results))
+        return self.respond(response=self.make_package_reply(
+            'multiinfo', results))
 
 
     def handle_rpc_search(self, arg, by):
         if len(arg) < 2:
-            return self.respond(response=self.make_json_reply(
-                'error', error='Query arg too small.'))
+            return self.respond(response=self.make_error_reply(
+                'Query arg too small.'))
 
         reply = self.lookup_response(
                 'search', '{}|{}'.format(by, arg) if by else arg)
@@ -93,8 +102,8 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.handle_rpc_search(self.last_of(queryparams.get('arg')),
                                    self.last_of(queryparams.get('by')))
         else:
-            return self.respond(response=self.make_json_reply(
-                'error', error='Incorrect request type specified.'))
+            return self.respond(response=self.make_json_error_reply(
+                'Incorrect request type specified.'))
 
 
     def handle_download(self, url):
