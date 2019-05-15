@@ -5,6 +5,7 @@ import http.server
 import io
 import json
 import os.path
+import signal
 import sys
 import tarfile
 import tempfile
@@ -153,14 +154,21 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(response)
 
 
+class FakeAurServer(http.server.HTTPServer):
+    def handle_error(self, request, client_address):
+        raise
+
+
 def Serve(queue=None, port=0):
-    server = http.server.HTTPServer(('localhost', port), FakeAurHandler)
+    server = FakeAurServer(('localhost', port), FakeAurHandler)
     endpoint = 'http://{}:{}'.format(*server.socket.getsockname())
 
     if queue:
         queue.put(endpoint)
     else:
         print('serving on', endpoint)
+
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(0))
 
     try:
         server.serve_forever()
