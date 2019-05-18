@@ -49,10 +49,10 @@ template <typename OutputType>
 void DeserializeJsonObject(const nlohmann::json& j,
                            const CallbackMap<OutputType>& callbacks,
                            OutputType& o) {
-  for (const auto& item : j.items()) {
-    const auto iter = callbacks.find(item.key());
+  for (const auto& [key, value] : j.items()) {
+    const auto iter = callbacks.find(key);
     if (iter != callbacks.end()) {
-      iter->second(item.value(), o);
+      iter->second(value, o);
     }
   }
 }

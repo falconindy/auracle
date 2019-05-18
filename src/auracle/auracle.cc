@@ -570,12 +570,12 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
         });
   }
 
-  for (const auto& p : total_ordering) {
-    const bool satisfied = pacman_->DependencyIsSatisfied(p.first);
-    const bool from_aur = p.second != nullptr;
-    const bool unknown = !from_aur && !pacman_->HasPackage(p.first);
+  for (const auto& [name, pkg] : total_ordering) {
+    const bool satisfied = pacman_->DependencyIsSatisfied(name);
+    const bool from_aur = pkg != nullptr;
+    const bool unknown = !from_aur && !pacman_->HasPackage(name);
     const bool is_target =
-        std::find(args.begin(), args.end(), p.first) != args.end();
+        std::find(args.begin(), args.end(), name) != args.end();
 
     if (unknown) {
       std::cout << "UNKNOWN";
@@ -593,9 +593,9 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
       }
     }
 
-    std::cout << " " << p.first;
+    std::cout << " " << name;
     if (from_aur) {
-      std::cout << " " << p.second->pkgbase;
+      std::cout << " " << pkg->pkgbase;
     }
 
     std::cout << "\n";
