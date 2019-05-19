@@ -278,6 +278,7 @@ int Auracle::Info(const std::vector<std::string>& args,
                          }
 
                          auto results = response.value().results;
+                         packages.reserve(packages.size() + results.size());
                          std::move(results.begin(), results.end(),
                                    std::back_inserter(packages));
 
@@ -624,6 +625,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
         }
 
         auto results = response.value().results;
+        packages.reserve(packages.size() + results.size());
         std::move(results.begin(), results.end(), std::back_inserter(packages));
 
         return 0;
