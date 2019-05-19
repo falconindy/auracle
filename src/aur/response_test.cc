@@ -6,8 +6,8 @@
 using testing::Field;
 using testing::UnorderedElementsAre;
 
-TEST(ResponseTest, ParsesJson) {
-  const std::string json = R"({
+TEST(ResponseTest, ParsesSuccessResponse) {
+  const aur::RpcResponse response(R"({
     "version": 5,
     "type": "multiinfo",
     "resultcount": 1,
@@ -64,9 +64,7 @@ TEST(ResponseTest, ParsesJson) {
         ]
       }
     ]
-  })";
-
-  const aur::RpcResponse response(json);
+  })");
 
   EXPECT_EQ(response.type, "multiinfo");
   EXPECT_EQ(response.version, 5);
@@ -106,4 +104,20 @@ TEST(ResponseTest, ParsesJson) {
   EXPECT_THAT(result.licenses, UnorderedElementsAre("MIT"));
   EXPECT_THAT(result.keywords, UnorderedElementsAre("aur"));
   EXPECT_THAT(result.groups, UnorderedElementsAre("whydoestheaurhavegroups"));
+}
+
+TEST(ResponseTest, ParsesErrorResponse) {
+  const aur::RpcResponse response(R"({
+    "version": 5,
+    "type": "error",
+    "resultcount": 0,
+    "results": [],
+    "error": "something"
+  })");
+
+  EXPECT_EQ(response.version, 5);
+  EXPECT_EQ(response.type, "error");
+  EXPECT_EQ(response.resultcount, 0);
+  EXPECT_THAT(response.results, testing::IsEmpty());
+  EXPECT_EQ(response.error, "something");
 }
