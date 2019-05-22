@@ -69,4 +69,12 @@ void from_json(const nlohmann::json& j, Package& p) {
   DeserializeJsonObject(j, callbacks, p);
 }
 
+Package::Package(const std::string& json_bytes) {
+  if (json_bytes.empty()) {
+    return;
+  }
+
+  *this = nlohmann::json::parse(json_bytes);
+}
+
 }  // namespace aur

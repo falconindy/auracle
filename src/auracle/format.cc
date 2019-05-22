@@ -2,6 +2,7 @@
 
 #include <fmt/printf.h>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string_view>
 
@@ -140,7 +141,7 @@ struct formatter<Field<T>> {
 namespace format {
 
 void NameOnly(const aur::Package& package) {
-  fmt::print(terminal::Bold("{}\n"), package.name);
+  std::cout << fmt::format(terminal::Bold("{}\n"), package.name);
 }
 
 void Short(const aur::Package& package,
@@ -162,9 +163,10 @@ void Short(const aur::Package& package,
         fmt::format("[installed: {}]", local_ver_color(l->pkgver));
   }
 
-  fmt::print("{}{} {} ({}, {}) {}\n    {}\n", t::BoldMagenta("aur/"),
-             t::Bold(p.name), ood_color(p.version), p.votes, p.popularity,
-             installed_package, p.description);
+  std::cout << fmt::format("{}{} {} ({}, {}) {}\n    {}\n",
+                           t::BoldMagenta("aur/"), t::Bold(p.name),
+                           ood_color(p.version), p.votes, p.popularity,
+                           installed_package, p.description);
 }
 
 void Long(const aur::Package& package,
@@ -187,47 +189,51 @@ void Long(const aur::Package& package,
         fmt::format(" [installed: {}]", local_ver_color(l->pkgver));
   }
 
-  fmt::print("{}", Field("Repository", t::BoldMagenta("aur")));
-  fmt::print("{}", Field("Name", p.name));
-  fmt::print("{}", Field("Version", ood_color(p.version) + installed_package));
+  std::cout << fmt::format("{}", Field("Repository", t::BoldMagenta("aur")));
+  std::cout << fmt::format("{}", Field("Name", p.name));
+  std::cout << fmt::format(
+      "{}", Field("Version", ood_color(p.version) + installed_package));
 
   if (p.name != p.pkgbase) {
-    fmt::print("{}", Field("PackageBase", p.pkgbase));
+    std::cout << fmt::format("{}", Field("PackageBase", p.pkgbase));
   }
 
-  fmt::print("{}", Field("URL", t::BoldCyan(p.upstream_url)));
-  fmt::print(
+  std::cout << fmt::format("{}", Field("URL", t::BoldCyan(p.upstream_url)));
+  std::cout << fmt::format(
       "{}", Field("AUR Page",
                   t::BoldCyan("https://aur.archlinux.org/packages/" + p.name)));
-  fmt::print("{}", Field("Keywords", p.keywords));
-  fmt::print("{}", Field("Groups", p.groups));
-  fmt::print("{}", Field("Depends On", p.depends));
-  fmt::print("{}", Field("Makedepends", p.makedepends));
-  fmt::print("{}", Field("Checkdepends", p.checkdepends));
-  fmt::print("{}", Field("Provides", p.provides));
-  fmt::print("{}", Field("Conflicts With", p.conflicts));
-  fmt::print("{}", Field("Optional Deps", p.optdepends));
-  fmt::print("{}", Field("Replaces", p.replaces));
-  fmt::print("{}", Field("Licenses", p.licenses));
-  fmt::print("{}", Field("Votes", p.votes));
-  fmt::print("{}", Field("Popularity", p.popularity));
-  fmt::print("{}", Field("Maintainer",
-                         p.maintainer.empty() ? "(orphan)" : p.maintainer));
-  fmt::print("{}", Field("Submitted", p.submitted_s));
-  fmt::print("{}", Field("Last Modified", p.modified_s));
+  std::cout << fmt::format("{}", Field("Keywords", p.keywords));
+  std::cout << fmt::format("{}", Field("Groups", p.groups));
+  std::cout << fmt::format("{}", Field("Depends On", p.depends));
+  std::cout << fmt::format("{}", Field("Makedepends", p.makedepends));
+  std::cout << fmt::format("{}", Field("Checkdepends", p.checkdepends));
+  std::cout << fmt::format("{}", Field("Provides", p.provides));
+  std::cout << fmt::format("{}", Field("Conflicts With", p.conflicts));
+  std::cout << fmt::format("{}", Field("Optional Deps", p.optdepends));
+  std::cout << fmt::format("{}", Field("Replaces", p.replaces));
+  std::cout << fmt::format("{}", Field("Licenses", p.licenses));
+  std::cout << fmt::format("{}", Field("Votes", p.votes));
+  std::cout << fmt::format("{}", Field("Popularity", p.popularity));
+  std::cout << fmt::format(
+      "{}",
+      Field("Maintainer", p.maintainer.empty() ? "(orphan)" : p.maintainer));
+  std::cout << fmt::format("{}", Field("Submitted", p.submitted_s));
+  std::cout << fmt::format("{}", Field("Last Modified", p.modified_s));
   if (p.out_of_date != std::chrono::seconds::zero()) {
-    fmt::print("{}", Field("Out of Date", p.out_of_date));
+    std::cout << fmt::format("{}", Field("Out of Date", p.out_of_date));
   }
-  fmt::print("{}", Field("Description", p.description));
-  fmt::print("\n");
+  std::cout << fmt::format("{}", Field("Description", p.description));
+  std::cout << fmt::format("\n");
 }
 
 void Update(const auracle::Pacman::Package& from, const aur::Package& to) {
   namespace t = terminal;
 
-  fmt::print("{} {} -> {}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
-             t::BoldGreen(to.version));
+  std::cout << fmt::format("{} {} -> {}\n", t::Bold(from.pkgname),
+                           t::BoldRed(from.pkgver), t::BoldGreen(to.version));
 }
+
+namespace {
 
 void FormatCustomTo(std::string& out, const std::string& format,
                     const aur::Package& package) {
@@ -262,12 +268,14 @@ void FormatCustomTo(std::string& out, const std::string& format,
   // clang-format on
 }
 
+}  // namespace
+
 void Custom(const std::string& format, const aur::Package& package) {
   std::string out;
 
   FormatCustomTo(out, format, package);
 
-  fmt::print("{}\n", out);
+  std::cout << out << "\n";
 }
 
 bool FormatIsValid(const std::string& format, std::string* error) {

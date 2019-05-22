@@ -15,7 +15,9 @@ configure_file(
     output : 'config.h',
     configuration : conf)
 
-add_project_arguments('-include', 'config.h', language : 'cpp')
+add_project_arguments(
+    '-include', 'config.h',
+    language : 'cpp')
 
 possible_cpp_flags = []
 possible_link_flags = []
@@ -59,7 +61,6 @@ libaur = static_library(
       src/aur/json_internal.hh
     '''.split()),
     include_directories : [
-      'src',
       'third_party/nlohmann_json',
     ],
     dependencies : [libcurl, libsystemd, stdcppfs])
@@ -133,19 +134,39 @@ if gtest.found() and gmock.found()
     'src/test/gtest_main.cc')
 
   foreach input : [
-    'src/aur/request_test.cc',
-    'src/aur/response_test.cc',
+    {
+      'prefix': 'libaur',
+      'link_with' : [libaur],
+      'tests' : [
+        'src/aur/request_test.cc',
+        'src/aur/response_test.cc',
+      ],
+    },
+    {
+      'prefix': 'libauracle',
+      'link_with' : [libauracle],
+      'tests' : [
+        'src/auracle/package_cache_test.cc',
+        'src/auracle/format_test.cc',
+        'src/auracle/sort_test.cc',
+      ],
+    },
   ]
-    basename = input.split('/')[-1].split('.')[0]
 
-    test(
-      basename,
-      executable(
-        basename,
-        input,
-        link_with : [libaur, gtest_main],
-        dependencies : [gtest, gmock]))
+    foreach source : input.get('tests')
+      basename = source.split('/')[-1].split('.')[0]
+      test(
+        '@0@_@1@'.format(input.get('prefix'), basename),
+        executable(
+          basename,
+          source,
+          include_directories : [
+            'src',
+          ],
+          link_with : [gtest_main] + input.get('link_with'),
+          dependencies : [gtest, gmock]))
     endforeach
+  endforeach
 else
   message('Skipping unit tests, gtest or gmock not found')
 endif
@@ -169,7 +190,7 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
     basename = input.split('/')[-1].split('.')[0]
 
     test(
-      '@0@_integration_test'.format(basename),
+      'auracle_@0@_integration_test'.format(basename),
       py3,
       args : [join_paths(meson.source_root(), input)],
       env : ['PYTHONDONTWRITEBYTECODE=1'])
