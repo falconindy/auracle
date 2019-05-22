@@ -9,8 +9,6 @@ _arguments -S \
   {--recurse,-r}'[Recurse through dependencies on download]' \
   '--literal[Disallow regex in searches]' \
   '--searchby=[Change search-by dimension]: :(name name-desc maintainer depends makedepends optdepends checkdepends)' \
-  '--connect-timeout=[Set connection timeout in seconds]' \
-  '--max-connections=[Limit active connections]' \
   '--color=[Control colored output]: :(auto never always)' \
   {--chdir=,-C+}'[Change directory before downloading]:directory:_files -/' \
   {--format=,-F+}'[Specify custom output for search and info]' \
