@@ -20,33 +20,32 @@ TEST(SortOrderTest, RejectsInvalidSortField) {
 std::vector<aur::Package> MakePackages() {
   std::vector<aur::Package> packages;
 
-  packages.emplace_back(R"(
-      {
-        "Name": "cower",
-        "Popularity": 1.2345,
-        "NumVotes": 30,
-        "FirstSubmitted": 10000,
-        "LastModified": 20000
-      }
-    )");
-  packages.emplace_back(R"(
-      {
-        "Name": "auracle",
-        "Popularity": 5.3241,
-        "NumVotes": 20,
-        "FirstSubmitted": 20000,
-        "LastModified": 40000
-      }
-    )");
-  packages.emplace_back(R"(
-      {
-        "Name": "pacman",
-        "Popularity": 5.3240,
-        "NumVotes": 10,
-        "FirstSubmitted": 30000,
-        "LastModified": 10000
-      }
-    )");
+  using namespace std::chrono_literals;
+
+  {
+    auto& p = packages.emplace_back();
+    p.name = "cower";
+    p.popularity = 1.2345;
+    p.votes = 30;
+    p.submitted_s = 10000s;
+    p.modified_s = 20000s;
+  }
+  {
+    auto& p = packages.emplace_back();
+    p.name = "auracle";
+    p.popularity = 5.3241;
+    p.votes = 20;
+    p.submitted_s = 20000s;
+    p.modified_s = 40000s;
+  }
+  {
+    auto& p = packages.emplace_back();
+    p.name = "pacman";
+    p.popularity = 5.3240;
+    p.votes = 10;
+    p.submitted_s = 30000s;
+    p.modified_s = 10000s;
+  }
 
   return packages;
 }
@@ -93,19 +92,19 @@ TEST_P(SortOrderTest, ByVotes) {
 }
 
 TEST_P(SortOrderTest, ByFirstSubmitted) {
-  using s = std::chrono::seconds;
+  using namespace std::chrono_literals;
   ExpectSorted("firstsubmitted",
-               ElementsAre(Field(&aur::Package::submitted_s, s(10000)),
-                           Field(&aur::Package::submitted_s, s(20000)),
-                           Field(&aur::Package::submitted_s, s(30000))));
+               ElementsAre(Field(&aur::Package::submitted_s, 10000s),
+                           Field(&aur::Package::submitted_s, 20000s),
+                           Field(&aur::Package::submitted_s, 30000s)));
 }
 
 TEST_P(SortOrderTest, ByLastModified) {
-  using s = std::chrono::seconds;
+  using namespace std::chrono_literals;
   ExpectSorted("lastmodified",
-               ElementsAre(Field(&aur::Package::modified_s, s(10000)),
-                           Field(&aur::Package::modified_s, s(20000)),
-                           Field(&aur::Package::modified_s, s(40000))));
+               ElementsAre(Field(&aur::Package::modified_s, 10000s),
+                           Field(&aur::Package::modified_s, 20000s),
+                           Field(&aur::Package::modified_s, 40000s)));
 }
 
 INSTANTIATE_TEST_CASE_P(BothOrderings, SortOrderTest,

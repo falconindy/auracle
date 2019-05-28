@@ -9,14 +9,11 @@ using testing::Field;
 using testing::UnorderedElementsAre;
 
 TEST(PackageCacheTest, AddsPackages) {
-  aur::Package package(R"(
-    {
-      "ID": 534056,
-      "Name": "auracle-git",
-      "PackageBaseID": 123768,
-      "PackageBase": "auracle-git"
-    }
-  )");
+  aur::Package package;
+  package.package_id = 534056;
+  package.name = "auracle-git";
+  package.pkgbase_id = 123768;
+  package.pkgbase = "auracle-git";
 
   auracle::PackageCache cache;
   ASSERT_TRUE(cache.empty());
@@ -38,24 +35,24 @@ TEST(PackageCacheTest, AddsPackages) {
 
 TEST(PackageCacheTest, LooksUpPackages) {
   auracle::PackageCache cache;
-  cache.AddPackage(aur::Package(R"(
-    {
-      "ID": 534056,
-      "Name": "auracle-git",
-      "PackageBaseID": 123768,
-      "PackageBase": "auracle-git",
-      "Version": "r36.752e4ba-1"
-    }
-  )"));
-  cache.AddPackage(aur::Package(R"(
-    {
-      "ID": 534055,
-      "Name": "pkgfile-git",
-      "PackageBaseID": 60915,
-      "PackageBase": "pkgfile-git",
-      "Version": "18.2.g6e6150d-1"
-    }
-  )"));
+
+  {
+    aur::Package package;
+    package.package_id = 534056;
+    package.name = "auracle-git";
+    package.pkgbase_id = 123768;
+    package.pkgbase = "auracle-git";
+    cache.AddPackage(package);
+  }
+
+  {
+    aur::Package package;
+    package.package_id = 534055;
+    package.name = "pkgfile-git";
+    package.pkgbase_id = 60915;
+    package.pkgbase = "pkgfile-git";
+    cache.AddPackage(package);
+  }
 
   {
     auto result = cache.LookupByPkgbase("pkgfile-git");
@@ -73,67 +70,44 @@ TEST(PackageCacheTest, LooksUpPackages) {
   EXPECT_EQ(cache.LookupByPkgname("notfound-pkgname"), nullptr);
 }
 
+aur::Dependency MakeDependency(const std::string& name) {
+  aur::Dependency d;
+  d.name = name;
+  d.depstring = name;
+
+  return d;
+}
+
 TEST(PackageCacheTest, WalkDependencies) {
   auracle::PackageCache cache;
-  cache.AddPackage(aur::Package(R"(
-    {
-      "ID": 534055,
-      "Name": "pkgfile-git",
-      "PackageBaseID": 60915,
-      "PackageBase": "pkgfile-git",
-      "Version": "18.2.g6e6150d-1",
-      "Description": "a pacman .files metadata explorer",
-      "URL": "http://github.com/falconindy/pkgfile",
-      "NumVotes": 42,
-      "Popularity": 0.070083,
-      "OutOfDate": null,
-      "Maintainer": "falconindy",
-      "FirstSubmitted": 1342485230,
-      "LastModified": 1534000387,
-      "URLPath": "/cgit/aur.git/snapshot/pkgfile-git.tar.gz",
-      "Depends": [
-        "libarchive",
-        "curl",
-        "pcre",
-        "pacman-git"
-      ]
-    }
-  )"));
-  cache.AddPackage(aur::Package(R"(
-    {
-      "ID": 600011,
-      "Name": "pacman-git",
-      "PackageBaseID": 29937,
-      "PackageBase": "pacman-git",
-      "Version": "5.1.1.r160.gd37e6d40-2",
-      "Description": "A library-based package manager with dependency support",
-      "URL": "https://www.archlinux.org/pacman/",
-      "NumVotes": 22,
-      "Popularity": 0.327399,
-      "OutOfDate": null,
-      "Maintainer": "eschwartz",
-      "FirstSubmitted": 1252344761,
-      "LastModified": 1554053989,
-      "URLPath": "/cgit/aur.git/snapshot/pacman-git.tar.gz",
-      "Depends": [
-        "archlinux-keyring",
-        "bash",
-        "curl",
-        "gpgme",
-        "libarchive",
-        "pacman-mirrorlist"
-      ],
-      "MakeDepends": [
-        "git",
-        "asciidoc",
-        "meson"
-      ],
-      "CheckDepends": [
-        "python",
-        "fakechroot"
-      ]
-    }
-  )"));
+  {
+    aur::Package package;
+    package.package_id = 534055;
+    package.name = "pkgfile-git";
+    package.pkgbase_id = 60915;
+    package.pkgbase = "pkgfile-git";
+    package.depends = {MakeDependency("libarchive"), MakeDependency("curl"),
+                       MakeDependency("pcre"), MakeDependency("pacman-git")};
+    cache.AddPackage(package);
+  }
+  {
+    aur::Package package;
+    package.package_id = 600011;
+    package.name = "pacman-git";
+    package.pkgbase_id = 29937;
+    package.pkgbase = "pacman-git";
+    package.depends = {MakeDependency("archlinux-keyring"),
+                       MakeDependency("bash"),
+                       MakeDependency("curl"),
+                       MakeDependency("gpgme"),
+                       MakeDependency("libarchive"),
+                       MakeDependency("pacman-mirrorlist")};
+    package.makedepends = {MakeDependency("git"), MakeDependency("asciidoc"),
+                           MakeDependency("meson")};
+    package.checkdepends = {MakeDependency("python"),
+                            MakeDependency("fakechroot")};
+    cache.AddPackage(package);
+  }
 
   std::vector<std::string> walked_packages;
   std::vector<const aur::Package*> aur_packages;

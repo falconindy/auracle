@@ -25,7 +25,6 @@ struct Dependency {
 
 struct Package {
   Package() = default;
-  explicit Package(const std::string& json_bytes);
 
   std::string name;
   std::string description;
