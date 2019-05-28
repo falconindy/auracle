@@ -7,6 +7,8 @@ using testing::Field;
 using testing::UnorderedElementsAre;
 
 TEST(ResponseTest, ParsesSuccessResponse) {
+  using namespace std::chrono_literals;
+
   const aur::RpcResponse response(R"({
     "version": 5,
     "type": "multiinfo",
@@ -80,9 +82,9 @@ TEST(ResponseTest, ParsesSuccessResponse) {
   EXPECT_EQ(result.upstream_url, "https://github.com/falconindy/auracle.git");
   EXPECT_EQ(result.votes, 15);
   EXPECT_EQ(result.popularity, 0.095498);
-  EXPECT_EQ(result.out_of_date, std::chrono::seconds());
-  EXPECT_EQ(result.submitted, std::chrono::seconds(1499013608));
-  EXPECT_EQ(result.modified, std::chrono::seconds(1534000474));
+  EXPECT_EQ(result.out_of_date, 0s);
+  EXPECT_EQ(result.submitted, 1499013608s);
+  EXPECT_EQ(result.modified, 1534000474s);
   EXPECT_EQ(result.maintainer, "falconindy");
   EXPECT_EQ(result.aur_urlpath, "/cgit/aur.git/snapshot/auracle-git.tar.gz");
   EXPECT_THAT(
