@@ -27,24 +27,24 @@ std::vector<aur::Package> MakePackages() {
     p.name = "cower";
     p.popularity = 1.2345;
     p.votes = 30;
-    p.submitted_s = 10000s;
-    p.modified_s = 20000s;
+    p.submitted = 10000s;
+    p.modified = 20000s;
   }
   {
     auto& p = packages.emplace_back();
     p.name = "auracle";
     p.popularity = 5.3241;
     p.votes = 20;
-    p.submitted_s = 20000s;
-    p.modified_s = 40000s;
+    p.submitted = 20000s;
+    p.modified = 40000s;
   }
   {
     auto& p = packages.emplace_back();
     p.name = "pacman";
     p.popularity = 5.3240;
     p.votes = 10;
-    p.submitted_s = 30000s;
-    p.modified_s = 10000s;
+    p.submitted = 30000s;
+    p.modified = 10000s;
   }
 
   return packages;
@@ -94,17 +94,17 @@ TEST_P(SortOrderTest, ByVotes) {
 TEST_P(SortOrderTest, ByFirstSubmitted) {
   using namespace std::chrono_literals;
   ExpectSorted("firstsubmitted",
-               ElementsAre(Field(&aur::Package::submitted_s, 10000s),
-                           Field(&aur::Package::submitted_s, 20000s),
-                           Field(&aur::Package::submitted_s, 30000s)));
+               ElementsAre(Field(&aur::Package::submitted, 10000s),
+                           Field(&aur::Package::submitted, 20000s),
+                           Field(&aur::Package::submitted, 30000s)));
 }
 
 TEST_P(SortOrderTest, ByLastModified) {
   using namespace std::chrono_literals;
   ExpectSorted("lastmodified",
-               ElementsAre(Field(&aur::Package::modified_s, 10000s),
-                           Field(&aur::Package::modified_s, 20000s),
-                           Field(&aur::Package::modified_s, 40000s)));
+               ElementsAre(Field(&aur::Package::modified, 10000s),
+                           Field(&aur::Package::modified, 20000s),
+                           Field(&aur::Package::modified, 40000s)));
 }
 
 INSTANTIATE_TEST_CASE_P(BothOrderings, SortOrderTest,

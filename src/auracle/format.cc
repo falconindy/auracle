@@ -217,8 +217,8 @@ void Long(const aur::Package& package,
   std::cout << fmt::format(
       "{}",
       Field("Maintainer", p.maintainer.empty() ? "(orphan)" : p.maintainer));
-  std::cout << fmt::format("{}", Field("Submitted", p.submitted_s));
-  std::cout << fmt::format("{}", Field("Last Modified", p.modified_s));
+  std::cout << fmt::format("{}", Field("Submitted", p.submitted));
+  std::cout << fmt::format("{}", Field("Last Modified", p.modified));
   if (p.out_of_date != std::chrono::seconds::zero()) {
     std::cout << fmt::format("{}", Field("Out of Date", p.out_of_date));
   }
@@ -250,8 +250,8 @@ void FormatCustomTo(std::string& out, const std::string& format,
       fmt::arg("votes", package.votes),
       fmt::arg("popularity", package.popularity),
 
-      fmt::arg("submitted", package.submitted_s),
-      fmt::arg("modified", package.modified_s),
+      fmt::arg("submitted", package.submitted),
+      fmt::arg("modified", package.modified),
       fmt::arg("outofdate", package.out_of_date),
 
       fmt::arg("depends", package.depends),

@@ -40,8 +40,8 @@ struct Package {
   double popularity = 0.f;
 
   std::chrono::seconds out_of_date{0};
-  std::chrono::seconds submitted_s{0};
-  std::chrono::seconds modified_s{0};
+  std::chrono::seconds submitted{0};
+  std::chrono::seconds modified{0};
 
   std::vector<std::string> conflicts;
   std::vector<std::string> groups;

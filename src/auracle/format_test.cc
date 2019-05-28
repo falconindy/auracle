@@ -37,7 +37,7 @@ aur::Package MakePackage() {
   p.popularity = 5.20238;
 
   // datetime
-  p.submitted_s = std::chrono::seconds(1499013608);
+  p.submitted = std::chrono::seconds(1499013608);
 
   // lists
   p.conflicts = {

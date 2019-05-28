@@ -34,11 +34,11 @@ Sorter MakePackageSorter(const std::string_view field, OrderBy order_by) {
   }
 
   if (field == "firstsubmitted") {
-    return MakePackageSorter(&aur::Package::submitted_s, order_by);
+    return MakePackageSorter(&aur::Package::submitted, order_by);
   }
 
   if (field == "lastmodified") {
-    return MakePackageSorter(&aur::Package::modified_s, order_by);
+    return MakePackageSorter(&aur::Package::modified, order_by);
   }
 
   return nullptr;
