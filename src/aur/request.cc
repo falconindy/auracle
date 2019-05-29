@@ -28,7 +28,7 @@ template <typename... Pieces>
 void StrAppend(std::string* out, const Pieces&... args) {
   std::vector<std::string_view> v{args...};
 
-  std::string::size_type append_sz = 0;
+  std::string_view::size_type append_sz = 0;
   for (const auto& piece : v) {
     append_sz += piece.size();
   }
