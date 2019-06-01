@@ -4,6 +4,7 @@ project('auracle', 'cpp',
         meson_version : '>=0.50',
         default_options : [
           'cpp_std=c++17',
+          'warning_level=3',
         ])
 
 conf = configuration_data()

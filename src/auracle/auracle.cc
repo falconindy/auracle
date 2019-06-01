@@ -542,7 +542,7 @@ int Auracle::Show(const std::vector<std::string>& args,
 }
 
 int Auracle::BuildOrder(const std::vector<std::string>& args,
-                        const CommandOptions& options) {
+                        const CommandOptions&) {
   if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
