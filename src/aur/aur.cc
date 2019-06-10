@@ -497,26 +497,28 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   if (pid == 0) {
     const auto url = request.Build(options_.baseurl)[0];
 
-    std::vector<const char*> cmd{"git"};
+    std::vector<const char*> cmd;
     if (update) {
       // clang-format off
-      cmd.insert(cmd.end(), {
-                 "-C",
-                request.reponame().c_str(),
-                "pull",
-                 "--quiet",
-                 "--rebase",
-                 "--autostash",
-                 "--ff-only",
-                 });
+      cmd = {
+        "git",
+         "-C",
+        request.reponame().c_str(),
+        "pull",
+         "--quiet",
+         "--rebase",
+         "--autostash",
+         "--ff-only",
+      };
       // clang-format on
     } else {
       // clang-format off
-      cmd.insert(cmd.end(), {
-                 "clone",
-                 "--quiet",
-                 url.c_str(),
-                 });
+      cmd = {
+        "git",
+        "clone",
+        "--quiet",
+        url.c_str(),
+      };
       // clang-format on
     }
     cmd.push_back(nullptr);
