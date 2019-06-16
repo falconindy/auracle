@@ -37,15 +37,11 @@ add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags)
 libalpm = dependency('libalpm')
 libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
+libfmt = dependency('fmt', fallback : ['fmt', 'fmt_dep'])
 libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
 stdcppfs = cpp.find_library('stdc++fs')
-
-libfmt = dependency('fmt', required : false)
-if not libfmt.found()
-  libfmt = subproject('fmt').get_variable('fmt_dep')
-endif
 
 pod2man = find_program('pod2man')
 
