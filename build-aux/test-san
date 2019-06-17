@@ -1,10 +1,12 @@
 #!/bin/bash
 
+sanitizer=${1:-address}
+
 if [[ -d build ]]; then
   verb=configure
 else
   verb=setup
 fi
 
-meson "$verb" build -Db_sanitize=address
+meson "$verb" build -Db_sanitize="$sanitizer"
 meson test -C build
