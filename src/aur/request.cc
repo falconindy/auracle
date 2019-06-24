@@ -24,8 +24,8 @@ char* AppendUnsafe(char* to, std::string_view from) {
   return static_cast<char*>(ptr);
 }
 
-template <typename... Pieces>
-void StrAppend(std::string* out, const Pieces&... args) {
+template <typename... StringLike>
+void StrAppend(std::string* out, const StringLike&... args) {
   std::vector<std::string_view> v{args...};
 
   std::string_view::size_type append_sz = 0;
@@ -42,8 +42,8 @@ void StrAppend(std::string* out, const Pieces&... args) {
   }
 }
 
-template <typename... Pieces>
-std::string StrCat(const Pieces&... args) {
+template <typename... StringLike>
+std::string StrCat(const StringLike&... args) {
   std::string out;
   StrAppend(&out, args...);
   return out;
@@ -53,13 +53,12 @@ void QueryParamFormatter(std::string* out, const HttpRequest::QueryParam& kv) {
   StrAppend(out, kv.first, "=", UrlEscape(kv.second));
 }
 
-template <typename Iterator, typename Formatter>
-std::string StrJoin(Iterator begin, Iterator end, std::string_view s,
-                    Formatter&& f) {
+template <typename Container, typename Formatter>
+std::string StrJoin(Container container, std::string_view s, Formatter&& f) {
   std::string result;
 
-  std::string_view sep("");
-  for (Iterator it = begin; it != end; ++it) {
+  std::string_view sep;
+  for (auto it = std::begin(container); it != std::end(container); ++it) {
     result.append(sep.data(), sep.size());
     f(&result, *it);
     sep = s;
@@ -98,8 +97,7 @@ std::vector<std::string> RpcRequest::Build(std::string_view baseurl) const {
     return s;
   };
 
-  const auto qs =
-      StrJoin(args_.begin(), args_.end(), "&", &QueryParamFormatter);
+  const auto qs = StrJoin(args_, "&", &QueryParamFormatter);
   std::string_view sv(qs);
 
   std::vector<std::string> requests;
@@ -115,8 +113,7 @@ std::vector<std::string> RpcRequest::Build(std::string_view baseurl) const {
 
 RpcRequest::RpcRequest(const HttpRequest::QueryParams& base_params,
                        long unsigned approx_max_length)
-    : base_querystring_(StrJoin(base_params.begin(), base_params.end(), "&",
-                                &QueryParamFormatter)),
+    : base_querystring_(StrJoin(base_params, "&", &QueryParamFormatter)),
       approx_max_length_(approx_max_length) {}
 
 // static
