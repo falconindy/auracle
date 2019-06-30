@@ -85,7 +85,7 @@ are:
 
 =over 4
 
-B<AUR>        The dependency was found in the AUR and needs to be built and installed.
+B<AUR>        The dependency was found in the AUR and needs to be built and installed. The output will contain an additional column of the pkgbase the package is provided by.
 
 B<REPOS>      The dependency was found in a binary repo and can be installed via pacman.
 
