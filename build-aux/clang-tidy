@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 tmpdir=$(mktemp -d)
 trap 'rm -r "$tmpdir"' EXIT
 
