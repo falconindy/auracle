@@ -20,14 +20,14 @@ struct Field {
 
 }  // namespace
 
-namespace fmt {
+FMT_BEGIN_NAMESPACE
 
 // Specialization for formatting std::chrono::seconds
 template <typename Char>
 struct formatter<std::chrono::seconds, Char> {
   template <typename ParseContext>
-  auto parse(ParseContext& ctx) -> decltype(ctx.begin()) {
-    auto it = internal::null_terminating_iterator<Char>(ctx);
+  auto parse(ParseContext& ctx) {
+    auto it = ctx.begin();
     auto end = it;
     while (*end && *end != '}') {
       ++end;
@@ -36,18 +36,17 @@ struct formatter<std::chrono::seconds, Char> {
     using internal::pointer_from;
     if (it != end) {
       tm_format.reserve(end - it + 1);
-      tm_format.append(pointer_from(it), pointer_from(end));
+      tm_format.append(it, end);
       tm_format.push_back('\0');
     } else {
-      constexpr char kDefaultFormat[] = "%c\0";
+      constexpr char kDefaultFormat[] = "%c";
       tm_format.append(std::begin(kDefaultFormat), std::end(kDefaultFormat));
     }
-    return pointer_from(end);
+    return end;
   }
 
   template <typename FormatContext>
-  auto format(const std::chrono::seconds& seconds, FormatContext& ctx)
-      -> decltype(ctx.out()) {
+  auto format(const std::chrono::seconds& seconds, FormatContext& ctx) {
     using system_clock = std::chrono::system_clock;
     auto point = system_clock::to_time_t(system_clock::time_point(seconds));
     std::tm tm{};
@@ -65,11 +64,11 @@ struct formatter<std::chrono::seconds, Char> {
 
 // Specialization for formatting vectors of things with an optional custom
 // delimiter.
-template <typename T, typename Char>
-struct formatter<std::vector<T>, Char> {
+template <typename T>
+struct formatter<std::vector<T>> {
   template <typename ParseContext>
-  auto parse(ParseContext& ctx) -> decltype(ctx.begin()) {
-    auto it = internal::null_terminating_iterator<Char>(ctx);
+  auto parse(ParseContext& ctx) {
+    auto it = ctx.begin();
     auto end = it;
     while (*end && *end != '}') {
       ++end;
@@ -77,7 +76,7 @@ struct formatter<std::vector<T>, Char> {
 
     if (it != end) {
       delimiter.reserve(end - it + 1);
-      delimiter.append(internal::pointer_from(it), internal::pointer_from(end));
+      delimiter.append(it, end);
       delimiter.push_back('\0');
     } else {
       constexpr char kDefaultDelimeter[] = "  \0";
@@ -85,58 +84,48 @@ struct formatter<std::vector<T>, Char> {
                        std::end(kDefaultDelimeter));
     }
 
-    return internal::pointer_from(end);
+    return end;
   }
 
   template <typename FormatContext>
   auto format(const std::vector<T>& vec, FormatContext& ctx) {
     const char* sep = "";
     for (const auto& v : vec) {
-      format_to(ctx.begin(), "{}{}", sep, v);
+      format_to(ctx.out(), "{}{}", sep, v);
       sep = &delimiter[0];
     }
 
     return ctx.out();
   }
 
-  basic_memory_buffer<Char> delimiter;
+  std::string delimiter;
 };
 
 // Specialization to format Dependency objects
 template <>
-struct formatter<aur::Dependency> {
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) {
-    return ctx.begin();
-  }
-
+struct formatter<aur::Dependency> : formatter<std::string_view> {
   template <typename FormatContext>
   auto format(const aur::Dependency& dep, FormatContext& ctx) {
-    return format_to(ctx.begin(), "{}", dep.depstring);
+    return formatter<std::string_view>::format(dep.depstring, ctx);
   }
 };
 
 template <typename T>
-struct formatter<Field<T>> {
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) {
-    return ctx.begin();
-  }
-
+struct formatter<Field<T>> : formatter<std::string_view> {
   template <typename FormatContext>
   auto format(const Field<T>& f, FormatContext& ctx) {
     if constexpr (std::is_same_v<T, std::vector<std::string>> ||
                   std::is_same_v<T, std::vector<aur::Dependency>>) {
       if (f.value.empty()) {
-        return ctx.begin();
+        return ctx.out();
       }
     }
 
-    return format_to(ctx.begin(), "{:14s} : {}\n", f.name, f.value);
+    return format_to(ctx.out(), "{:14s} : {}\n", f.name, f.value);
   }
 };
 
-}  // namespace fmt
+FMT_END_NAMESPACE
 
 namespace format {
 
