@@ -23,8 +23,8 @@ struct Field {
 FMT_BEGIN_NAMESPACE
 
 // Specialization for formatting std::chrono::seconds
-template <typename Char>
-struct formatter<std::chrono::seconds, Char> {
+template <>
+struct formatter<std::chrono::seconds> {
   template <typename ParseContext>
   auto parse(ParseContext& ctx) {
     auto it = ctx.begin();
@@ -33,7 +33,6 @@ struct formatter<std::chrono::seconds, Char> {
       ++end;
     }
 
-    using internal::pointer_from;
     if (it != end) {
       tm_format.reserve(end - it + 1);
       tm_format.append(it, end);
@@ -59,7 +58,7 @@ struct formatter<std::chrono::seconds, Char> {
     return ctx.out();
   }
 
-  basic_memory_buffer<Char> tm_format;
+  std::string tm_format;
 };
 
 // Specialization for formatting vectors of things with an optional custom
