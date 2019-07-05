@@ -8,26 +8,26 @@ namespace aur {
 template <typename ResponseT>
 class ResponseWrapper {
  public:
-  ResponseWrapper(ResponseT value, int status, std::string error)
+  ResponseWrapper(ResponseT value, long status, std::string error)
       : value_(std::move(value)), status_(status), error_(std::move(error)) {}
 
   ResponseWrapper(const ResponseWrapper&) = delete;
   ResponseWrapper& operator=(const ResponseWrapper&) = delete;
 
-  ResponseWrapper(ResponseWrapper&&) = default;
-  ResponseWrapper& operator=(ResponseWrapper&&) = default;
+  ResponseWrapper(ResponseWrapper&&) noexcept = default;
+  ResponseWrapper& operator=(ResponseWrapper&&) noexcept = default;
 
   const ResponseT& value() const { return value_; }
   ResponseT&& value() { return std::move(value_); }
 
   const std::string& error() const { return error_; }
-  int status() const { return status_; }
+  long status() const { return status_; }
 
   bool ok() const { return error_.empty(); }
 
  private:
   ResponseT value_;
-  int status_;
+  long status_;
   std::string error_;
 };
 

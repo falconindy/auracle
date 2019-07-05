@@ -20,7 +20,7 @@ Sorter MakePackageSorter(T aur::Package::*field, OrderBy order_by) {
   return nullptr;
 }
 
-Sorter MakePackageSorter(const std::string_view field, OrderBy order_by) {
+Sorter MakePackageSorter(std::string_view field, OrderBy order_by) {
   if (field == "name") {
     return MakePackageSorter(&aur::Package::name, order_by);
   }

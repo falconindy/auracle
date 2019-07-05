@@ -15,7 +15,7 @@ class Auracle {
  public:
   struct Options {
     Options& set_aur_baseurl(std::string aur_baseurl) {
-      this->aur_baseurl = aur_baseurl;
+      this->aur_baseurl = std::move(aur_baseurl);
       return *this;
     }
 

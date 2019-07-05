@@ -65,7 +65,7 @@ class ResponseHandler {
     return 0;
   }
 
-  int RunCallback(int status, const std::string& error) {
+  int RunCallback(long status, const std::string& error) {
     int r = Run(status, error);
     delete this;
     return r;
@@ -74,10 +74,10 @@ class ResponseHandler {
   Aur* aur() const { return aur_; }
 
   std::string body;
-  char error_buffer[CURL_ERROR_SIZE]{};
+  std::array<char, CURL_ERROR_SIZE> error_buffer = {};
 
  private:
-  virtual int Run(int status, const std::string& error) = 0;
+  virtual int Run(long status, const std::string& error) = 0;
 
   Aur* aur_;
 };
@@ -94,7 +94,7 @@ class TypedResponseHandler : public ResponseHandler {
   virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
 
  private:
-  int Run(int status, const std::string& error) override {
+  int Run(long status, const std::string& error) override {
     return callback_(ResponseWrapper(MakeResponse(), status, error));
   }
 
@@ -351,7 +351,7 @@ int Aur::FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback) {
 
     std::string error;
     if (result != CURLE_OK) {
-      error = handler->error_buffer;
+      error = handler->error_buffer.data();
       if (error.empty()) {
         error = curl_easy_strerror(result);
       }
@@ -432,16 +432,16 @@ void Aur::QueueHttpRequest(
   for (const auto& r : request.Build(options_.baseurl)) {
     auto curl = curl_easy_init();
 
-    auto response_handler =
+    auto handler =
         new typename RequestTraits::ResponseHandlerType(this, callback);
 
     using RH = ResponseHandler;
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
     curl_easy_setopt(curl, CURLOPT_URL, r.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &RH::BodyCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, response_handler);
-    curl_easy_setopt(curl, CURLOPT_PRIVATE, response_handler);
-    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, response_handler->error_buffer);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, handler);
+    curl_easy_setopt(curl, CURLOPT_PRIVATE, handler);
+    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, handler->error_buffer.data());
     curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestTraits::kEncoding);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, options_.useragent.c_str());
@@ -483,14 +483,13 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
                             const CloneResponseCallback& callback) {
   const bool update = fs::exists(fs::path(request.reponame()) / ".git");
 
-  auto response_handler =
+  auto handler =
       new CloneResponseHandler(this, callback, update ? "update" : "clone");
 
   int pid = fork();
   if (pid < 0) {
-    response_handler->RunCallback(
-        -errno,
-        "failed to fork new process for git: " + std::string(strerror(errno)));
+    handler->RunCallback(-errno, "failed to fork new process for git: " +
+                                     std::string(strerror(errno)));
     return;
   }
 
@@ -528,8 +527,7 @@ void Aur::QueueCloneRequest(const CloneRequest& request,
   }
 
   sd_event_source* child;
-  sd_event_add_child(event_, &child, pid, WEXITED, &Aur::OnCloneExit,
-                     response_handler);
+  sd_event_add_child(event_, &child, pid, WEXITED, &Aur::OnCloneExit, handler);
 
   active_requests_.emplace(child);
 }
