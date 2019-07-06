@@ -189,7 +189,7 @@ void Aur::CancelAll() {
     Cancel(*active_requests_.begin());
   }
 
-  sd_event_exit(event_, 1);
+  cancelled_ = true;
 }
 
 // static
@@ -395,16 +395,15 @@ int Aur::CheckFinished() {
 }
 
 int Aur::Wait() {
+  cancelled_ = false;
+
   while (!active_requests_.empty()) {
     if (sd_event_run(event_, 0) < 0) {
-      break;
+      return -EIO;
     }
   }
 
-  int r = 0;
-  sd_event_get_exit_code(event_, &r);
-
-  return -r;
+  return cancelled_ ? -ECANCELED : 0;
 }
 
 struct RpcRequestTraits {

@@ -130,6 +130,7 @@ class Aur {
   sigset_t saved_ss_{};
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
+  bool cancelled_ = false;
 
   DebugLevel debug_level_ = DebugLevel::NONE;
   std::ofstream debug_stream_;
