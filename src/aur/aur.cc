@@ -194,27 +194,19 @@ void Aur::CancelAll() {
 
 // static
 int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
-                        void*) {
+                        void* sockptr) {
   auto aur = static_cast<Aur*>(userdata);
-  return aur->DispatchSocketCallback(s, action);
+  auto io = static_cast<sd_event_source*>(sockptr);
+  return aur->DispatchSocketCallback(s, action, io);
 }
 
-int Aur::DispatchSocketCallback(curl_socket_t s, int action) {
-  auto iter = active_io_.find(s);
-  sd_event_source* io = iter != active_io_.end() ? iter->second : nullptr;
-
+int Aur::DispatchSocketCallback(curl_socket_t s, int action,
+                                sd_event_source* io) {
   if (action == CURL_POLL_REMOVE) {
-    if (io != nullptr) {
-      int fd = sd_event_source_get_io_fd(io);
+    sd_event_source_set_enabled(io, SD_EVENT_OFF);
+    sd_event_source_unref(io);
 
-      sd_event_source_set_enabled(io, SD_EVENT_OFF);
-      sd_event_source_unref(io);
-
-      active_io_.erase(iter);
-      translate_fds_.erase(fd);
-
-      close(fd);
-    }
+    return 0;
   }
 
   auto action_to_revents = [](int action) -> std::uint32_t {
@@ -240,23 +232,13 @@ int Aur::DispatchSocketCallback(curl_socket_t s, int action) {
       return -1;
     }
   } else {
-    /* When curl needs to remove an fd from us it closes
-     * the fd first, and only then calls into us. This is
-     * nasty, since we cannot pass the fd on to epoll()
-     * anymore. Hence, duplicate the fds here, and keep a
-     * copy for epoll which we control after use. */
-
-    int fd = fcntl(s, F_DUPFD_CLOEXEC, 3);
-    if (fd < 0) {
+    if (sd_event_add_io(event_, &io, s, events, &Aur::OnCurlIO, this) < 0) {
       return -1;
     }
 
-    if (sd_event_add_io(event_, &io, fd, events, &Aur::OnCurlIO, this) < 0) {
+    if (curl_multi_assign(curl_multi_, s, io) != CURLM_OK) {
       return -1;
     }
-
-    active_io_.emplace(s, io);
-    translate_fds_.emplace(fd, s);
   }
 
   return 0;
@@ -265,9 +247,6 @@ int Aur::DispatchSocketCallback(curl_socket_t s, int action) {
 // static
 int Aur::OnCurlIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
   auto aur = static_cast<Aur*>(userdata);
-
-  // Throwing an exception here would indicate a bug in Aur::SocketCallback.
-  auto translated_fd = aur->translate_fds_[fd];
 
   int action;
   if ((revents & (EPOLLIN | EPOLLOUT)) == (EPOLLIN | EPOLLOUT)) {
@@ -281,8 +260,8 @@ int Aur::OnCurlIO(sd_event_source*, int fd, uint32_t revents, void* userdata) {
   }
 
   int unused;
-  if (curl_multi_socket_action(aur->curl_multi_, translated_fd, action,
-                               &unused) != CURLM_OK) {
+  if (curl_multi_socket_action(aur->curl_multi_, fd, action, &unused) !=
+      CURLM_OK) {
     return -EINVAL;
   }
 
@@ -310,10 +289,8 @@ int Aur::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
 
 int Aur::DispatchTimerCallback(long timeout_ms) {
   if (timeout_ms < 0) {
-    if (timer_ != nullptr) {
-      if (sd_event_source_set_enabled(timer_, SD_EVENT_OFF) < 0) {
-        return -1;
-      }
+    if (sd_event_source_set_enabled(timer_, SD_EVENT_OFF) < 0) {
+      return -1;
     }
 
     return 0;

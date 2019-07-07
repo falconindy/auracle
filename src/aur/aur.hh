@@ -109,7 +109,7 @@ class Aur {
 
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
                             void* userdata, void* socketp);
-  int DispatchSocketCallback(curl_socket_t s, int action);
+  int DispatchSocketCallback(curl_socket_t s, int action, sd_event_source* io);
 
   static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
   int DispatchTimerCallback(long timeout_ms);
@@ -124,8 +124,6 @@ class Aur {
 
   CURLM* curl_multi_;
   ActiveRequests active_requests_;
-  std::unordered_map<int, sd_event_source*> active_io_;
-  std::unordered_map<int, int> translate_fds_;
 
   sigset_t saved_ss_{};
   sd_event* event_ = nullptr;
