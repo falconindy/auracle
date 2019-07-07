@@ -203,10 +203,7 @@ int Aur::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
 int Aur::DispatchSocketCallback(curl_socket_t s, int action,
                                 sd_event_source* io) {
   if (action == CURL_POLL_REMOVE) {
-    sd_event_source_set_enabled(io, SD_EVENT_OFF);
-    sd_event_source_unref(io);
-
-    return 0;
+    return FinishRequest(io);
   }
 
   auto action_to_revents = [](int action) -> std::uint32_t {
@@ -353,22 +350,20 @@ int Aur::FinishRequest(sd_event_source* source) {
 }
 
 int Aur::CheckFinished() {
-  for (;;) {
-    int unused;
-    auto msg = curl_multi_info_read(curl_multi_, &unused);
-    if (msg == nullptr || msg->msg != CURLMSG_DONE) {
-      break;
-    }
+  int unused;
 
-    auto r = FinishRequest(msg->easy_handle, msg->data.result,
-                           /* dispatch_callback = */ true);
-    if (r < 0) {
-      CancelAll();
-      return r;
-    }
+  auto msg = curl_multi_info_read(curl_multi_, &unused);
+  if (msg == nullptr || msg->msg != CURLMSG_DONE) {
+    return 0;
   }
 
-  return 0;
+  auto r = FinishRequest(msg->easy_handle, msg->data.result,
+                         /* dispatch_callback = */ true);
+  if (r < 0) {
+    CancelAll();
+  }
+
+  return r;
 }
 
 int Aur::Wait() {
