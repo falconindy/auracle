@@ -43,7 +43,8 @@ ValueCallback<OutputType> MakeValueCallback(FieldType OutputType::*field) {
 }
 
 template <typename OutputType>
-using CallbackMap = std::unordered_map<std::string, ValueCallback<OutputType>>;
+using CallbackMap =
+    std::unordered_map<std::string_view, ValueCallback<OutputType>>;
 
 template <typename OutputType>
 void DeserializeJsonObject(const nlohmann::json& j,
