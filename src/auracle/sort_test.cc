@@ -109,4 +109,13 @@ TEST_P(SortOrderTest, ByLastModified) {
 
 INSTANTIATE_TEST_CASE_P(BothOrderings, SortOrderTest,
                         testing::Values(sort::OrderBy::ORDER_ASC,
-                                        sort::OrderBy::ORDER_DESC));
+                                        sort::OrderBy::ORDER_DESC),
+                        [](const auto& info) {
+                          switch (info.param) {
+                            case sort::OrderBy::ORDER_ASC:
+                              return "ORDER_ASC";
+                            case sort::OrderBy::ORDER_DESC:
+                              return "ORDER_DESC";
+                          }
+                          return "UNKNOWN";
+                        });
