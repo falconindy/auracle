@@ -17,11 +17,7 @@ void from_json(const nlohmann::json& j, T& v) {
     return;
   }
 
-  if constexpr (std::is_assignable<T&, decltype(j)>::value) {
-    v = j;
-  } else {
-    v = T(j);
-  }
+  v = T(j);
 }
 
 template <typename T>
