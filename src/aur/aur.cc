@@ -370,7 +370,7 @@ int Aur::Wait() {
   cancelled_ = false;
 
   while (!active_requests_.empty()) {
-    if (sd_event_run(event_, 0) < 0) {
+    if (sd_event_run(event_, 1) < 0) {
       return -EIO;
     }
   }
