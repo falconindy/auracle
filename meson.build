@@ -41,6 +41,7 @@ libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
 stdcppfs = cpp.find_library('stdc++fs')
+json = dependency('nlohmann_json', fallback: ['nlohmann_json', 'nlohmann_json_dep'])
 
 pod2man = find_program('pod2man')
 
@@ -56,10 +57,7 @@ libaur = static_library(
       src/aur/response.cc src/aur/response.hh
       src/aur/json_internal.hh
     '''.split()),
-    include_directories : [
-      'third_party/nlohmann_json',
-    ],
-    dependencies : [libcurl, libsystemd, stdcppfs])
+    dependencies : [libcurl, libsystemd, stdcppfs, json])
 
 libauracle = static_library(
     'auracle',
