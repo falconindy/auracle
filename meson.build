@@ -34,6 +34,7 @@ endif
 add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
 add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
 
+json = dependency('nlohmann_json', fallback: ['nlohmann_json', 'nlohmann_json_dep'])
 libalpm = dependency('libalpm')
 libcurl = dependency('libcurl')
 libfmt = dependency('fmt', fallback : ['fmt', 'fmt_dep'])
@@ -56,10 +57,7 @@ libaur = static_library(
       src/aur/response.cc src/aur/response.hh
       src/aur/json_internal.hh
     '''.split()),
-    include_directories : [
-      'third_party/nlohmann_json',
-    ],
-    dependencies : [libcurl, libsystemd, stdcppfs])
+    dependencies : [json, libcurl, libsystemd, stdcppfs])
 
 libauracle = static_library(
     'auracle',
