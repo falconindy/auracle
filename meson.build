@@ -76,7 +76,7 @@ libauracle = static_library(
       'src',
     ],
     link_with : [libaur],
-    dependencies : [libalpm, libarchive, libfmt, stdcppfs])
+    dependencies : [libalpm, libarchive, libfmt, stdcppfs, libsystemd])
 
 auracle = executable(
     'auracle',
@@ -85,7 +85,8 @@ auracle = executable(
       'src',
     ],
     link_with : [libauracle],
-    install : true)
+    install : true,
+    dependencies : libsystemd)
 
 man = custom_target(
     'man',
