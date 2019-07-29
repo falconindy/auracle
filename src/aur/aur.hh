@@ -1,13 +1,9 @@
 #ifndef AUR_HH
 #define AUR_HH
 
-#include <fstream>
 #include <functional>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <variant>
 
 #include "request.hh"
 #include "response.hh"

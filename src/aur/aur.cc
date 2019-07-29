@@ -6,7 +6,10 @@
 #include <chrono>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
 #include <string_view>
+#include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include <curl/curl.h>
@@ -16,8 +19,86 @@ namespace fs = std::filesystem;
 
 namespace aur {
 
-// Forward declare AurImpl for ResponseHandler and subclasses.
-class AurImpl;
+class AurImpl : public Aur {
+ public:
+  explicit AurImpl(Options options = Options());
+  ~AurImpl();
+
+  AurImpl(const AurImpl&) = delete;
+  AurImpl& operator=(const AurImpl&) = delete;
+
+  AurImpl(AurImpl&&) = default;
+  AurImpl& operator=(AurImpl&&) = default;
+
+  void QueueRpcRequest(const RpcRequest& request,
+                       const RpcResponseCallback& callback) override;
+
+  void QueueRawRequest(const HttpRequest& request,
+                       const RawResponseCallback& callback) override;
+
+  void QueueTarballRequest(const RawRequest& request,
+                           const RawResponseCallback& callback) override;
+
+  void QueueCloneRequest(const CloneRequest& request,
+                         const CloneResponseCallback& callback) override;
+
+  // Wait for all pending requests to complete. Returns non-zero if any request
+  // failed or was cancelled by a callback.
+  int Wait() override;
+
+ private:
+  using ActiveRequests =
+      std::unordered_set<std::variant<CURL*, sd_event_source*>>;
+
+  template <typename RequestType>
+  void QueueHttpRequest(
+      const HttpRequest& request,
+      const typename RequestType::ResponseHandlerType::CallbackType& callback);
+
+  int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
+  int FinishRequest(sd_event_source* source);
+
+  int CheckFinished();
+  void CancelAll();
+  void Cancel(const ActiveRequests::value_type& request);
+
+  enum class DebugLevel {
+    // No debugging.
+    NONE,
+
+    // Enable Curl's verbose output to stderr
+    VERBOSE_STDERR,
+
+    // Enable Curl debug handler, write outbound requests made to a file
+    REQUESTS,
+  };
+
+  static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
+                            void* userdata, void* socketp);
+  int DispatchSocketCallback(curl_socket_t s, int action, sd_event_source* io);
+
+  static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
+  int DispatchTimerCallback(long timeout_ms);
+
+  static int OnCurlIO(sd_event_source* s, int fd, uint32_t revents,
+                      void* userdata);
+  static int OnCurlTimer(sd_event_source* s, uint64_t usec, void* userdata);
+  static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
+                         void* userdata);
+
+  Options options_;
+
+  CURLM* curl_multi_;
+  ActiveRequests active_requests_;
+
+  sigset_t saved_ss_{};
+  sd_event* event_ = nullptr;
+  sd_event_source* timer_ = nullptr;
+  bool cancelled_ = false;
+
+  DebugLevel debug_level_ = DebugLevel::NONE;
+  std::ofstream debug_stream_;
+};
 
 namespace {
 
@@ -131,99 +212,6 @@ class CloneResponseHandler
 
 }  // namespace
 
-class AurImpl : public Aur {
- public:
-  using RpcResponseCallback = std::function<int(ResponseWrapper<RpcResponse>)>;
-  using RawResponseCallback = std::function<int(ResponseWrapper<RawResponse>)>;
-  using CloneResponseCallback =
-      std::function<int(ResponseWrapper<CloneResponse>)>;
-
-  explicit AurImpl(Options options = Options());
-  ~AurImpl();
-
-  AurImpl(const AurImpl&) = delete;
-  AurImpl& operator=(const AurImpl&) = delete;
-
-  AurImpl(AurImpl&&) = default;
-  AurImpl& operator=(AurImpl&&) = default;
-
-  // Asynchronously issue an RPC request. The callback will be invoked when the
-  // call completes.
-  void QueueRpcRequest(const RpcRequest& request,
-                       const RpcResponseCallback& callback) override;
-
-  // Asynchronously issue a raw request. The callback will be invoked when the
-  // call completes.
-  void QueueRawRequest(const HttpRequest& request,
-                       const RawResponseCallback& callback) override;
-
-  // Asynchronously issue a download request. The callback will be invoked when
-  // the call completes.
-  void QueueTarballRequest(const RawRequest& request,
-                           const RawResponseCallback& callback) override;
-
-  // Clone a git repository.
-  void QueueCloneRequest(const CloneRequest& request,
-                         const CloneResponseCallback& callback) override;
-
-  // Wait for all pending requests to complete. Returns non-zero if any request
-  // failed or was cancelled by a callback.
-  int Wait() override;
-
- private:
-  using ActiveRequests =
-      std::unordered_set<std::variant<CURL*, sd_event_source*>>;
-
-  template <typename RequestType>
-  void QueueHttpRequest(
-      const HttpRequest& request,
-      const typename RequestType::ResponseHandlerType::CallbackType& callback);
-
-  int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
-  int FinishRequest(sd_event_source* source);
-
-  int CheckFinished();
-  void CancelAll();
-  void Cancel(const ActiveRequests::value_type& request);
-
-  enum class DebugLevel {
-    // No debugging.
-    NONE,
-
-    // Enable Curl's verbose output to stderr
-    VERBOSE_STDERR,
-
-    // Enable Curl debug handler, write outbound requests made to a file
-    REQUESTS,
-  };
-
-  static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
-                            void* userdata, void* socketp);
-  int DispatchSocketCallback(curl_socket_t s, int action, sd_event_source* io);
-
-  static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
-  int DispatchTimerCallback(long timeout_ms);
-
-  static int OnCurlIO(sd_event_source* s, int fd, uint32_t revents,
-                      void* userdata);
-  static int OnCurlTimer(sd_event_source* s, uint64_t usec, void* userdata);
-  static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
-                         void* userdata);
-
-  Options options_;
-
-  CURLM* curl_multi_;
-  ActiveRequests active_requests_;
-
-  sigset_t saved_ss_{};
-  sd_event* event_ = nullptr;
-  sd_event_source* timer_ = nullptr;
-  bool cancelled_ = false;
-
-  DebugLevel debug_level_ = DebugLevel::NONE;
-  std::ofstream debug_stream_;
-};
-
 AurImpl::AurImpl(Options options) : options_(std::move(options)) {
   curl_global_init(CURL_GLOBAL_SSL);
   curl_multi_ = curl_multi_init();
@@ -307,7 +295,7 @@ int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
     return FinishRequest(io);
   }
 
-  auto action_to_revents = [](int action) -> std::uint32_t {
+  auto events = [action]() -> std::uint32_t {
     switch (action) {
       case CURL_POLL_IN:
         return EPOLLIN;
@@ -318,8 +306,7 @@ int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
       default:
         return 0;
     }
-  };
-  std::uint32_t events = action_to_revents(action);
+  }();
 
   if (io != nullptr) {
     if (sd_event_source_set_io_events(io, events) < 0) {

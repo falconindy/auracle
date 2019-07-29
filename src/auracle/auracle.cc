@@ -9,6 +9,7 @@
 #include <iostream>
 #include <regex>
 #include <string_view>
+#include <unordered_set>
 
 #include "aur/response.hh"
 #include "format.hh"
