@@ -5,8 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include <curl/curl.h>
-
 #include "package.hh"
 
 namespace aur {

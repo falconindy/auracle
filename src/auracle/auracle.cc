@@ -194,9 +194,9 @@ bool RpcResponseIsFailure(
 }  // namespace
 
 Auracle::Auracle(Options options)
-    : aur_(aur::Aur::Options()
-               .set_baseurl(options.aur_baseurl)
-               .set_useragent("Auracle/" PACKAGE_VERSION)),
+    : aur_(aur::NewAur(aur::Aur::Options()
+                           .set_baseurl(options.aur_baseurl)
+                           .set_useragent("Auracle/" PACKAGE_VERSION))),
       pacman_(options.pacman) {}
 
 void Auracle::IteratePackages(std::vector<std::string> args,
@@ -211,7 +211,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
     info_request.AddArg(arg);
   }
 
-  aur_.QueueRpcRequest(
+  aur_->QueueRpcRequest(
       info_request, [this, state, want{std::move(args)}](
                         aur::ResponseWrapper<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
@@ -271,21 +271,21 @@ int Auracle::Info(const std::vector<std::string>& args,
   }
 
   std::vector<aur::Package> packages;
-  aur_.QueueRpcRequest(aur::InfoRequest(args),
-                       [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-                         if (RpcResponseIsFailure(response)) {
-                           return -EIO;
-                         }
+  aur_->QueueRpcRequest(aur::InfoRequest(args),
+                        [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+                          if (RpcResponseIsFailure(response)) {
+                            return -EIO;
+                          }
 
-                         auto results = response.value().results;
-                         packages.reserve(packages.size() + results.size());
-                         std::move(results.begin(), results.end(),
-                                   std::back_inserter(packages));
+                          auto results = response.value().results;
+                          packages.reserve(packages.size() + results.size());
+                          std::move(results.begin(), results.end(),
+                                    std::back_inserter(packages));
 
-                         return 0;
-                       });
+                          return 0;
+                        });
 
-  auto r = aur_.Wait();
+  auto r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -353,22 +353,22 @@ int Auracle::Search(const std::vector<std::string>& args,
       }
     }
 
-    aur_.QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
-                         [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-                           if (RpcResponseIsFailure(response)) {
-                             return -EIO;
-                           }
+    aur_->QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
+                          [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+                            if (RpcResponseIsFailure(response)) {
+                              return -EIO;
+                            }
 
-                           auto results = response.value().results;
-                           std::copy_if(
-                               std::make_move_iterator(results.begin()),
-                               std::make_move_iterator(results.end()),
-                               std::back_inserter(packages), matches);
-                           return 0;
-                         });
+                            auto results = response.value().results;
+                            std::copy_if(
+                                std::make_move_iterator(results.begin()),
+                                std::make_move_iterator(results.end()),
+                                std::back_inserter(packages), matches);
+                            return 0;
+                          });
   }
 
-  int r = aur_.Wait();
+  int r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -398,7 +398,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
 
   int ret = 0;
   PackageIterator iter(options.recurse, [this, &ret](const aur::Package& p) {
-    aur_.QueueCloneRequest(
+    aur_->QueueCloneRequest(
         aur::CloneRequest(p.pkgbase),
         [&ret, pkgbase{p.pkgbase}](
             aur::ResponseWrapper<aur::CloneResponse> response) {
@@ -416,7 +416,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
 
   IteratePackages(args, &iter);
 
-  int r = aur_.Wait();
+  int r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -439,7 +439,7 @@ int Auracle::Download(const std::vector<std::string>& args,
   }
 
   PackageIterator iter(options.recurse, [this](const aur::Package& p) {
-    aur_.QueueTarballRequest(
+    aur_->QueueTarballRequest(
         aur::RawRequest::ForTarball(p),
         [pkgbase{p.pkgbase}](aur::ResponseWrapper<aur::RawResponse> response) {
           if (!response.ok()) {
@@ -462,7 +462,7 @@ int Auracle::Download(const std::vector<std::string>& args,
 
   IteratePackages(args, &iter);
 
-  int r = aur_.Wait();
+  int r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -481,7 +481,7 @@ int Auracle::Show(const std::vector<std::string>& args,
   }
 
   int resultcount = 0;
-  aur_.QueueRpcRequest(
+  aur_->QueueRpcRequest(
       aur::InfoRequest(args),
       [&](aur::ResponseWrapper<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
@@ -493,7 +493,7 @@ int Auracle::Show(const std::vector<std::string>& args,
         const bool print_header = resultcount > 1;
 
         for (const auto& pkg : response.value().results) {
-          aur_.QueueRawRequest(
+          aur_->QueueRawRequest(
               aur::RawRequest::ForSourceFile(pkg, options.show_file),
               [&options, print_header, pkgbase{pkg.pkgbase}](
                   aur::ResponseWrapper<aur::RawResponse> response) {
@@ -529,7 +529,7 @@ int Auracle::Show(const std::vector<std::string>& args,
         return 0;
       });
 
-  int r = aur_.Wait();
+  int r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -550,7 +550,7 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   PackageIterator iter(/* recurse = */ true, nullptr);
   IteratePackages(args, &iter);
 
-  int r = aur_.Wait();
+  int r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -618,7 +618,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
   }
 
   std::vector<aur::Package> packages;
-  aur_.QueueRpcRequest(
+  aur_->QueueRpcRequest(
       info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
           return -EIO;
@@ -631,7 +631,7 @@ int Auracle::Sync(const std::vector<std::string>& args,
         return 0;
       });
 
-  auto r = aur_.Wait();
+  auto r = aur_->Wait();
   if (r < 0) {
     return r;
   }
@@ -678,18 +678,18 @@ int RawSearchDone(aur::ResponseWrapper<aur::RawResponse> response) {
 int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
-    aur_.QueueRawRequest(aur::SearchRequest(options.search_by, arg),
-                         &RawSearchDone);
+    aur_->QueueRawRequest(aur::SearchRequest(options.search_by, arg),
+                          &RawSearchDone);
   }
 
-  return aur_.Wait();
+  return aur_->Wait();
 }
 
 int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
-  aur_.QueueRawRequest(aur::InfoRequest(args), &RawSearchDone);
+  aur_->QueueRawRequest(aur::InfoRequest(args), &RawSearchDone);
 
-  return aur_.Wait();
+  return aur_->Wait();
 }
 
 }  // namespace auracle

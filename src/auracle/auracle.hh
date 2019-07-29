@@ -88,7 +88,7 @@ class Auracle {
 
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
-  aur::Aur aur_;
+  std::unique_ptr<aur::Aur> aur_;
   Pacman* pacman_;
 };
 

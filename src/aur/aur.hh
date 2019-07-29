@@ -9,9 +9,6 @@
 #include <unordered_set>
 #include <variant>
 
-#include <curl/curl.h>
-#include <systemd/sd-event.h>
-
 #include "request.hh"
 #include "response.hh"
 
@@ -46,10 +43,8 @@ class Aur {
     std::string useragent;
   };
 
-  // Construct a new Aur object, rooted at the given URL, e.g.
-  // https://aur.archlinux.org.
-  explicit Aur(Options options = Options());
-  ~Aur();
+  Aur() = default;
+  virtual ~Aur() = default;
 
   Aur(const Aur&) = delete;
   Aur& operator=(const Aur&) = delete;
@@ -59,80 +54,29 @@ class Aur {
 
   // Asynchronously issue an RPC request. The callback will be invoked when the
   // call completes.
-  void QueueRpcRequest(const RpcRequest& request,
-                       const RpcResponseCallback& callback);
+  virtual void QueueRpcRequest(const RpcRequest& request,
+                               const RpcResponseCallback& callback) = 0;
 
   // Asynchronously issue a raw request. The callback will be invoked when the
   // call completes.
-  void QueueRawRequest(const HttpRequest& request,
-                       const RawResponseCallback& callback);
+  virtual void QueueRawRequest(const HttpRequest& request,
+                               const RawResponseCallback& callback) = 0;
 
   // Asynchronously issue a download request. The callback will be invoked when
   // the call completes.
-  void QueueTarballRequest(const RawRequest& request,
-                           const RawResponseCallback& callback);
+  virtual void QueueTarballRequest(const RawRequest& request,
+                                   const RawResponseCallback& callback) = 0;
 
   // Clone a git repository.
-  void QueueCloneRequest(const CloneRequest& request,
-                         const CloneResponseCallback& callback);
+  virtual void QueueCloneRequest(const CloneRequest& request,
+                                 const CloneResponseCallback& callback) = 0;
 
   // Wait for all pending requests to complete. Returns non-zero if any request
   // failed or was cancelled by a callback.
-  int Wait();
-
- private:
-  using ActiveRequests =
-      std::unordered_set<std::variant<CURL*, sd_event_source*>>;
-
-  template <typename RequestType>
-  void QueueHttpRequest(
-      const HttpRequest& request,
-      const typename RequestType::ResponseHandlerType::CallbackType& callback);
-
-  int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
-  int FinishRequest(sd_event_source* source);
-
-  int CheckFinished();
-  void CancelAll();
-  void Cancel(const ActiveRequests::value_type& request);
-
-  enum class DebugLevel {
-    // No debugging.
-    NONE,
-
-    // Enable Curl's verbose output to stderr
-    VERBOSE_STDERR,
-
-    // Enable Curl debug handler, write outbound requests made to a file
-    REQUESTS,
-  };
-
-  static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
-                            void* userdata, void* socketp);
-  int DispatchSocketCallback(curl_socket_t s, int action, sd_event_source* io);
-
-  static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
-  int DispatchTimerCallback(long timeout_ms);
-
-  static int OnCurlIO(sd_event_source* s, int fd, uint32_t revents,
-                      void* userdata);
-  static int OnCurlTimer(sd_event_source* s, uint64_t usec, void* userdata);
-  static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
-                         void* userdata);
-
-  Options options_;
-
-  CURLM* curl_multi_;
-  ActiveRequests active_requests_;
-
-  sigset_t saved_ss_{};
-  sd_event* event_ = nullptr;
-  sd_event_source* timer_ = nullptr;
-  bool cancelled_ = false;
-
-  DebugLevel debug_level_ = DebugLevel::NONE;
-  std::ofstream debug_stream_;
+  virtual int Wait() = 0;
 };
+
+std::unique_ptr<Aur> NewAur(Aur::Options options = Aur::Options());
 
 }  // namespace aur
 
