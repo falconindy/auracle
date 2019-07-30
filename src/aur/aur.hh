@@ -12,10 +12,12 @@ namespace aur {
 
 class Aur {
  public:
-  using RpcResponseCallback = std::function<int(ResponseWrapper<RpcResponse>)>;
-  using RawResponseCallback = std::function<int(ResponseWrapper<RawResponse>)>;
-  using CloneResponseCallback =
-      std::function<int(ResponseWrapper<CloneResponse>)>;
+  template <typename ResponseType>
+  using ResponseCallback = std::function<int(ResponseWrapper<ResponseType>)>;
+
+  using RpcResponseCallback = ResponseCallback<RpcResponse>;
+  using RawResponseCallback = ResponseCallback<RawResponse>;
+  using CloneResponseCallback = ResponseCallback<CloneResponse>;
 
   struct Options {
     Options() = default;
@@ -57,11 +59,6 @@ class Aur {
   // call completes.
   virtual void QueueRawRequest(const HttpRequest& request,
                                const RawResponseCallback& callback) = 0;
-
-  // Asynchronously issue a download request. The callback will be invoked when
-  // the call completes.
-  virtual void QueueTarballRequest(const RawRequest& request,
-                                   const RawResponseCallback& callback) = 0;
 
   // Clone a git repository.
   virtual void QueueCloneRequest(const CloneRequest& request,

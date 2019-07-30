@@ -36,9 +36,6 @@ class AurImpl : public Aur {
   void QueueRawRequest(const HttpRequest& request,
                        const RawResponseCallback& callback) override;
 
-  void QueueTarballRequest(const RawRequest& request,
-                           const RawResponseCallback& callback) override;
-
   void QueueCloneRequest(const CloneRequest& request,
                          const CloneResponseCallback& callback) override;
 
@@ -50,10 +47,10 @@ class AurImpl : public Aur {
   using ActiveRequests =
       std::unordered_set<std::variant<CURL*, sd_event_source*>>;
 
-  template <typename RequestType>
+  template <typename ResponseHandlerType>
   void QueueHttpRequest(
       const HttpRequest& request,
-      const typename RequestType::ResponseHandlerType::CallbackType& callback);
+      const typename ResponseHandlerType::CallbackType& callback);
 
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
   int FinishRequest(sd_event_source* source);
@@ -169,12 +166,12 @@ class ResponseHandler {
   AurImpl* aur_;
 };
 
-template <typename ResponseT, typename CallbackT>
+template <typename ResponseT>
 class TypedResponseHandler : public ResponseHandler {
  public:
-  using CallbackType = CallbackT;
+  using CallbackType = Aur::ResponseCallback<ResponseT>;
 
-  constexpr TypedResponseHandler(AurImpl* aur, CallbackT callback)
+  constexpr TypedResponseHandler(AurImpl* aur, CallbackType callback)
       : ResponseHandler(aur), callback_(std::move(callback)) {}
 
  protected:
@@ -185,16 +182,13 @@ class TypedResponseHandler : public ResponseHandler {
     return callback_(ResponseWrapper(MakeResponse(), status, error));
   }
 
-  const CallbackT callback_;
+  const CallbackType callback_;
 };
 
-using RpcResponseHandler =
-    TypedResponseHandler<RpcResponse, Aur::RpcResponseCallback>;
-using RawResponseHandler =
-    TypedResponseHandler<RawResponse, Aur::RawResponseCallback>;
+using RpcResponseHandler = TypedResponseHandler<RpcResponse>;
+using RawResponseHandler = TypedResponseHandler<RawResponse>;
 
-class CloneResponseHandler
-    : public TypedResponseHandler<CloneResponse, Aur::CloneResponseCallback> {
+class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
  public:
   CloneResponseHandler(AurImpl* aur, Aur::CloneResponseCallback callback,
                        std::string operation)
@@ -468,33 +462,13 @@ int AurImpl::Wait() {
   return cancelled_ ? -ECANCELED : 0;
 }
 
-struct RpcRequestTraits {
-  using ResponseHandlerType = RpcResponseHandler;
-
-  static constexpr char const* kEncoding = "";
-};
-
-struct RawRequestTraits {
-  using ResponseHandlerType = RawResponseHandler;
-
-  static constexpr char const* kEncoding = "";
-};
-
-struct TarballRequestTraits {
-  using ResponseHandlerType = RawResponseHandler;
-
-  static constexpr char const* kEncoding = "identity";
-};
-
-template <typename RequestTraits>
+template <typename ResponseHandlerType>
 void AurImpl::QueueHttpRequest(
     const HttpRequest& request,
-    const typename RequestTraits::ResponseHandlerType::CallbackType& callback) {
+    const typename ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request.Build(options_.baseurl)) {
     auto curl = curl_easy_init();
-
-    auto handler =
-        new typename RequestTraits::ResponseHandlerType(this, callback);
+    auto handler = new ResponseHandlerType(this, callback);
 
     using RH = ResponseHandler;
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
@@ -503,7 +477,7 @@ void AurImpl::QueueHttpRequest(
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, handler);
     curl_easy_setopt(curl, CURLOPT_PRIVATE, handler);
     curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, handler->error_buffer.data());
-    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, RequestTraits::kEncoding);
+    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, options_.useragent.c_str());
 
@@ -596,17 +570,12 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
 
 void AurImpl::QueueRawRequest(const HttpRequest& request,
                               const RawResponseCallback& callback) {
-  QueueHttpRequest<RawRequestTraits>(request, callback);
+  QueueHttpRequest<RawResponseHandler>(request, callback);
 }
 
 void AurImpl::QueueRpcRequest(const RpcRequest& request,
                               const RpcResponseCallback& callback) {
-  QueueHttpRequest<RpcRequestTraits>(request, callback);
-}
-
-void AurImpl::QueueTarballRequest(const RawRequest& request,
-                                  const RawResponseCallback& callback) {
-  QueueHttpRequest<TarballRequestTraits>(request, callback);
+  QueueHttpRequest<RpcResponseHandler>(request, callback);
 }
 
 std::unique_ptr<Aur> NewAur(Aur::Options options) {

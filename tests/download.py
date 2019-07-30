@@ -24,19 +24,6 @@ class TestDownload(auracle_test.TestCase):
         self.assertIn('no results found', r.process.stderr.decode())
 
 
-    def testSendsDifferentAcceptEncodingHeaders(self):
-        r = self.Auracle(['download', 'auracle-git'])
-        self.assertEqual(r.process.returncode, 0)
-        self.assertPkgbuildExists('auracle-git')
-
-        accept_encoding = r.requests_sent[0].headers['accept-encoding']
-        self.assertIn('deflate', accept_encoding)
-        self.assertIn('gzip', accept_encoding)
-
-        accept_encoding = r.requests_sent[1].headers['accept-encoding']
-        self.assertEqual(accept_encoding, 'identity')
-
-
     def testDownloadMultiple(self):
         r = self.Auracle(['download', 'auracle-git', 'pkgfile-git'])
         self.assertEqual(r.process.returncode, 0)

@@ -440,7 +440,7 @@ int Auracle::Download(const std::vector<std::string>& args,
   }
 
   PackageIterator iter(options.recurse, [this](const aur::Package& p) {
-    aur_->QueueTarballRequest(
+    aur_->QueueRawRequest(
         aur::RawRequest::ForTarball(p),
         [pkgbase{p.pkgbase}](aur::ResponseWrapper<aur::RawResponse> response) {
           if (!response.ok()) {

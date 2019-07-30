@@ -32,7 +32,8 @@ class ResponseWrapper {
 };
 
 struct CloneResponse {
-  CloneResponse(std::string operation) : operation(std::move(operation)) {}
+  explicit CloneResponse(std::string operation)
+      : operation(std::move(operation)) {}
 
   CloneResponse(const CloneResponse&) = delete;
   CloneResponse& operator=(const CloneResponse&) = delete;
