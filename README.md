@@ -3,59 +3,26 @@
 Auracle is a command line tool used to interact with Arch Linux's User
 Repository, commonly referred to as the [AUR](https://aur.archlinux.org).
 
-Auracle supersedes my previous efforts in developing
-[cower](https://github.com/falconindy/cower), a tool with a similar purpose.
-I've started anew mainly as a result of frustrations over the years with how
-cower has developed, and limitations I've run into.
+### Features
 
-### Background
+Auracle has a number of actions it can perform:
 
-At the core of any AUR client is a series of HTTP requests to the AUR. cower
-currently implements this using the venerable libcurl. Libcurl, generally
-speaking, offers two APIs: "easy" and "multi". The easy API uses a CURL handle
-to represent a session. Each handle manages approximately 1 active request at
-a given time. The multi API aggregates multiple easy handles, allowing for
-concurrent sessions in a non-blocking (event-like) manner.
+* `search`: find packages in the AUR by regular expression.
+* `info`: return detailed information about packages.
+* `show`: show the contents of a source file for a package (e.g. the PKGBUILD)
+* `raw{info,search}`: similar to info and search, but output raw json responses
+  rather than formatting them.
+* `clone`: clone the git repository for packages.
+* `buildorder`: show the order and origin of packages that need to be built for
+  a given set of AUR packages.
+* `sync`: attempt to find updates for installed AUR packages.
 
-It's also possible to achieve session concurrency through anothers means, which
-is to use threads with multiple CURL handles, but solely through the easy API.
-In this mode, one must be careful never to access the same CURL handle
-concurrently, as the objects are not thread-safe.
+### Non-goals
 
-### Problem
+Auracle does not currently, and will probably never:
 
-History has taught me that the handle-per-thread approach was a poor choice.
-cower (loosely) implements a thread pool, and multiplexes requests across some
-number of threads. Information is generally shared through light use of mutexes
-around global objects (mainly, a work queue), and results from threads are
-aggregated back in the main thread.
-
-Due to my decision to write cower in C and ensuing laziness, there's other
-warts.  Data structures are ill-chosen, typically using the doubly-linked list
-from alpm. Encapsulation is poor, and there's numerous objects which have some
-vague amount of overlap, or end up being global for the sake of sharing.
-
-Lack of proper communication channels (or any real synchronization) between
-threads has lead to relatively
-[unfixable](https://github.com/falconindy/cower/issues/90) bugs. And, the
-current architecture makes it difficult to implement [obvious
-improvements](https://github.com/falconindy/cower/issues/90).
-
-The cower codebase has simply become frustrating to work with.
-
-### Solution
-
-I've attempted to address some of these faults through refactoring. There's
-some obvious (to me) abstractions to be created, but the added difficulty
-presented by the current threading architecture and yearn for actual data
-structures (without having to write/find them) gives me pause.
-
-Therefore, the ideal state seems to be to move away from threads and rewrite in
-a higher level language. auracle attempts to address these problems and more
-through it's C++ implementation and adoption of Curl's multi API.
-
-This code is all subject to change until a tag is pushed. If you have opinions,
-feature requests, or bug reports, please file issues.
+* Build packages for you.
+* Look at upstream VCS repos to find updates.
 
 ### Building and Testing
 
