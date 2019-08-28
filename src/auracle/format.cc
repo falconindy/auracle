@@ -18,6 +18,10 @@ struct Field {
   const T& value;
 };
 
+struct OptDepends {
+  const std::vector<std::string>& optdepends;
+};
+
 }  // namespace
 
 FMT_BEGIN_NAMESPACE
@@ -109,6 +113,27 @@ struct formatter<aur::Dependency> : formatter<std::string_view> {
   }
 };
 
+// Specialization to format optdepends since we write these newline delimited,
+// not double-space delimited.
+template <>
+struct formatter<OptDepends> : formatter<std::string_view> {
+  template <typename FormatContext>
+  auto format(const OptDepends& optdep, FormatContext& ctx) {
+    if (optdep.optdepends.empty()) {
+      return ctx.out();
+    }
+
+    auto iter = optdep.optdepends.begin();
+    format_to(ctx.out(), "{}", *iter);
+
+    while (++iter != optdep.optdepends.end()) {
+      format_to(ctx.out(), "\n                 {}", *iter);
+    }
+
+    return ctx.out();
+  }
+};
+
 template <typename T>
 struct formatter<Field<T>> : formatter<std::string_view> {
   template <typename FormatContext>
@@ -197,7 +222,8 @@ void Long(const aur::Package& package,
   std::cout << fmt::format("{}", Field("Checkdepends", p.checkdepends));
   std::cout << fmt::format("{}", Field("Provides", p.provides));
   std::cout << fmt::format("{}", Field("Conflicts With", p.conflicts));
-  std::cout << fmt::format("{}", Field("Optional Deps", p.optdepends));
+  std::cout << fmt::format("{}",
+                           Field("Optional Deps", OptDepends{p.optdepends}));
   std::cout << fmt::format("{}", Field("Replaces", p.replaces));
   std::cout << fmt::format("{}", Field("Licenses", p.licenses));
   std::cout << fmt::format("{}", Field("Votes", p.votes));
