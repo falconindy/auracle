@@ -307,7 +307,7 @@ bool FormatIsValid(const std::string& format, std::string* error) {
   try {
     std::string out;
     FormatCustomTo(out, format, aur::Package());
-  } catch (const fmt::v5::format_error& e) {
+  } catch (const fmt::format_error& e) {
     error->assign(e.what());
     return false;
   }
