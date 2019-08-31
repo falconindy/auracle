@@ -45,8 +45,7 @@ FMT_BEGIN_NAMESPACE
 // Specialization for formatting std::chrono::seconds
 template <>
 struct formatter<std::chrono::seconds> {
-  template <typename ParseContext>
-  auto parse(ParseContext& ctx) {
+  auto parse(fmt::format_parse_context& ctx) {
     auto it = ctx.begin();
     auto end = it;
     while (*end && *end != '}') {
@@ -64,8 +63,7 @@ struct formatter<std::chrono::seconds> {
     return end;
   }
 
-  template <typename FormatContext>
-  auto format(const std::chrono::seconds& seconds, FormatContext& ctx) {
+  auto format(const std::chrono::seconds& seconds, fmt::format_context& ctx) {
     using system_clock = std::chrono::system_clock;
     auto point = system_clock::to_time_t(system_clock::time_point(seconds));
     std::tm tm{};
@@ -85,8 +83,7 @@ struct formatter<std::chrono::seconds> {
 // delimiter.
 template <typename T>
 struct formatter<std::vector<T>> {
-  template <typename ParseContext>
-  auto parse(ParseContext& ctx) {
+  auto parse(fmt::format_parse_context& ctx) {
     auto it = ctx.begin();
     auto end = it;
     while (*end && *end != '}') {
@@ -106,8 +103,7 @@ struct formatter<std::vector<T>> {
     return end;
   }
 
-  template <typename FormatContext>
-  auto format(const std::vector<T>& vec, FormatContext& ctx) {
+  auto format(const std::vector<T>& vec, fmt::format_context& ctx) {
     const char* sep = "";
     for (const auto& v : vec) {
       format_to(ctx.out(), "{}{}", sep, v);
@@ -123,8 +119,7 @@ struct formatter<std::vector<T>> {
 // Specialization to format Dependency objects
 template <>
 struct formatter<aur::Dependency> : formatter<std::string_view> {
-  template <typename FormatContext>
-  auto format(const aur::Dependency& dep, FormatContext& ctx) {
+  auto format(const aur::Dependency& dep, fmt::format_context& ctx) {
     return formatter<std::string_view>::format(dep.depstring, ctx);
   }
 };
@@ -133,11 +128,10 @@ struct formatter<aur::Dependency> : formatter<std::string_view> {
 // not double-space delimited.
 template <>
 struct formatter<OptDepends> : formatter<std::string_view> {
-  template <typename FormatContext>
-  auto format(const OptDepends& optdep, FormatContext& ctx) {
+  auto format(const OptDepends& optdep, fmt::format_context& ctx) {
     auto iter = optdep.optdepends.begin();
-    format_to(ctx.out(), "{}", *iter);
 
+    format_to(ctx.out(), "{}", *iter);
     while (++iter != optdep.optdepends.end()) {
       format_to(ctx.out(), "\n                 {}", *iter);
     }
@@ -148,8 +142,7 @@ struct formatter<OptDepends> : formatter<std::string_view> {
 
 template <typename T>
 struct formatter<Field<T>> : formatter<std::string_view> {
-  template <typename FormatContext>
-  auto format(const Field<T>& f, FormatContext& ctx) {
+  auto format(const Field<T>& f, fmt::format_context& ctx) {
     if constexpr (is_containerlike<T>::value) {
       if (f.value.empty()) {
         return ctx.out();
