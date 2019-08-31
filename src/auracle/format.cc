@@ -20,6 +20,22 @@ struct Field {
 
 struct OptDepends {
   const std::vector<std::string>& optdepends;
+
+  bool empty() const { return optdepends.empty(); }
+};
+
+template <typename T>
+struct is_containerlike {
+ private:
+  template <typename U>
+  static decltype((void)std::declval<U>().empty(), void(), std::true_type())
+  test(int);
+
+  template <typename>
+  static std::false_type test(...);
+
+ public:
+  enum { value = decltype(test<T>(0))::value };
 };
 
 }  // namespace
@@ -119,10 +135,6 @@ template <>
 struct formatter<OptDepends> : formatter<std::string_view> {
   template <typename FormatContext>
   auto format(const OptDepends& optdep, FormatContext& ctx) {
-    if (optdep.optdepends.empty()) {
-      return ctx.out();
-    }
-
     auto iter = optdep.optdepends.begin();
     format_to(ctx.out(), "{}", *iter);
 
@@ -138,8 +150,7 @@ template <typename T>
 struct formatter<Field<T>> : formatter<std::string_view> {
   template <typename FormatContext>
   auto format(const Field<T>& f, FormatContext& ctx) {
-    if constexpr (std::is_same_v<T, std::vector<std::string>> ||
-                  std::is_same_v<T, std::vector<aur::Dependency>>) {
+    if constexpr (is_containerlike<T>::value) {
       if (f.value.empty()) {
         return ctx.out();
       }
