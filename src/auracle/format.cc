@@ -91,13 +91,9 @@ struct formatter<std::vector<T>> {
     }
 
     if (it != end) {
-      delimiter.reserve(end - it + 1);
-      delimiter.append(it, end);
-      delimiter.push_back('\0');
+      delimiter = {it, end};
     } else {
-      constexpr char kDefaultDelimeter[] = "  \0";
-      delimiter.append(std::begin(kDefaultDelimeter),
-                       std::end(kDefaultDelimeter));
+      delimiter = "  ";
     }
 
     return end;
@@ -113,6 +109,7 @@ struct formatter<std::vector<T>> {
     return ctx.out();
   }
 
+ private:
   std::string delimiter;
 };
 
@@ -127,17 +124,13 @@ struct formatter<aur::Dependency> : formatter<std::string_view> {
 // Specialization to format optdepends since we write these newline delimited,
 // not double-space delimited.
 template <>
-struct formatter<OptDepends> : formatter<std::string_view> {
+struct formatter<OptDepends> : formatter<std::vector<std::string>> {
   auto format(const OptDepends& optdep, fmt::format_context& ctx) {
-    auto iter = optdep.optdepends.begin();
-
-    format_to(ctx.out(), "{}", *iter);
-    while (++iter != optdep.optdepends.end()) {
-      format_to(ctx.out(), "\n                 {}", *iter);
-    }
-
-    return ctx.out();
+    return formatter<std::vector<std::string>>::format(optdep.optdepends, ctx);
   }
+
+ private:
+  std::string delimiter = "\n                 ";
 };
 
 template <typename T>
