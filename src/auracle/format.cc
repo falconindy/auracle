@@ -38,6 +38,19 @@ struct is_containerlike {
   enum { value = decltype(test<T>(0))::value };
 };
 
+fmt::format_parse_context::iterator parse_format_or_default(
+    fmt::format_parse_context& ctx, std::string_view default_value,
+    std::string* out) {
+  auto iter = std::find(ctx.begin(), ctx.end(), '}');
+  if (ctx.begin() == iter) {
+    *out = default_value;
+  } else {
+    *out = {ctx.begin(), iter};
+  }
+
+  return iter;
+}
+
 }  // namespace
 
 FMT_BEGIN_NAMESPACE
@@ -46,34 +59,18 @@ FMT_BEGIN_NAMESPACE
 template <>
 struct formatter<std::chrono::seconds> {
   auto parse(fmt::format_parse_context& ctx) {
-    auto it = ctx.begin();
-    auto end = it;
-    while (*end && *end != '}') {
-      ++end;
-    }
-
-    if (it != end) {
-      tm_format.reserve(end - it + 1);
-      tm_format.append(it, end);
-      tm_format.push_back('\0');
-    } else {
-      constexpr char kDefaultFormat[] = "%c";
-      tm_format.append(std::begin(kDefaultFormat), std::end(kDefaultFormat));
-    }
-    return end;
+    return parse_format_or_default(ctx, "%c", &tm_format);
   }
 
   auto format(const std::chrono::seconds& seconds, fmt::format_context& ctx) {
-    using system_clock = std::chrono::system_clock;
-    auto point = system_clock::to_time_t(system_clock::time_point(seconds));
+    auto point = std::chrono::system_clock::to_time_t(
+        std::chrono::system_clock::time_point(seconds));
+
     std::tm tm{};
-    localtime_r(&point, &tm);
-
     std::stringstream ss;
-    ss << std::put_time(&tm, &tm_format[0]);
-    format_to(ctx.out(), "{}", ss.str());
+    ss << std::put_time(localtime_r(&point, &tm), &tm_format[0]);
 
-    return ctx.out();
+    return format_to(ctx.out(), "{}", ss.str());
   }
 
   std::string tm_format;
@@ -84,19 +81,7 @@ struct formatter<std::chrono::seconds> {
 template <typename T>
 struct formatter<std::vector<T>> {
   auto parse(fmt::format_parse_context& ctx) {
-    auto it = ctx.begin();
-    auto end = it;
-    while (*end && *end != '}') {
-      ++end;
-    }
-
-    if (it != end) {
-      delimiter = {it, end};
-    } else {
-      delimiter = "  ";
-    }
-
-    return end;
+    return parse_format_or_default(ctx, "  ", &delimiter);
   }
 
   auto format(const std::vector<T>& vec, fmt::format_context& ctx) {
