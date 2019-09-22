@@ -26,7 +26,6 @@ class HttpRequest : public Request {
 // A class describing a GET request for an arbitrary URL on the AUR.
 class RawRequest : public HttpRequest {
  public:
-  static RawRequest ForTarball(const Package& package);
   static RawRequest ForSourceFile(const Package& package,
                                   std::string_view filename);
 

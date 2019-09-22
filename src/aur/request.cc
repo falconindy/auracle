@@ -117,11 +117,6 @@ RpcRequest::RpcRequest(const HttpRequest::QueryParams& base_params,
       approx_max_length_(approx_max_length) {}
 
 // static
-RawRequest RawRequest::ForTarball(const Package& package) {
-  return RawRequest(package.aur_urlpath);
-}
-
-// static
 RawRequest RawRequest::ForSourceFile(const Package& package,
                                      std::string_view filename) {
   return RawRequest(StrCat("/cgit/aur.git/plain/", filename,

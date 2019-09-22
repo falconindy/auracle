@@ -1,8 +1,5 @@
 #include "auracle.hh"
 
-#include <archive.h>
-#include <archive_entry.h>
-
 #include <cerrno>
 #include <filesystem>
 #include <functional>
@@ -60,40 +57,6 @@ void SortUnique(std::vector<aur::Package>* packages,
 
   packages->resize(std::unique(packages->begin(), packages->end()) -
                    packages->begin());
-}
-
-int ExtractArchive(const std::string& archive_bytes) {
-  struct archive* archive;
-  struct archive_entry* entry;
-  const int archive_flags = ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_TIME;
-  int r = 0;
-
-  archive = archive_read_new();
-  archive_read_support_filter_all(archive);
-  archive_read_support_format_all(archive);
-
-  if (archive_read_open_memory(archive, archive_bytes.data(),
-                               archive_bytes.size()) != ARCHIVE_OK) {
-    return -archive_errno(archive);
-  }
-
-  while (archive_read_next_header(archive, &entry) == ARCHIVE_OK) {
-    r = archive_read_extract(archive, entry, archive_flags);
-    if (r == ARCHIVE_FATAL || r == ARCHIVE_WARN) {
-      r = -archive_errno(archive);
-      break;
-    }
-
-    if (r == ARCHIVE_EOF) {
-      r = 0;
-      break;
-    }
-  }
-
-  archive_read_close(archive);
-  archive_read_free(archive);
-
-  return r;
 }
 
 std::vector<std::string> NotFoundPackages(
@@ -429,52 +392,6 @@ int Auracle::Clone(const std::vector<std::string>& args,
   return ret;
 }
 
-int Auracle::Download(const std::vector<std::string>& args,
-                      const CommandOptions& options) {
-  if (args.empty()) {
-    return ErrorNotEnoughArgs();
-  }
-
-  if (!ChdirIfNeeded(options.directory)) {
-    return -EINVAL;
-  }
-
-  PackageIterator iter(options.recurse, [this](const aur::Package& p) {
-    aur_->QueueRawRequest(
-        aur::RawRequest::ForTarball(p),
-        [pkgbase{p.pkgbase}](aur::ResponseWrapper<aur::RawResponse> response) {
-          if (!response.ok()) {
-            std::cerr << "error: request failed: " << response.error() << "\n";
-            return -EIO;
-          }
-
-          int r = ExtractArchive(response.value().bytes);
-          if (r < 0) {
-            std::cerr << "error: failed to extract tarball for " << pkgbase
-                      << ": " << strerror(-r) << "\n";
-            return r;
-          }
-
-          std::cout << "download complete: "
-                    << (fs::current_path() / pkgbase).string() << "\n";
-          return 0;
-        });
-  });
-
-  IteratePackages(args, &iter);
-
-  int r = aur_->Wait();
-  if (r < 0) {
-    return r;
-  }
-
-  if (iter.package_cache.empty()) {
-    return -ENOENT;
-  }
-
-  return 0;
-}
-
 int Auracle::Show(const std::vector<std::string>& args,
                   const CommandOptions& options) {
   if (args.empty()) {
@@ -526,7 +443,6 @@ int Auracle::Show(const std::vector<std::string>& args,
                 return 0;
               });
         }
-
         return 0;
       });
 

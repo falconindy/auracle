@@ -27,26 +27,25 @@ __attribute__((noreturn)) void usage() {
   fputs(
       "auracle [options] command\n"
       "\n"
-      "Query the AUR or download snapshots of packages.\n"
+      "Query the AUR or clone packages.\n"
       "\n"
       "  -h, --help               Show this help\n"
       "      --version            Show software version\n"
       "\n"
       "  -q, --quiet              Output less, when possible\n"
-      "  -r, --recurse            Recurse through dependencies on download\n"
+      "  -r, --recurse            Recurse dependencies when cloning\n"
       "      --literal            Disallow regex in searches\n"
       "      --searchby=BY        Change search-by dimension\n"
       "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
       "      --sort=KEY           Sort results in ascending order by KEY\n"
       "      --rsort=KEY          Sort results in descending order by KEY\n"
       "      --show-file=FILE     File to dump with 'show' command\n"
-      "  -C DIR, --chdir=DIR      Change directory to DIR before downloading\n"
+      "  -C DIR, --chdir=DIR      Change directory to DIR before cloning\n"
       "  -F FMT, --format=FMT     Specify custom output for search and info\n"
       "\n"
       "Commands:\n"
       "  buildorder               Show build order\n"
       "  clone                    Clone or update git repos for packages\n"
-      "  download                 Download tarball snapshots\n"
       "  info                     Show detailed information\n"
       "  rawinfo                  Dump unformatted JSON for info query\n"
       "  rawsearch                Dump unformatted JSON for search query\n"
@@ -230,7 +229,7 @@ int main(int argc, char** argv) {
           // clang-format off
           {"buildorder",  &auracle::Auracle::BuildOrder},
           {"clone",       &auracle::Auracle::Clone},
-          {"download",    &auracle::Auracle::Download},
+          {"download",    &auracle::Auracle::Clone},
           {"info",        &auracle::Auracle::Info},
           {"rawinfo",     &auracle::Auracle::RawInfo},
           {"rawsearch",   &auracle::Auracle::RawSearch},

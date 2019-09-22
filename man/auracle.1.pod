@@ -67,7 +67,8 @@ This option defaults to B<PKGBUILD>.
 
 =item B<-C >I<DIR>, B<--chdir=>I<DIR>
 
-Change directory to I<DIR> before downloading and extracting tarballs.
+Change directory to I<DIR> before performing any actions. Only useful with the
+B<clone> command.
 
 =back
 
@@ -100,19 +101,14 @@ commandline.
 
 =item B<clone> I<PACKAGES>...
 
-Pass one to many arguments to clone package git repositories. Use the
-B<--recurse> flag to clone dependencies of packages. If the git repository
+Pass one to many arguments to get clone git repositories. Use the
+B<--recurse> flag to get dependencies of packages. If the git repository
 already exists, the repository will instead be updated. A best effort attempt
 will be made to preserve existing local changes to packages. Auracle will
 instruct git to autostash staged changes and will then rebase new incoming
 changes before unstashing. This is intended to handle the case of makepkg
 updating the I<pkgver> attribute of PKGBUILDs but may not handle more complex
 changes made by a local user.
-
-=item B<download> I<PACKAGES>...
-
-Pass one to many arguments to download packages. Use the B<--recurse> flag
-to download dependencies of packages.
 
 =item B<info> I<PACKAGES>...
 

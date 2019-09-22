@@ -61,8 +61,6 @@ class Auracle {
                  const CommandOptions& options);
   int Clone(const std::vector<std::string>& args,
             const CommandOptions& options);
-  int Download(const std::vector<std::string>& args,
-               const CommandOptions& options);
   int Info(const std::vector<std::string>& args, const CommandOptions& options);
   int Show(const std::vector<std::string>& args, const CommandOptions& options);
   int RawInfo(const std::vector<std::string>& args,

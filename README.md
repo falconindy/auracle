@@ -12,7 +12,7 @@ Auracle has a number of actions it can perform:
 * `show`: show the contents of a source file for a package (e.g. the PKGBUILD)
 * `raw{info,search}`: similar to info and search, but output raw json responses
   rather than formatting them.
-* `clone`: clone the git repository for packages.
+* `get`: clone the git repository for packages.
 * `buildorder`: show the order and origin of packages that need to be built for
   a given set of AUR packages.
 * `sync`: attempt to find updates for installed AUR packages.
@@ -32,7 +32,6 @@ Building auracle requires:
 * meson
 * libsystemd
 * libalpm
-* libarchive
 * libcurl
 
 Testing additionally depends on:

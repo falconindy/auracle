@@ -25,7 +25,6 @@ case $state in
     commands=(
       'buildorder:Show build order'
       'clone:Clone or update git repos for packages'
-      'download:Download tarball snapshots'
       'info:Show detailed information'
       'rawinfo:Dump unformatted JSON for info query'
       'rawsearch:Dump unformatted JSON for search query'
@@ -40,7 +39,7 @@ case $state in
     local prefix=$PREFIX
     local -a packages
     case $line[1] in
-      (buildorder|clone|download|info|rawinfo|show)
+      (buildorder|clone|info|rawinfo|show)
         [[ $compstate[quote] = [\'\"] ]] && prefix=$compstate[quote]$PREFIX$compstate[quote]
         packages=(${(f)"$(auracle search --quiet "${(Q)prefix}" 2> /dev/null)"})
         _describe -t packages package packages

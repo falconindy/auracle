@@ -35,7 +35,6 @@ add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language 
 add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
 
 libalpm = dependency('libalpm')
-libarchive = dependency('libarchive')
 libcurl = dependency('libcurl')
 libfmt = dependency('fmt', fallback : ['fmt', 'fmt_dep'])
 libsystemd = dependency('libsystemd')
@@ -76,7 +75,7 @@ libauracle = static_library(
       'src',
     ],
     link_with : [libaur],
-    dependencies : [libalpm, libarchive, libfmt, stdcppfs])
+    dependencies : [libalpm, libfmt, stdcppfs])
 
 auracle = executable(
     'auracle',
@@ -175,7 +174,6 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
     'tests/buildorder.py',
     'tests/clone.py',
     'tests/custom_format.py',
-    'tests/download.py',
     'tests/info.py',
     'tests/raw_query.py',
     'tests/regex_search.py',
