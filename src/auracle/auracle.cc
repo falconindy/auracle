@@ -522,8 +522,8 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   return 0;
 }
 
-int Auracle::Sync(const std::vector<std::string>& args,
-                  const CommandOptions& options) {
+int Auracle::Outdated(const std::vector<std::string>& args,
+                      const CommandOptions& options) {
   aur::InfoRequest info_request;
 
   auto local_pkgs = pacman_->LocalPackages();

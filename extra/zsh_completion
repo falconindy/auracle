@@ -30,7 +30,7 @@ case $state in
       'rawsearch:Dump unformatted JSON for search query'
       'search:Search for packages'
       'show:Dump package source file'
-      'sync:Check for updates for foreign packages')
+      'outdated:Check for updates for foreign packages')
     _describe -t commands command commands
     ;;
 
@@ -44,7 +44,7 @@ case $state in
         packages=(${(f)"$(auracle search --quiet "${(Q)prefix}" 2> /dev/null)"})
         _describe -t packages package packages
         ;;
-      (sync)
+      (outdated)
         packages=(${(f)"$(pacman -Qmq 2> /dev/null)"})
         _describe -t packages package packages
         ;;

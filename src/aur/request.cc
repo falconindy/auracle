@@ -1,10 +1,10 @@
 #include "request.hh"
 
+#include <curl/curl.h>
+
 #include <cstring>
 #include <memory>
 #include <string_view>
-
-#include <curl/curl.h>
 
 namespace aur {
 

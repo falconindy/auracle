@@ -69,7 +69,8 @@ class Auracle {
                 const CommandOptions& options);
   int Search(const std::vector<std::string>& args,
              const CommandOptions& options);
-  int Sync(const std::vector<std::string>& args, const CommandOptions& options);
+  int Outdated(const std::vector<std::string>& args,
+               const CommandOptions& options);
 
  private:
   struct PackageIterator {

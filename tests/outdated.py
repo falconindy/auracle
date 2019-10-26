@@ -5,8 +5,8 @@ import auracle_test
 
 class TestDownload(auracle_test.TestCase):
 
-    def testSyncFindsPackagesNeedingUpgrade(self):
-        r = self.Auracle(['sync', '--quiet'])
+    def testOutdatedFindsPackagesNeedingUpgrade(self):
+        r = self.Auracle(['outdated', '--quiet'])
         self.assertEqual(r.process.returncode, 0)
         self.assertEqual(r.process.stdout.decode().strip(), 'auracle-git')
 
@@ -15,8 +15,8 @@ class TestDownload(auracle_test.TestCase):
             '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=ocaml&arg[]=pkgfile-git'])
 
 
-    def testSyncFiltersUpdatesToArgs(self):
-        r = self.Auracle(['sync', 'auracle-git'])
+    def testOutdatedFiltersUpdatesToArgs(self):
+        r = self.Auracle(['outdated', 'auracle-git'])
         self.assertEqual(r.process.returncode, 0)
 
         self.assertCountEqual(r.request_uris, [
@@ -24,7 +24,7 @@ class TestDownload(auracle_test.TestCase):
 
 
     def testExitsNonZeroWithoutUpgrades(self):
-        r = self.Auracle(['sync', '--quiet', 'ocaml'])
+        r = self.Auracle(['outdated', '--quiet', 'ocaml'])
         self.assertEqual(r.process.returncode, 1)
 
 

@@ -47,11 +47,11 @@ __attribute__((noreturn)) void usage() {
       "  buildorder               Show build order\n"
       "  clone                    Clone or update git repos for packages\n"
       "  info                     Show detailed information\n"
+      "  outdated                 Check for updates for foreign packages\n"
       "  rawinfo                  Dump unformatted JSON for info query\n"
       "  rawsearch                Dump unformatted JSON for search query\n"
       "  search                   Search for packages\n"
-      "  show                     Dump package source file\n"
-      "  sync                     Check for updates for foreign packages\n",
+      "  show                     Dump package source file\n",
       stdout);
   exit(0);
 }
@@ -233,9 +233,10 @@ int main(int argc, char** argv) {
           {"info",        &auracle::Auracle::Info},
           {"rawinfo",     &auracle::Auracle::RawInfo},
           {"rawsearch",   &auracle::Auracle::RawSearch},
+          {"outdated",    &auracle::Auracle::Outdated},
           {"search",      &auracle::Auracle::Search},
           {"show",        &auracle::Auracle::Show},
-          {"sync",        &auracle::Auracle::Sync},
+          {"sync",        &auracle::Auracle::Outdated},
           // clang-format on
       };
 

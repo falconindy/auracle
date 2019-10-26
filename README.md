@@ -15,7 +15,7 @@ Auracle has a number of actions it can perform:
 * `get`: clone the git repository for packages.
 * `buildorder`: show the order and origin of packages that need to be built for
   a given set of AUR packages.
-* `sync`: attempt to find updates for installed AUR packages.
+* `outdated`: attempt to find updates for installed AUR packages.
 
 ### Non-goals
 

@@ -1,6 +1,8 @@
 #include "aur.hh"
 
+#include <curl/curl.h>
 #include <fcntl.h>
+#include <systemd/sd-event.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -11,9 +13,6 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
-
-#include <curl/curl.h>
-#include <systemd/sd-event.h>
 
 namespace fs = std::filesystem;
 

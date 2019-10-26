@@ -4,7 +4,6 @@
 #include <unordered_map>
 
 #include "nlohmann/json.hpp"
-
 #include "package.hh"
 
 namespace aur {

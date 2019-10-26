@@ -35,7 +35,7 @@ rather than as regular expressions.
 
 =item B<--quiet>
 
-When used with the B<search> and B<sync> commands, output will be limited to
+When used with the B<search> and B<outdated> commands, output will be limited to
 package names only.
 
 =item B<-r>, B<--recurse>
@@ -137,7 +137,7 @@ and support in auracle is implemented on a best-effort basis.
 Pass one to many arguments to print source files for the given packages. The
 file fetched is controlled by the B<--show-file> flag.
 
-=item B<sync> [I<PACKAGES>...]
+=item B<outdated> [I<PACKAGES>...]
 
 Pass one to many arguments to check for newer versions existing in the AUR.
 Each argument is assumed to be a package installed locally using B<pacman>(8).

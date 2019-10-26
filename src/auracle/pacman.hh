@@ -1,12 +1,12 @@
 #ifndef PACMAN_HH
 #define PACMAN_HH
 
+#include <alpm.h>
+
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include <alpm.h>
 
 namespace auracle {
 

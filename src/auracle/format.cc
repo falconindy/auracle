@@ -1,6 +1,7 @@
 #include "format.hh"
 
 #include <fmt/printf.h>
+
 #include <iomanip>
 #include <iostream>
 #include <sstream>
