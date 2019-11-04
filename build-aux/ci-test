@@ -1,0 +1,18 @@
+#!/bin/bash -le
+
+cd /github/workspace
+
+# Needed to ensure PATH is properly set for perl, etc.
+source /etc/profile
+
+pacman -Syu --noconfirm base-devel git gmock gtest python meson fmt
+
+# build
+meson build --prefix=/usr --buildtype=debugoptimized
+ninja -C build
+
+# test
+meson test -C build
+
+# package
+ninja -C build install

@@ -1,3 +1,6 @@
+![GitHub Actions status | falconindy/auracle](https://github.com/falconindy/auracle/workflows/Arch%20Linux%20Build/badge.svg)
+![GitHub Actions status | falconindy/auracle](https://github.com/falconindy/auracle/workflows/Arch%20Linux%20Build%20(ASAN)/badge.svg)
+
 ## What is Auracle?
 
 Auracle is a command line tool used to interact with Arch Linux's User
