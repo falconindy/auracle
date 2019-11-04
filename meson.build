@@ -179,6 +179,7 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
     'tests/search.py',
     'tests/show.py',
     'tests/sort.py',
+    'tests/update.py',
   ]
     basename = input.split('/')[-1].split('.')[0]
 

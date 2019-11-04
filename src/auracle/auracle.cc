@@ -522,8 +522,53 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   return 0;
 }
 
-int Auracle::Outdated(const std::vector<std::string>& args,
-                      const CommandOptions& options) {
+int Auracle::Update(const std::vector<std::string>& args,
+                    const CommandOptions& options) {
+  std::vector<aur::Package> packages;
+
+  auto r = GetOutdatedPackages(args, &packages);
+  if (r < 0) {
+    return r;
+  }
+
+  if (packages.empty()) {
+    return -ENOENT;
+  }
+
+  if (!ChdirIfNeeded(options.directory)) {
+    return -EINVAL;
+  }
+
+  int ret = 0;
+  PackageIterator iter(options.recurse, [this, &ret](const aur::Package& p) {
+    aur_->QueueCloneRequest(
+        aur::CloneRequest(p.pkgbase),
+        [&ret, pkgbase{p.pkgbase}](
+            aur::ResponseWrapper<aur::CloneResponse> response) {
+          if (response.ok()) {
+            std::cout << response.value().operation << " complete: "
+                      << (fs::current_path() / pkgbase).string() << "\n";
+          } else {
+            std::cerr << "error: clone failed for " << pkgbase << ": "
+                      << response.error() << "\n";
+            ret = -EIO;
+          }
+          return 0;
+        });
+  });
+
+  std::vector<std::string> outdated;
+  for (const auto& p : packages) {
+    outdated.push_back(p.name);
+  }
+
+  IteratePackages(outdated, &iter);
+
+  return aur_->Wait();
+}
+
+int Auracle::GetOutdatedPackages(const std::vector<std::string>& args,
+                                 std::vector<aur::Package>* packages) {
   aur::InfoRequest info_request;
 
   auto local_pkgs = pacman_->LocalPackages();
@@ -534,45 +579,63 @@ int Auracle::Outdated(const std::vector<std::string>& args,
     }
   }
 
-  std::vector<aur::Package> packages;
-  aur_->QueueRpcRequest(
-      info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-        if (RpcResponseIsFailure(response)) {
-          return -EIO;
-        }
+  aur_->QueueRpcRequest(info_request,
+                        [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+                          if (RpcResponseIsFailure(response)) {
+                            return -EIO;
+                          }
 
-        auto results = response.value().results;
-        packages.reserve(packages.size() + results.size());
-        std::move(results.begin(), results.end(), std::back_inserter(packages));
+                          auto results = response.value().results;
+                          packages->reserve(packages->size() + results.size());
+                          std::move(results.begin(), results.end(),
+                                    std::back_inserter(*packages));
 
-        return 0;
-      });
+                          return 0;
+                        });
 
   auto r = aur_->Wait();
   if (r < 0) {
     return r;
   }
 
+  // Drop packages that are up to date.
+  packages->erase(
+      std::remove_if(packages->begin(), packages->end(),
+                     [&](const aur::Package& p) {
+                       auto local = pacman_->GetLocalPackage(p.name);
+
+                       return local &&
+                              Pacman::Vercmp(p.version, local->pkgver) <= 0;
+                     }),
+      packages->end());
+
+  return 0;
+}
+
+int Auracle::Outdated(const std::vector<std::string>& args,
+                      const CommandOptions& options) {
+  std::vector<aur::Package> packages;
+
+  auto r = GetOutdatedPackages(args, &packages);
+  if (r < 0) {
+    return r;
+  }
+
+  if (packages.empty()) {
+    return -ENOENT;
+  }
+
+  // Not strictly needed, but let's keep output order stable
   std::sort(packages.begin(), packages.end(),
             sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC));
 
-  bool updates_available = false;
   for (const auto& r : packages) {
-    auto iter = std::find_if(
-        local_pkgs.cbegin(), local_pkgs.cend(),
-        [&r](const Pacman::Package& p) { return p.pkgname == r.name; });
-    if (Pacman::Vercmp(r.version, iter->pkgver) > 0) {
-      updates_available = true;
-      if (options.quiet) {
-        format::NameOnly(r);
-      } else {
-        format::Update(*iter, r);
-      }
+    if (options.quiet) {
+      format::NameOnly(r);
+    } else {
+      auto local = pacman_->GetLocalPackage(r.name);
+      format::Update(*local, r);
     }
-  }
-
-  if (!updates_available) {
-    return -ENOENT;
   }
 
   return 0;

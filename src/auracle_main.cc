@@ -51,7 +51,8 @@ __attribute__((noreturn)) void usage() {
       "  rawinfo                  Dump unformatted JSON for info query\n"
       "  rawsearch                Dump unformatted JSON for search query\n"
       "  search                   Search for packages\n"
-      "  show                     Dump package source file\n",
+      "  show                     Dump package source file\n"
+      "  update                   Clone out of date foreign packages\n",
       stdout);
   exit(0);
 }
@@ -237,6 +238,7 @@ int main(int argc, char** argv) {
           {"search",      &auracle::Auracle::Search},
           {"show",        &auracle::Auracle::Show},
           {"sync",        &auracle::Auracle::Outdated},
+          {"update",      &auracle::Auracle::Update},
           // clang-format on
       };
 

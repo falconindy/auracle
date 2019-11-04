@@ -8,7 +8,10 @@ class TestDownload(auracle_test.TestCase):
     def testOutdatedFindsPackagesNeedingUpgrade(self):
         r = self.Auracle(['outdated', '--quiet'])
         self.assertEqual(r.process.returncode, 0)
-        self.assertEqual(r.process.stdout.decode().strip(), 'auracle-git')
+        self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
+            'auracle-git',
+            'pkgfile-git'
+        ])
 
         # TODO: build this dynamically from the filesystem?
         self.assertCountEqual(r.request_uris, [

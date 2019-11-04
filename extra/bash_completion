@@ -48,7 +48,7 @@ _auracle() {
 
   local -A VERBS=(
       [AUR_PACKAGES]='buildorder clone show info rawinfo'
-    [LOCAL_PACKAGES]='outdated'
+    [LOCAL_PACKAGES]='outdated update'
               [NONE]='search rawsearch'
   )
 

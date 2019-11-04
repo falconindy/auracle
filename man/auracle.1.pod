@@ -144,6 +144,11 @@ Each argument is assumed to be a package installed locally using B<pacman>(8).
 If no arguments are given, pacman is queried for all foreign packages as an
 input to this operation.
 
+=item B<update> [I<PACKAGES>...]
+
+Similar to B<outdated>, but download packages found to be outdated. Pass the
+B<--recurse> flag to download new dependencies of packages as well.
+
 =back
 
 =head1 CUSTOM FORMATTING

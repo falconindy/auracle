@@ -71,6 +71,8 @@ class Auracle {
              const CommandOptions& options);
   int Outdated(const std::vector<std::string>& args,
                const CommandOptions& options);
+  int Update(const std::vector<std::string>& args,
+             const CommandOptions& options);
 
  private:
   struct PackageIterator {
@@ -84,6 +86,9 @@ class Auracle {
     const PackageCallback callback;
     PackageCache package_cache;
   };
+
+  int GetOutdatedPackages(const std::vector<std::string>& args,
+                          std::vector<aur::Package>* packages);
 
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
