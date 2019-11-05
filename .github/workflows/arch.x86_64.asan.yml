@@ -1,4 +1,4 @@
-name: Arch Linux Build (ASAN)
+name: arch.x86_64.asan
 on: [push, pull_request]
 
 jobs:

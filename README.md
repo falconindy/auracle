@@ -1,5 +1,5 @@
-![GitHub Actions status | falconindy/auracle](https://github.com/falconindy/auracle/workflows/Arch%20Linux%20Build/badge.svg)
-![GitHub Actions status | falconindy/auracle](https://github.com/falconindy/auracle/workflows/Arch%20Linux%20Build%20(ASAN)/badge.svg)
+![GitHub Actions status | falconindy/auracle](https://github.com/falconindy/auracle/workflows/arch.x86_64/badge.svg)
+![GitHub Actions status | falconindy/auracle](https://github.com/falconindy/auracle/workflows/arch.x86_64.asan/badge.svg)
 
 ## What is Auracle?
 
