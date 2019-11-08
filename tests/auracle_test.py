@@ -135,12 +135,11 @@ class TestCase(unittest.TestCase):
                 requests_file)
 
 
-    def assertPkgbuildExists(self, pkgname, git=False):
+    def assertPkgbuildExists(self, pkgname):
         self.assertTrue(
                 os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
-        if git:
-            self.assertTrue(
-                    os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+        self.assertTrue(
+                os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
 
 def main():
