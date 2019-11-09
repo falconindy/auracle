@@ -579,37 +579,26 @@ int Auracle::GetOutdatedPackages(const std::vector<std::string>& args,
     }
   }
 
-  aur_->QueueRpcRequest(info_request,
-                        [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-                          if (RpcResponseIsFailure(response)) {
-                            return -EIO;
-                          }
+  aur_->QueueRpcRequest(
+      info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+        if (RpcResponseIsFailure(response)) {
+          return -EIO;
+        }
 
-                          auto results = response.value().results;
-                          packages->reserve(packages->size() + results.size());
-                          std::move(results.begin(), results.end(),
-                                    std::back_inserter(*packages));
-
-                          return 0;
-                        });
-
-  auto r = aur_->Wait();
-  if (r < 0) {
-    return r;
-  }
-
-  // Drop packages that are up to date.
-  packages->erase(
-      std::remove_if(packages->begin(), packages->end(),
-                     [&](const aur::Package& p) {
+        auto results = response.value().results;
+        std::copy_if(std::make_move_iterator(results.begin()),
+                     std::make_move_iterator(results.end()),
+                     std::back_inserter(*packages), [&](const aur::Package& p) {
                        auto local = pacman_->GetLocalPackage(p.name);
 
                        return local &&
-                              Pacman::Vercmp(p.version, local->pkgver) <= 0;
-                     }),
-      packages->end());
+                              Pacman::Vercmp(p.version, local->pkgver) > 0;
+                     });
 
-  return 0;
+        return 0;
+      });
+
+  return aur_->Wait();
 }
 
 int Auracle::Outdated(const std::vector<std::string>& args,
