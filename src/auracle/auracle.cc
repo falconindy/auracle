@@ -524,8 +524,11 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
 
 int Auracle::Update(const std::vector<std::string>& args,
                     const CommandOptions& options) {
-  std::vector<aur::Package> packages;
+  if (!ChdirIfNeeded(options.directory)) {
+    return -EINVAL;
+  }
 
+  std::vector<aur::Package> packages;
   auto r = GetOutdatedPackages(args, &packages);
   if (r < 0) {
     return r;
@@ -533,10 +536,6 @@ int Auracle::Update(const std::vector<std::string>& args,
 
   if (packages.empty()) {
     return -ENOENT;
-  }
-
-  if (!ChdirIfNeeded(options.directory)) {
-    return -EINVAL;
   }
 
   int ret = 0;
