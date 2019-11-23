@@ -21,5 +21,12 @@ class TestInfo(auracle_test.TestCase):
         self.assertNotEqual(r.process.returncode, 0)
 
 
+    def testBadResponsesFromAur(self):
+        r = self.Auracle(['info', '503'])
+        self.assertNotEqual(r.process.returncode, 0)
+        self.assertEqual('error: unexpected HTTP status code 503\n',
+                r.process.stderr.decode())
+
+
 if __name__ == '__main__':
     auracle_test.main()

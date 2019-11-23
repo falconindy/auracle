@@ -179,6 +179,13 @@ class TypedResponseHandler : public ResponseHandler {
 
  private:
   int Run(long status, const std::string& error) override {
+    if (status != 200) {
+      // The AUR might supply HTML on non-200 replies. We must avoid parsing
+      // this as JSON, so drop the response body and trust the callback to do
+      // the right thing with the error.
+      body.clear();
+    }
+
     return callback_(ResponseWrapper(MakeResponse(), status, error));
   }
 

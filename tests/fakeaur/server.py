@@ -73,6 +73,16 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
     def handle_rpc_info(self, args):
         results = []
 
+        print(args)
+        if len(args) == 1:
+            try:
+                status_code = int(next(iter(args)))
+                return self.respond(status_code=status_code,
+                        response='{}: fridge too loud\n'.format(
+                            status_code).encode())
+            except ValueError:
+                pass
+
         for arg in args:
             reply = self.lookup_response('info', arg)
             # extract the results from each DB file
@@ -98,9 +108,9 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
         rpc_type = self.last_of(queryparams.get('type', None))
         if rpc_type == 'info':
-            self.handle_rpc_info(set(queryparams.get('arg[]', [])))
+            return self.handle_rpc_info(set(queryparams.get('arg[]', [])))
         elif rpc_type == 'search':
-            self.handle_rpc_search(self.last_of(queryparams.get('arg')),
+            return self.handle_rpc_search(self.last_of(queryparams.get('arg')),
                                    self.last_of(queryparams.get('by')))
         else:
             return self.respond(response=self.make_json_error_reply(
