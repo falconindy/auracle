@@ -131,7 +131,7 @@ bool ChdirIfNeeded(const fs::path& target) {
   return true;
 }
 
-const std::string GetRpcError(
+std::string GetRpcError(
     const aur::ResponseWrapper<aur::RpcResponse>& response) {
   if (!response.error().empty()) {
     return response.error();
@@ -557,6 +557,7 @@ int Auracle::Update(const std::vector<std::string>& args,
   });
 
   std::vector<std::string> outdated;
+  outdated.reserve(packages.size());
   for (const auto& p : packages) {
     outdated.push_back(p.name);
   }

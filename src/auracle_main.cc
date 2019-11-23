@@ -10,14 +10,14 @@
 
 namespace {
 
-constexpr char kAurBaseurl[] = "https://aur.archlinux.org";
-constexpr char kPacmanConf[] = "/etc/pacman.conf";
+constexpr std::string_view kAurBaseurl = "https://aur.archlinux.org";
+constexpr std::string_view kPacmanConf = "/etc/pacman.conf";
 
 struct Flags {
   bool ParseFromArgv(int* argc, char*** argv);
 
-  std::string baseurl = kAurBaseurl;
-  std::string pacman_config = kPacmanConf;
+  std::string baseurl = std::string(kAurBaseurl);
+  std::string pacman_config = std::string(kPacmanConf);
   terminal::WantColor color = terminal::WantColor::AUTO;
 
   auracle::Auracle::CommandOptions command_options;

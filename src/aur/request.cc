@@ -19,7 +19,7 @@ std::string UrlEscape(const std::string_view sv) {
 }
 
 char* AppendUnsafe(char* to, std::string_view from) {
-  auto ptr = mempcpy(to, from.data(), from.size());
+  void* ptr = mempcpy(to, from.data(), from.size());
 
   return static_cast<char*>(ptr);
 }

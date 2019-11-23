@@ -21,7 +21,7 @@ namespace aur {
 class AurImpl : public Aur {
  public:
   explicit AurImpl(Options options = Options());
-  ~AurImpl();
+  ~AurImpl() override;
 
   AurImpl(const AurImpl&) = delete;
   AurImpl& operator=(const AurImpl&) = delete;
@@ -70,7 +70,7 @@ class AurImpl : public Aur {
   };
 
   static int SocketCallback(CURLM* curl, curl_socket_t s, int action,
-                            void* userdata, void* socketp);
+                            void* userdata, void* socketptr);
   int DispatchSocketCallback(curl_socket_t s, int action, sd_event_source* io);
 
   static int TimerCallback(CURLM* curl, long timeout_ms, void* userdata);
@@ -99,7 +99,7 @@ class AurImpl : public Aur {
 namespace {
 
 std::string_view GetEnv(const char* name) {
-  auto value = getenv(name);
+  auto* value = getenv(name);
   return std::string_view(value ? value : "");
 }
 
@@ -131,7 +131,7 @@ class ResponseHandler {
 
   static size_t BodyCallback(char* ptr, size_t size, size_t nmemb,
                              void* userdata) {
-    auto handler = static_cast<ResponseHandler*>(userdata);
+    auto* handler = static_cast<ResponseHandler*>(userdata);
 
     handler->body.append(ptr, size * nmemb);
     return size * nmemb;
@@ -139,7 +139,7 @@ class ResponseHandler {
 
   static int DebugCallback(CURL*, curl_infotype type, char* data, size_t size,
                            void* userdata) {
-    auto stream = static_cast<std::ofstream*>(userdata);
+    auto* stream = static_cast<std::ofstream*>(userdata);
 
     if (type != CURLINFO_HEADER_OUT) {
       return 0;
@@ -278,8 +278,8 @@ void AurImpl::CancelAll() {
 // static
 int AurImpl::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
                             void* sockptr) {
-  auto aur = static_cast<AurImpl*>(userdata);
-  auto io = static_cast<sd_event_source*>(sockptr);
+  auto* aur = static_cast<AurImpl*>(userdata);
+  auto* io = static_cast<sd_event_source*>(sockptr);
   return aur->DispatchSocketCallback(s, action, io);
 }
 
@@ -326,7 +326,7 @@ int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
 // static
 int AurImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
                       void* userdata) {
-  auto aur = static_cast<AurImpl*>(userdata);
+  auto* aur = static_cast<AurImpl*>(userdata);
 
   int action;
   if ((revents & (EPOLLIN | EPOLLOUT)) == (EPOLLIN | EPOLLOUT)) {
@@ -350,7 +350,7 @@ int AurImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
 
 // static
 int AurImpl::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
-  auto aur = static_cast<AurImpl*>(userdata);
+  auto* aur = static_cast<AurImpl*>(userdata);
 
   int unused;
   if (curl_multi_socket_action(aur->curl_multi_, CURL_SOCKET_TIMEOUT, 0,
@@ -363,7 +363,7 @@ int AurImpl::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
 
 // static
 int AurImpl::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
-  auto aur = static_cast<AurImpl*>(userdata);
+  auto* aur = static_cast<AurImpl*>(userdata);
   return aur->DispatchTimerCallback(timeout_ms);
 }
 
@@ -436,7 +436,7 @@ int AurImpl::FinishRequest(sd_event_source* source) {
 int AurImpl::CheckFinished() {
   int unused;
 
-  auto msg = curl_multi_info_read(curl_multi_, &unused);
+  auto* msg = curl_multi_info_read(curl_multi_, &unused);
   if (msg == nullptr || msg->msg != CURLMSG_DONE) {
     return 0;
   }
@@ -467,8 +467,8 @@ void AurImpl::QueueHttpRequest(
     const HttpRequest& request,
     const typename ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request.Build(options_.baseurl)) {
-    auto curl = curl_easy_init();
-    auto handler = new ResponseHandlerType(this, callback);
+    auto* curl = curl_easy_init();
+    auto* handler = new ResponseHandlerType(this, callback);
 
     using RH = ResponseHandler;
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
@@ -501,7 +501,7 @@ void AurImpl::QueueHttpRequest(
 // static
 int AurImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
                          void* userdata) {
-  auto handler = static_cast<CloneResponseHandler*>(userdata);
+  auto* handler = static_cast<CloneResponseHandler*>(userdata);
 
   handler->aur()->FinishRequest(source);
 
@@ -518,7 +518,7 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
                                 const CloneResponseCallback& callback) {
   const bool update = fs::exists(fs::path(request.reponame()) / ".git");
 
-  auto handler =
+  auto* handler =
       new CloneResponseHandler(this, callback, update ? "update" : "clone");
 
   int pid = fork();

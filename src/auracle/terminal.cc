@@ -9,6 +9,7 @@
 namespace terminal {
 
 namespace {
+constexpr int kDefaultColumns = 80;
 int g_cached_columns = -1;
 WantColor g_want_color = WantColor::AUTO;
 
@@ -49,7 +50,7 @@ int Columns() {
   if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
     c = ws.ws_col;
   } else {
-    c = isatty(STDOUT_FILENO) == 1 ? 80 : 0;
+    c = isatty(STDOUT_FILENO) == 1 ? kDefaultColumns : 0;
   }
 
   g_cached_columns = c;

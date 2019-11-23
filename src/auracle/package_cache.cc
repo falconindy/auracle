@@ -40,7 +40,7 @@ void PackageCache::WalkDependencies(const std::string& name,
       return;
     }
 
-    const auto pkg = LookupByPkgname(pkgname);
+    const auto* pkg = LookupByPkgname(pkgname);
     if (pkg != nullptr) {
       for (const auto* deplist :
            {&pkg->depends, &pkg->makedepends, &pkg->checkdepends}) {
