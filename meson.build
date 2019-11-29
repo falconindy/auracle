@@ -34,10 +34,14 @@ endif
 add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
 add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
 
-json = dependency('nlohmann_json', fallback: ['nlohmann_json', 'nlohmann_json_dep'])
+json = dependency('nlohmann_json',
+                  version : '>=3.7.1',
+                  fallback: ['nlohmann_json', 'nlohmann_json_dep'])
 libalpm = dependency('libalpm')
 libcurl = dependency('libcurl')
-libfmt = dependency('fmt', fallback : ['fmt', 'fmt_dep'])
+libfmt = dependency('fmt',
+                    version : '>=6.0.0',
+                    fallback : ['fmt', 'fmt_dep'])
 libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
