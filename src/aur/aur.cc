@@ -177,7 +177,19 @@ class TypedResponseHandler : public ResponseHandler {
  protected:
   virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
 
+  int Run(long status, const std::string& error) override {
+    return callback_(ResponseWrapper(MakeResponse(), status, error));
+  }
+
  private:
+  const CallbackType callback_;
+};
+
+class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
+ public:
+  using TypedResponseHandler<RpcResponse>::TypedResponseHandler;
+
+ protected:
   int Run(long status, const std::string& error) override {
     if (status != 200) {
       // The AUR might supply HTML on non-200 replies. We must avoid parsing
@@ -186,13 +198,10 @@ class TypedResponseHandler : public ResponseHandler {
       body.clear();
     }
 
-    return callback_(ResponseWrapper(MakeResponse(), status, error));
+    return TypedResponseHandler<RpcResponse>::Run(status, error);
   }
-
-  const CallbackType callback_;
 };
 
-using RpcResponseHandler = TypedResponseHandler<RpcResponse>;
 using RawResponseHandler = TypedResponseHandler<RawResponse>;
 
 class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
