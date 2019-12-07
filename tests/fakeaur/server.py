@@ -73,7 +73,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
     def handle_rpc_info(self, args):
         results = []
 
-        print(args)
         if len(args) == 1:
             try:
                 status_code = int(next(iter(args)))
