@@ -54,13 +54,14 @@ void QueryParamFormatter(std::string* out, const HttpRequest::QueryParam& kv) {
 }
 
 template <typename Container, typename Formatter>
-std::string StrJoin(Container container, std::string_view s, Formatter&& f) {
+std::string StrJoin(const Container& container, std::string_view s,
+                    Formatter&& f) {
   std::string result;
 
   std::string_view sep;
-  for (auto it = std::begin(container); it != std::end(container); ++it) {
+  for (const auto& item : container) {
     result.append(sep.data(), sep.size());
-    f(&result, *it);
+    f(&result, item);
     sep = s;
   }
 
