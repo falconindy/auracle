@@ -1,5 +1,5 @@
-#ifndef PACKAGE_H
-#define PACKAGE_H
+#ifndef AUR_PACKAGE_H
+#define AUR_PACKAGE_H
 
 #include <chrono>
 #include <string>
@@ -62,4 +62,4 @@ inline bool operator==(const Package& a, const Package& b) {
 
 }  // namespace aur
 
-#endif  // PACKAGE_H
+#endif  // AUR_PACKAGE_H

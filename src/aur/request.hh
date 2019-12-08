@@ -1,5 +1,5 @@
-#ifndef REQUEST_HH
-#define REQUEST_HH
+#ifndef AUR_REQUEST_HH_
+#define AUR_REQUEST_HH_
 
 #include <string>
 #include <utility>
@@ -183,4 +183,4 @@ class SearchRequest : public RpcRequest {
 
 }  // namespace aur
 
-#endif  // REQUEST_HH
+#endif  // AUR_REQUEST_HH_

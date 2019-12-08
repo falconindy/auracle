@@ -1,5 +1,5 @@
-#ifndef RESPONSE_HH
-#define RESPONSE_HH
+#ifndef AUR_RESPONSE_HH_
+#define AUR_RESPONSE_HH_
 
 #include "package.hh"
 
@@ -75,4 +75,4 @@ struct RawResponse {
 
 }  // namespace aur
 
-#endif  // RESPONSE_HH
+#endif  // AUR_RESPONSE_HH_

@@ -1,5 +1,5 @@
-#ifndef FORMAT_HH
-#define FORMAT_HH
+#ifndef AURACLE_FORMAT_HH_
+#define AURACLE_FORMAT_HH_
 
 #include <string_view>
 
@@ -20,4 +20,4 @@ bool FormatIsValid(const std::string& format, std::string* error);
 
 }  // namespace format
 
-#endif  // FORMAT_HH
+#endif  // AURACLE_FORMAT_HH_

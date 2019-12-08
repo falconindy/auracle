@@ -1,5 +1,5 @@
-#ifndef AUR_HH
-#define AUR_HH
+#ifndef AUR_AUR_HH_
+#define AUR_AUR_HH_
 
 #include <functional>
 #include <memory>
@@ -73,4 +73,4 @@ std::unique_ptr<Aur> NewAur(Aur::Options options = Aur::Options());
 
 }  // namespace aur
 
-#endif  // AUR_HH
+#endif  // AUR_AUR_HH_

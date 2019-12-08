@@ -1,5 +1,5 @@
-#ifndef PACKAGE_CACHE_HH
-#define PACKAGE_CACHE_HH
+#ifndef PACKAGE_AURACLE_CACHE_HH_
+#define PACKAGE_AURACLE_CACHE_HH_
 
 #include <functional>
 #include <unordered_map>
@@ -45,4 +45,4 @@ class PackageCache {
 
 }  // namespace auracle
 
-#endif  // PACKAGE_CACHE_HH
+#endif  // PACKAGE_AURACLE_CACHE_HH_

@@ -1,5 +1,5 @@
-#ifndef AURACLE_HH
-#define AURACLE_HH
+#ifndef AURACLE_AURACLE_HH_
+#define AURACLE_AURACLE_HH_
 
 #include <string>
 #include <vector>
@@ -98,4 +98,4 @@ class Auracle {
 
 }  // namespace auracle
 
-#endif  // AURACLE_HH
+#endif  // AURACLE_AURACLE_HH_

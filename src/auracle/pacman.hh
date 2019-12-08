@@ -1,5 +1,5 @@
-#ifndef PACMAN_HH
-#define PACMAN_HH
+#ifndef AURACLE_PACMAN_HH_
+#define AURACLE_PACMAN_HH_
 
 #include <alpm.h>
 
@@ -54,4 +54,4 @@ class Pacman {
 
 }  // namespace auracle
 
-#endif  // PACMAN_HH
+#endif  // AURACLE_PACMAN_HH_

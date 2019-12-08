@@ -1,5 +1,5 @@
-#ifndef TERMINAL_HH
-#define TERMINAL_HH
+#ifndef AURACLE_TERMINAL_HH_
+#define AURACLE_TERMINAL_HH_
 
 #include <sstream>
 #include <string>
@@ -24,4 +24,4 @@ std::string BoldRed(const std::string& s);
 
 }  // namespace terminal
 
-#endif  // TERMINAL_HH
+#endif  // AURACLE_TERMINAL_HH_

@@ -1,5 +1,5 @@
-#ifndef SORT_HH
-#define SORT_HH
+#ifndef AURACLE_SORT_HH_
+#define AURACLE_SORT_HH_
 
 #include <functional>
 #include <string_view>
@@ -17,4 +17,4 @@ Sorter MakePackageSorter(std::string_view field, OrderBy order_by);
 
 }  // namespace sort
 
-#endif  // SORT_HH
+#endif  // AURACLE_SORT_HH_

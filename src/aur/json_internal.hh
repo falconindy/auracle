@@ -1,5 +1,5 @@
-#ifndef JSON_INTERNAL_HH
-#define JSON_INTERNAL_HH
+#ifndef AUR_JSON_INTERNAL_HH_
+#define AUR_JSON_INTERNAL_HH_
 
 #include <unordered_map>
 
@@ -55,4 +55,4 @@ void DeserializeJsonObject(const nlohmann::json& j,
 
 }  // namespace aur
 
-#endif  // JSON_INTERNAL_HH
+#endif  // AUR_JSON_INTERNAL_HH_
