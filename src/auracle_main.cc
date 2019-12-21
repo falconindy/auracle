@@ -23,7 +23,7 @@ struct Flags {
   auracle::Auracle::CommandOptions command_options;
 };
 
-__attribute__((noreturn)) void usage() {
+[[noreturn]] void usage() {
   fputs(
       "auracle [options] command\n"
       "\n"
@@ -57,7 +57,7 @@ __attribute__((noreturn)) void usage() {
   exit(0);
 }
 
-__attribute__((noreturn)) void version() {
+[[noreturn]] void version() {
   std::cout << "auracle " << PACKAGE_VERSION << "\n";
   exit(0);
 }
