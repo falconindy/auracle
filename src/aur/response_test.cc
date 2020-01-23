@@ -134,5 +134,5 @@ TEST(ResponseTest, GracefullyHandlesInvalidJson) {
   })");
 
   ASSERT_EQ(response.type, "error");
-  ASSERT_EQ(response.error, testing::HasSubstr("parse error"));
+  ASSERT_THAT(response.error, testing::HasSubstr("parse error"));
 }
