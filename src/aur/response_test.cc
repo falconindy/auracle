@@ -123,3 +123,16 @@ TEST(ResponseTest, ParsesErrorResponse) {
   EXPECT_THAT(response.results, testing::IsEmpty());
   EXPECT_EQ(response.error, "something");
 }
+
+TEST(ResponseTest, GracefullyHandlesInvalidJson) {
+  const aur::RpcResponse response(R"({
+    "version": 5,
+    "type": "multiinfo,
+    "resultcount": 0,
+    "results": [],
+    "error": "something"
+  })");
+
+  ASSERT_EQ(response.type, "error");
+  ASSERT_EQ(response.error, testing::HasSubstr("parse error"));
+}

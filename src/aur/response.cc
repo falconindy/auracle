@@ -24,7 +24,12 @@ RpcResponse::RpcResponse(const std::string& json_bytes) {
     return;
   }
 
-  *this = nlohmann::json::parse(json_bytes);
+  try {
+    *this = nlohmann::json::parse(json_bytes);
+  } catch (const std::exception& e) {
+    type = "error";
+    error = e.what();
+  }
 }
 
 }  // namespace aur
