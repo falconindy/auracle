@@ -18,28 +18,15 @@ std::string UrlEscape(const std::string_view sv) {
   return escaped;
 }
 
-char* AppendUnsafe(char* to, std::string_view from) {
-  void* ptr = mempcpy(to, from.data(), from.size());
-
-  return static_cast<char*>(ptr);
+template <typename... Views>
+void StrAppendViews(std::string* out, Views... views) {
+  out->reserve((out->size() + ... + views.size()));
+  (out->append(views), ...);
 }
 
 template <typename... StringLike>
 void StrAppend(std::string* out, const StringLike&... args) {
-  std::vector<std::string_view> v{args...};
-
-  std::string_view::size_type append_sz = 0;
-  for (const auto& piece : v) {
-    append_sz += piece.size();
-  }
-
-  auto original_sz = out->size();
-  out->resize(original_sz + append_sz);
-
-  char* ptr = out->data() + original_sz;
-  for (const auto& piece : v) {
-    ptr = AppendUnsafe(ptr, piece);
-  }
+  StrAppendViews(out, std::string_view(args)...);
 }
 
 template <typename... StringLike>
