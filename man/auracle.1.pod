@@ -40,7 +40,7 @@ package names only.
 
 =item B<-r>, B<--recurse>
 
-When used with the B<download> command, recursively follow and download
+When used with the B<clone> command, recursively follow and clone
 dependencies of each given argument.
 
 =item B<--searchby=>I<BY>
