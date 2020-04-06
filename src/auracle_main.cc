@@ -58,7 +58,7 @@ struct Flags {
 }
 
 [[noreturn]] void version() {
-  std::cout << "auracle " << PACKAGE_VERSION << "\n";
+  std::cout << "auracle " << PROJECT_VERSION << "\n";
   exit(0);
 }
 

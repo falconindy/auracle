@@ -7,32 +7,20 @@ project('auracle', 'cpp',
           'warning_level=3',
         ])
 
-conf = configuration_data()
-conf.set_quoted('PACKAGE_VERSION', meson.project_version())
-
 cpp = meson.get_compiler('cpp')
 
-configure_file(
-    output : 'config.h',
-    configuration : conf)
-
 add_project_arguments(
-    '-include', 'config.h',
+    '-DPROJECT_VERSION="@0@"'.format(meson.project_version()),
     language : 'cpp')
 
-possible_cpp_flags = []
-possible_link_flags = []
-if get_option('buildtype') != 'debug'
-  possible_cpp_flags += [
-    '-ffunction-sections',
-    '-fdata-sections',
-  ]
+add_project_arguments(cpp.get_supported_arguments([
+  '-ffunction-sections',
+  '-fdata-sections',
+]), language : 'cpp')
 
-  possible_link_flags += '-Wl,--gc-sections'
-endif
-
-add_project_arguments(cpp.get_supported_arguments(possible_cpp_flags), language : 'cpp')
-add_project_link_arguments(cpp.get_supported_link_arguments(possible_link_flags), language : 'cpp')
+add_project_link_arguments(cpp.get_supported_link_arguments([
+  '-Wl,--gc-sections',
+]), language : 'cpp')
 
 json = dependency('nlohmann_json',
                   version : '>=3.7.1',
@@ -53,55 +41,55 @@ python = import('python')
 py3 = python.find_installation('python3')
 
 libaur = static_library(
-    'aur',
-    files('''
-      src/aur/aur.cc src/aur/aur.hh
-      src/aur/package.cc src/aur/package.hh
-      src/aur/request.cc src/aur/request.hh
-      src/aur/response.cc src/aur/response.hh
-      src/aur/json_internal.hh
-    '''.split()),
-    dependencies : [json, libcurl, libsystemd, stdcppfs])
+  'aur',
+  files('''
+    src/aur/aur.cc src/aur/aur.hh
+    src/aur/package.cc src/aur/package.hh
+    src/aur/request.cc src/aur/request.hh
+    src/aur/response.cc src/aur/response.hh
+    src/aur/json_internal.hh
+  '''.split()),
+  dependencies : [json, libcurl, libsystemd, stdcppfs])
 
 libauracle = static_library(
-    'auracle',
-    files('''
-      src/auracle/auracle.cc src/auracle/auracle.hh
-      src/auracle/format.cc src/auracle/format.hh
-      src/auracle/package_cache.cc src/auracle/package_cache.hh
-      src/auracle/pacman.cc src/auracle/pacman.hh
-      src/auracle/sort.cc src/auracle/sort.hh
-      src/auracle/terminal.cc src/auracle/terminal.hh
-    '''.split()),
-    include_directories : [
-      'src',
-    ],
-    link_with : [libaur],
-    dependencies : [libalpm, libfmt, stdcppfs])
+  'auracle',
+  files('''
+    src/auracle/auracle.cc src/auracle/auracle.hh
+    src/auracle/format.cc src/auracle/format.hh
+    src/auracle/package_cache.cc src/auracle/package_cache.hh
+    src/auracle/pacman.cc src/auracle/pacman.hh
+    src/auracle/sort.cc src/auracle/sort.hh
+    src/auracle/terminal.cc src/auracle/terminal.hh
+  '''.split()),
+  include_directories : [
+    'src',
+  ],
+  link_with : [libaur],
+  dependencies : [libalpm, libfmt, stdcppfs])
 
-auracle = executable(
-    'auracle',
-    files('src/auracle_main.cc'),
-    include_directories : [
-      'src',
-    ],
-    link_with : [libauracle],
-    install : true)
+executable(
+  'auracle',
+  files('src/auracle_main.cc'),
+  include_directories : [
+    'src',
+  ],
+  link_with : [libauracle],
+  install : true)
 
-man = custom_target(
-    'man',
-    output : 'auracle.1',
-    input : 'man/auracle.1.pod',
-    command : [
-      pod2man,
-      '--section=1',
-      '--center=Auracle Manual',
-      '--name=AURACLE',
-      '--release=Auracle @0@'.format(meson.project_version()),
-      '@INPUT@', '@OUTPUT@'
-    ],
-    install : true,
-    install_dir : join_paths(get_option('mandir'), 'man1'))
+custom_target(
+  'man',
+  output : 'auracle.1',
+  input : 'man/auracle.1.pod',
+  command : [
+    pod2man,
+    '--section=1',
+    '--center=Auracle Manual',
+    '--name=AURACLE',
+    '--release=Auracle @0@'.format(meson.project_version()),
+    '@INPUT@', '@OUTPUT@'
+  ],
+  install : true,
+  install_dir : join_paths(get_option('mandir'), 'man1'))
 
 install_data(
   files('extra/bash_completion'),

@@ -160,7 +160,7 @@ bool RpcResponseIsFailure(
 Auracle::Auracle(Options options)
     : aur_(aur::NewAur(aur::Aur::Options()
                            .set_baseurl(options.aur_baseurl)
-                           .set_useragent("Auracle/" PACKAGE_VERSION))),
+                           .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 
 void Auracle::IteratePackages(std::vector<std::string> args,
