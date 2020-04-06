@@ -23,21 +23,13 @@ Sorter MakePackageSorter(T aur::Package::*field, OrderBy order_by) {
 Sorter MakePackageSorter(std::string_view field, OrderBy order_by) {
   if (field == "name") {
     return MakePackageSorter(&aur::Package::name, order_by);
-  }
-
-  if (field == "popularity") {
+  } else if (field == "popularity") {
     return MakePackageSorter(&aur::Package::popularity, order_by);
-  }
-
-  if (field == "votes") {
+  } else if (field == "votes") {
     return MakePackageSorter(&aur::Package::votes, order_by);
-  }
-
-  if (field == "firstsubmitted") {
+  } else if (field == "firstsubmitted") {
     return MakePackageSorter(&aur::Package::submitted, order_by);
-  }
-
-  if (field == "lastmodified") {
+  } else if (field == "lastmodified") {
     return MakePackageSorter(&aur::Package::modified, order_by);
   }
 
