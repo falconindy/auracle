@@ -302,7 +302,8 @@ int AurImpl::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
 int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
                                     sd_event_source* io) {
   if (action == CURL_POLL_REMOVE) {
-    return FinishRequest(io);
+    sd_event_source_unref(io);
+    return CheckFinished();
   }
 
   auto events = [action]() -> std::uint32_t {
