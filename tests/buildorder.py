@@ -114,5 +114,13 @@ class TestBuildOrder(auracle_test.TestCase):
         ])
 
 
+    def testDependencyCycle(self):
+        r = self.Auracle(['buildorder', 'python-fontpens'])
+        self.assertEqual(r.process.returncode, 0)
+        self.assertIn(
+                'warning: found dependency cycle: [ python-fontpens -> python-fontparts -> python-fontpens ]',
+                r.process.stderr.decode().strip().splitlines())
+
+
 if __name__ == '__main__':
     auracle_test.main()

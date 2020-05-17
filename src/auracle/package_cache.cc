@@ -1,5 +1,6 @@
 #include "package_cache.hh"
 
+#include <iostream>
 #include <unordered_set>
 
 namespace auracle {
@@ -30,12 +31,59 @@ const aur::Package* PackageCache::LookupByPkgbase(
   return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
 }
 
+using DependencyPath = std::vector<std::string>;
+
+class Step {
+ public:
+  Step(DependencyPath& dependency_path, std::string step)
+      : dependency_path_(dependency_path) {
+    MaybeReportCycle(step);
+
+    dependency_path_.push_back(step);
+  }
+
+  ~Step() { dependency_path_.pop_back(); }
+
+ private:
+  void MaybeReportCycle(const std::string& step) {
+    auto cycle_start =
+        std::find(dependency_path_.cbegin(), dependency_path_.cend(), step);
+    if (cycle_start == dependency_path_.cend()) {
+      return;
+    }
+
+    std::cerr << "warning: found dependency cycle:";
+
+    // Print the path leading up to the start of the cycle
+    auto iter = dependency_path_.cbegin();
+    while (iter != cycle_start) {
+      std::cerr << " " << *iter << " ->";
+      ++iter;
+    }
+
+    // Print the cycle itself, wrapped in brackets
+    std::cerr << " [ " << *iter;
+    ++iter;
+    while (iter != dependency_path_.cend()) {
+      std::cerr << " -> " << *iter;
+      ++iter;
+    }
+
+    std::cerr << " -> " << *cycle_start << " ]\n";
+  }
+
+  DependencyPath& dependency_path_;
+};
+
 void PackageCache::WalkDependencies(const std::string& name,
                                     WalkDependenciesFn cb) const {
   std::unordered_set<std::string> visited;
+  DependencyPath dependency_path;
 
   std::function<void(std::string)> walk;
-  walk = [this, &visited, &walk, &cb](const std::string& pkgname) {
+  walk = [&](const std::string& pkgname) {
+    Step step(dependency_path, pkgname);
+
     if (!visited.insert(pkgname).second) {
       return;
     }
