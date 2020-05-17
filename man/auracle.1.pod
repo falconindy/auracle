@@ -43,6 +43,25 @@ package names only.
 When used with the B<clone> command, recursively follow and clone
 dependencies of each given argument.
 
+=item B<--resolve-deps=>I<DEPLIST>
+
+When performing recursive operations, control the kinds of dependencies that
+auracle will consider. By default, this is all dependency kinds -- I<depends>,
+I<makedepends>, and I<checkdepends>. This flag takes a comma-delimited string
+value with one to many of these dependency kinds.
+
+Additionally, some special syntax exists to make this more composable. A
+leading I<!> or I<^> character will cause dependencies to be removed from the
+set, whereas a leading I<+> will cause dependencies to be added to the set.
+These special indicators are only understood when they appear as the first
+character in the string and never after a comma.
+
+Specifying this flag multiple times is additive, for example:
+
+  auracle buildorder --resolve-deps=depends --resolve-deps=+makedepends
+
+Is the same as I<depends,makedepends> or I<^checkdepends>.
+
 =item B<--searchby=>I<BY>
 
 When used with the B<search> and B<rawsearch> commands, change the search

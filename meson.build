@@ -54,6 +54,7 @@ libauracle = static_library(
   'auracle',
   files('''
     src/auracle/auracle.cc src/auracle/auracle.hh
+    src/auracle/dependency_kind.cc src/auracle/dependency_kind.hh
     src/auracle/format.cc src/auracle/format.hh
     src/auracle/package_cache.cc src/auracle/package_cache.hh
     src/auracle/pacman.cc src/auracle/pacman.hh
@@ -131,6 +132,7 @@ if gtest.found() and gmock.found()
       'prefix': 'libauracle',
       'link_with' : [libauracle],
       'tests' : [
+        'src/auracle/dependency_kind_test.cc',
         'src/auracle/package_cache_test.cc',
         'src/auracle/format_test.cc',
         'src/auracle/sort_test.cc',

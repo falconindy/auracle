@@ -141,6 +141,12 @@ class TestCase(unittest.TestCase):
         self.assertTrue(
                 os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
+    def assertPkgbuildNotExists(self, pkgname):
+        self.assertFalse(
+                os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
+        self.assertFalse(
+                os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+
 
 def main():
     test_runner = unittest.TextTestRunner(resultclass=TimeLoggingTestResult)

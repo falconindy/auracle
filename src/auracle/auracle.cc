@@ -213,9 +213,8 @@ void Auracle::IteratePackages(std::vector<std::string> args,
             alldeps.reserve(p->depends.size() + p->makedepends.size() +
                             p->checkdepends.size());
 
-            for (const auto* deparray :
-                 {&p->depends, &p->makedepends, &p->checkdepends}) {
-              for (const auto& dep : *deparray) {
+            for (auto kind : state->resolve_depends) {
+              for (const auto& dep : GetDependenciesByKind(p, kind)) {
                 alldeps.push_back(dep.name);
               }
             }
@@ -361,22 +360,24 @@ int Auracle::Clone(const std::vector<std::string>& args,
   }
 
   int ret = 0;
-  PackageIterator iter(options.recurse, [this, &ret](const aur::Package& p) {
-    aur_->QueueCloneRequest(
-        aur::CloneRequest(p.pkgbase),
-        [&ret, pkgbase{p.pkgbase}](
-            aur::ResponseWrapper<aur::CloneResponse> response) {
-          if (response.ok()) {
-            std::cout << response.value().operation << " complete: "
-                      << (fs::current_path() / pkgbase).string() << "\n";
-          } else {
-            std::cerr << "error: clone failed for " << pkgbase << ": "
-                      << response.error() << "\n";
-            ret = -EIO;
-          }
-          return 0;
-        });
-  });
+  PackageIterator iter(
+      options.recurse, options.resolve_depends,
+      [this, &ret](const aur::Package& p) {
+        aur_->QueueCloneRequest(
+            aur::CloneRequest(p.pkgbase),
+            [&ret, pkgbase{p.pkgbase}](
+                aur::ResponseWrapper<aur::CloneResponse> response) {
+              if (response.ok()) {
+                std::cout << response.value().operation << " complete: "
+                          << (fs::current_path() / pkgbase).string() << "\n";
+              } else {
+                std::cerr << "error: clone failed for " << pkgbase << ": "
+                          << response.error() << "\n";
+                ret = -EIO;
+              }
+              return 0;
+            });
+      });
 
   IteratePackages(args, &iter);
 
@@ -459,12 +460,12 @@ int Auracle::Show(const std::vector<std::string>& args,
 }
 
 int Auracle::BuildOrder(const std::vector<std::string>& args,
-                        const CommandOptions&) {
+                        const CommandOptions& options) {
   if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
 
-  PackageIterator iter(/* recurse = */ true, nullptr);
+  PackageIterator iter(/* recurse = */ true, options.resolve_depends, nullptr);
   IteratePackages(args, &iter);
 
   int r = aur_->Wait();
@@ -480,12 +481,14 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   std::unordered_set<std::string> seen;
   for (const auto& arg : args) {
     iter.package_cache.WalkDependencies(
-        arg, [&total_ordering, &seen](const std::string& pkgname,
-                                      const aur::Package* package) {
+        arg,
+        [&total_ordering, &seen](const std::string& pkgname,
+                                 const aur::Package* package) {
           if (seen.emplace(pkgname).second) {
             total_ordering.emplace_back(pkgname, package);
           }
-        });
+        },
+        options.resolve_depends);
   }
 
   for (const auto& [name, pkg] : total_ordering) {
@@ -539,22 +542,24 @@ int Auracle::Update(const std::vector<std::string>& args,
   }
 
   int ret = 0;
-  PackageIterator iter(options.recurse, [this, &ret](const aur::Package& p) {
-    aur_->QueueCloneRequest(
-        aur::CloneRequest(p.pkgbase),
-        [&ret, pkgbase{p.pkgbase}](
-            aur::ResponseWrapper<aur::CloneResponse> response) {
-          if (response.ok()) {
-            std::cout << response.value().operation << " complete: "
-                      << (fs::current_path() / pkgbase).string() << "\n";
-          } else {
-            std::cerr << "error: clone failed for " << pkgbase << ": "
-                      << response.error() << "\n";
-            ret = -EIO;
-          }
-          return 0;
-        });
-  });
+  PackageIterator iter(
+      options.recurse, options.resolve_depends,
+      [this, &ret](const aur::Package& p) {
+        aur_->QueueCloneRequest(
+            aur::CloneRequest(p.pkgbase),
+            [&ret, pkgbase{p.pkgbase}](
+                aur::ResponseWrapper<aur::CloneResponse> response) {
+              if (response.ok()) {
+                std::cout << response.value().operation << " complete: "
+                          << (fs::current_path() / pkgbase).string() << "\n";
+              } else {
+                std::cerr << "error: clone failed for " << pkgbase << ": "
+                          << response.error() << "\n";
+                ret = -EIO;
+              }
+              return 0;
+            });
+      });
 
   std::vector<std::string> outdated;
   outdated.reserve(packages.size());

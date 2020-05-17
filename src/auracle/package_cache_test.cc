@@ -111,13 +111,19 @@ TEST(PackageCacheTest, WalkDependencies) {
 
   std::vector<std::string> walked_packages;
   std::vector<const aur::Package*> aur_packages;
-  cache.WalkDependencies("pkgfile-git",
-                         [&](const std::string& name, const aur::Package* pkg) {
-                           walked_packages.push_back(name);
-                           if (pkg != nullptr) {
-                             aur_packages.push_back(pkg);
-                           }
-                         });
+  cache.WalkDependencies(
+      "pkgfile-git",
+      [&](const std::string& name, const aur::Package* pkg) {
+        walked_packages.push_back(name);
+        if (pkg != nullptr) {
+          aur_packages.push_back(pkg);
+        }
+      },
+      std::set<auracle::DependencyKind>{
+          auracle::DependencyKind::Depend,
+          auracle::DependencyKind::CheckDepend,
+          auracle::DependencyKind::MakeDepend,
+      });
 
   EXPECT_THAT(
       walked_packages,
@@ -128,4 +134,79 @@ TEST(PackageCacheTest, WalkDependencies) {
   EXPECT_THAT(aur_packages,
               UnorderedElementsAre(Field(&aur::Package::name, "pkgfile-git"),
                                    Field(&aur::Package::name, "pacman-git")));
+}
+
+TEST(PackageCacheTest, WalkDependenciesWithLimitedDeps) {
+  auracle::PackageCache cache;
+  {
+    aur::Package package;
+    package.package_id = 534055;
+    package.name = "pkgfile-git";
+    package.pkgbase_id = 60915;
+    package.pkgbase = "pkgfile-git";
+    package.depends = {MakeDependency("libarchive"), MakeDependency("curl"),
+                       MakeDependency("pcre"), MakeDependency("pacman-git")};
+    cache.AddPackage(package);
+  }
+  {
+    aur::Package package;
+    package.package_id = 600011;
+    package.name = "pacman-git";
+    package.pkgbase_id = 29937;
+    package.pkgbase = "pacman-git";
+    package.depends = {MakeDependency("archlinux-keyring"),
+                       MakeDependency("bash"),
+                       MakeDependency("curl"),
+                       MakeDependency("gpgme"),
+                       MakeDependency("libarchive"),
+                       MakeDependency("pacman-mirrorlist")};
+    package.makedepends = {MakeDependency("git"), MakeDependency("asciidoc"),
+                           MakeDependency("meson")};
+    package.checkdepends = {MakeDependency("python"),
+                            MakeDependency("fakechroot")};
+    cache.AddPackage(package);
+  }
+
+  std::vector<std::string> walked_packages;
+  std::vector<const aur::Package*> aur_packages;
+
+  auto walk_dependencies_fn = [&](const std::string& name,
+                                  const aur::Package* pkg) {
+    walked_packages.push_back(name);
+    if (pkg != nullptr) {
+      aur_packages.push_back(pkg);
+    }
+  };
+
+  cache.WalkDependencies("pkgfile-git", walk_dependencies_fn,
+                         std::set<auracle::DependencyKind>{
+                             auracle::DependencyKind::Depend,
+                             auracle::DependencyKind::MakeDepend,
+                         });
+  EXPECT_THAT(walked_packages,
+              ElementsAre("libarchive", "curl", "pcre", "archlinux-keyring",
+                          "bash", "gpgme", "pacman-mirrorlist", "git",
+                          "asciidoc", "meson", "pacman-git", "pkgfile-git"));
+  walked_packages.clear();
+  aur_packages.clear();
+
+  cache.WalkDependencies("pkgfile-git", walk_dependencies_fn,
+                         std::set<auracle::DependencyKind>{
+                             auracle::DependencyKind::Depend,
+                         });
+  EXPECT_THAT(
+      walked_packages,
+      ElementsAre("libarchive", "curl", "pcre", "archlinux-keyring", "bash",
+                  "gpgme", "pacman-mirrorlist", "pacman-git", "pkgfile-git"));
+  walked_packages.clear();
+  aur_packages.clear();
+
+  cache.WalkDependencies("pacman-git", walk_dependencies_fn,
+                         std::set<auracle::DependencyKind>{
+                             auracle::DependencyKind::CheckDepend,
+                         });
+  EXPECT_THAT(walked_packages,
+              ElementsAre("python", "fakechroot", "pacman-git"));
+  walked_packages.clear();
+  aur_packages.clear();
 }

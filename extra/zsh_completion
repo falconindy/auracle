@@ -14,6 +14,7 @@ _arguments -S \
   {--format=,-F+}'[Specify custom output for search and info]' \
   '(--rsort)--sort=[Sort results in ascending order]: :(name popularity votes firstsubmitted lastmodified)' \
   '(--sort)--rsort=[Sort results in descending order]: :(name popularity votes firstsubmitted lastmodified)' \
+  '--resolve-deps=[Control depends resolution]: :(depends checkdepends makedepends)' \
   "--show-file=[File to dump with 'show' command]" \
   '(-): :->command' \
   '*:: :->option-or-argument'

@@ -17,7 +17,7 @@ _auracle() {
   local i verb comps
   local -A OPTS=(
          [STANDALONE]='--help -h --version --quiet -q --recurse -r --literal'
-                [ARG]='-C --chdir --searchby --color --sort --rsort --show-file -F --format'
+                [ARG]='-C --chdir --searchby --color --sort --rsort --show-file -F --format --resolve-deps'
   )
 
   if __contains_word "$prev" ${OPTS[ARG]}; then
@@ -34,6 +34,10 @@ _auracle() {
       '-C'|'--chdir')
         comps=$(compgen -A directory -- "$cur" )
         compopt -o filenames
+        ;;
+      '--resolve-deps')
+        local c=({^,!,+,}{check,make,}depends)
+        comps="${c[*]}"
         ;;
     esac
 

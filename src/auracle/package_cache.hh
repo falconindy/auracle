@@ -2,10 +2,12 @@
 #define PACKAGE_AURACLE_CACHE_HH_
 
 #include <functional>
+#include <set>
 #include <unordered_map>
 #include <utility>
 
 #include "aur/package.hh"
+#include "dependency_kind.hh"
 
 namespace auracle {
 
@@ -31,7 +33,8 @@ class PackageCache {
 
   using WalkDependenciesFn =
       std::function<void(const std::string& name, const aur::Package*)>;
-  void WalkDependencies(const std::string& name, WalkDependenciesFn cb) const;
+  void WalkDependencies(const std::string& name, WalkDependenciesFn cb,
+                        const std::set<DependencyKind>& dependency_kinds) const;
 
  private:
   std::vector<aur::Package> packages_;

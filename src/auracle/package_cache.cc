@@ -75,8 +75,9 @@ class Step {
   DependencyPath& dependency_path_;
 };
 
-void PackageCache::WalkDependencies(const std::string& name,
-                                    WalkDependenciesFn cb) const {
+void PackageCache::WalkDependencies(
+    const std::string& name, WalkDependenciesFn cb,
+    const std::set<DependencyKind>& dependency_kinds) const {
   std::unordered_set<std::string> visited;
   DependencyPath dependency_path;
 
@@ -90,9 +91,9 @@ void PackageCache::WalkDependencies(const std::string& name,
 
     const auto* pkg = LookupByPkgname(pkgname);
     if (pkg != nullptr) {
-      for (const auto* deplist :
-           {&pkg->depends, &pkg->makedepends, &pkg->checkdepends}) {
-        for (const auto& dep : *deplist) {
+      for (auto kind : dependency_kinds) {
+        const auto& deplist = GetDependenciesByKind(pkg, kind);
+        for (const auto& dep : deplist) {
           walk(dep.name);
         }
       }

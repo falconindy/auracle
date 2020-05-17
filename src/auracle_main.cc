@@ -39,6 +39,8 @@ struct Flags {
       "      --color=WHEN         One of 'auto', 'never', or 'always'\n"
       "      --sort=KEY           Sort results in ascending order by KEY\n"
       "      --rsort=KEY          Sort results in descending order by KEY\n"
+      "      --resolve-deps=DEPS  Include/exclude dependency types in "
+      "recursive operations\n"
       "      --show-file=FILE     File to dump with 'show' command\n"
       "  -C DIR, --chdir=DIR      Change directory to DIR before cloning\n"
       "  -F FMT, --format=FMT     Specify custom output for search and info\n"
@@ -73,6 +75,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
     ARG_RSORT,
     ARG_PACMAN_CONFIG,
     ARG_SHOW_FILE,
+    ARG_RESOLVE_DEPS,
   };
 
   static constexpr struct option opts[] = {
@@ -83,6 +86,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
       { "chdir",           required_argument, nullptr, 'C' },
       { "color",           required_argument, nullptr, ARG_COLOR },
       { "literal",         no_argument,       nullptr, ARG_LITERAL },
+      { "resolve-deps",    required_argument, nullptr, ARG_RESOLVE_DEPS },
       { "rsort",           required_argument, nullptr, ARG_RSORT },
       { "searchby",        required_argument, nullptr, ARG_SEARCHBY },
       { "show-file",       required_argument, nullptr, ARG_SHOW_FILE },
@@ -167,6 +171,14 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_DESC);
         if (command_options.sorter == nullptr) {
           std::cerr << "error: invalid arg to --rsort: " << sv_optarg << "\n";
+          return false;
+        }
+        break;
+      case ARG_RESOLVE_DEPS:
+        if (!ParseDependencyKinds(sv_optarg,
+                                  &command_options.resolve_depends)) {
+          std::cerr << "error: invalid argument to --resolve-deps: "
+                    << sv_optarg << "\n";
           return false;
         }
         break;

@@ -1,10 +1,12 @@
 #ifndef AURACLE_AURACLE_HH_
 #define AURACLE_AURACLE_HH_
 
+#include <set>
 #include <string>
 #include <vector>
 
 #include "aur/aur.hh"
+#include "dependency_kind.hh"
 #include "package_cache.hh"
 #include "pacman.hh"
 #include "sort.hh"
@@ -55,6 +57,9 @@ class Auracle {
     sort::Sorter sorter =
         sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
     std::string format;
+    std::set<DependencyKind> resolve_depends = {DependencyKind::Depend,
+                                                DependencyKind::CheckDepend,
+                                                DependencyKind::MakeDepend};
   };
 
   int BuildOrder(const std::vector<std::string>& args,
@@ -78,10 +83,14 @@ class Auracle {
   struct PackageIterator {
     using PackageCallback = std::function<void(const aur::Package&)>;
 
-    PackageIterator(bool recurse, PackageCallback callback)
-        : recurse(recurse), callback(std::move(callback)) {}
+    PackageIterator(bool recurse, std::set<DependencyKind> resolve_depends,
+                    PackageCallback callback)
+        : recurse(recurse),
+          resolve_depends(resolve_depends),
+          callback(std::move(callback)) {}
 
     bool recurse;
+    std::set<DependencyKind> resolve_depends;
 
     const PackageCallback callback;
     PackageCache package_cache;
