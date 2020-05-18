@@ -33,7 +33,6 @@ libfmt = dependency('fmt',
 libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : false)
 gmock = dependency('gmock', required : false)
-stdcppfs = cpp.find_library('stdc++fs')
 
 pod2man = find_program('pod2man')
 
@@ -49,7 +48,7 @@ libaur = static_library(
     src/aur/response.cc src/aur/response.hh
     src/aur/json_internal.hh
   '''.split()),
-  dependencies : [json, libcurl, libsystemd, stdcppfs])
+  dependencies : [json, libcurl, libsystemd])
 
 libauracle = static_library(
   'auracle',
@@ -65,7 +64,7 @@ libauracle = static_library(
     'src',
   ],
   link_with : [libaur],
-  dependencies : [libalpm, libfmt, stdcppfs])
+  dependencies : [libalpm, libfmt])
 
 executable(
   'auracle',
