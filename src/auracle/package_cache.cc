@@ -100,7 +100,7 @@ void PackageCache::WalkDependencies(
       }
     }
 
-    cb(pkgname, pkg);
+    cb(pkgname, pkg, dependency_path);
   };
 
   walk(name);

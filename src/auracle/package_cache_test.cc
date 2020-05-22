@@ -113,7 +113,8 @@ TEST(PackageCacheTest, WalkDependencies) {
   std::vector<const aur::Package*> aur_packages;
   cache.WalkDependencies(
       "pkgfile-git",
-      [&](const std::string& name, const aur::Package* pkg) {
+      [&](const std::string& name, const aur::Package* pkg,
+          const std::vector<std::string>&) {
         walked_packages.push_back(name);
         if (pkg != nullptr) {
           aur_packages.push_back(pkg);
@@ -171,7 +172,8 @@ TEST(PackageCacheTest, WalkDependenciesWithLimitedDeps) {
   std::vector<const aur::Package*> aur_packages;
 
   auto walk_dependencies_fn = [&](const std::string& name,
-                                  const aur::Package* pkg) {
+                                  const aur::Package* pkg,
+                                  const std::vector<std::string>&) {
     walked_packages.push_back(name);
     if (pkg != nullptr) {
       aur_packages.push_back(pkg);

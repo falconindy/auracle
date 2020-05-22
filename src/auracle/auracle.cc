@@ -6,6 +6,7 @@
 #include <iostream>
 #include <regex>
 #include <string_view>
+#include <tuple>
 #include <unordered_set>
 
 #include "aur/response.hh"
@@ -477,21 +478,24 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     return -ENOENT;
   }
 
-  std::vector<std::pair<std::string, const aur::Package*>> total_ordering;
+  std::vector<
+      std::tuple<std::string, const aur::Package*, std::vector<std::string>>>
+      total_ordering;
   std::unordered_set<std::string> seen;
   for (const auto& arg : args) {
     iter.package_cache.WalkDependencies(
         arg,
-        [&total_ordering, &seen](const std::string& pkgname,
-                                 const aur::Package* package) {
+        [&total_ordering, &seen](
+            const std::string& pkgname, const aur::Package* package,
+            const std::vector<std::string>& dependency_path) {
           if (seen.emplace(pkgname).second) {
-            total_ordering.emplace_back(pkgname, package);
+            total_ordering.emplace_back(pkgname, package, dependency_path);
           }
         },
         options.resolve_depends);
   }
 
-  for (const auto& [name, pkg] : total_ordering) {
+  for (const auto& [name, pkg, dependency_path] : total_ordering) {
     const bool satisfied = pacman_->DependencyIsSatisfied(name);
     const bool from_aur = pkg != nullptr;
     const bool unknown = !from_aur && !pacman_->HasPackage(name);
@@ -500,6 +504,7 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
 
     if (unknown) {
       std::cout << "UNKNOWN";
+      r = -ENXIO;
     } else {
       if (is_target) {
         std::cout << "TARGET";
@@ -514,15 +519,22 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
       }
     }
 
-    std::cout << " " << name;
-    if (from_aur) {
-      std::cout << " " << pkg->pkgbase;
+    if (unknown) {
+      for (auto iter = dependency_path.crbegin();
+           iter != dependency_path.crend(); ++iter) {
+        std::cout << " " << *iter;
+      }
+    } else {
+      std::cout << " " << name;
+      if (from_aur) {
+        std::cout << " " << pkg->pkgbase;
+      }
     }
 
     std::cout << "\n";
   }
 
-  return 0;
+  return r;
 }
 
 int Auracle::Update(const std::vector<std::string>& args,

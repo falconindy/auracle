@@ -94,22 +94,20 @@ class TestBuildOrder(auracle_test.TestCase):
         ])
 
 
-    # Fix dependencies here to avoid unknowns. Unknown deps should be handled
-    # in a separate test.
-    def testSatisfiedPackage(self):
+    def testUnsatisfiedPackage(self):
         r = self.Auracle(['buildorder', 'auracle-git'])
-        self.assertEqual(r.process.returncode, 0)
+        self.assertEqual(r.process.returncode, 1)
         self.assertListEqual(r.process.stdout.decode().strip().splitlines(), [
-            'UNKNOWN pacman',
-            'UNKNOWN libarchive.so',
+            'UNKNOWN pacman auracle-git',
+            'UNKNOWN libarchive.so auracle-git',
             'REPOS libcurl.so',
-            'UNKNOWN libsystemd.so',
-            'UNKNOWN meson',
-            'UNKNOWN git',
-            'UNKNOWN cmake',
+            'UNKNOWN libsystemd.so auracle-git',
+            'UNKNOWN meson auracle-git',
+            'UNKNOWN git auracle-git',
+            'UNKNOWN cmake nlohmann-json auracle-git',
             'AUR nlohmann-json nlohmann-json',
-            'UNKNOWN gtest',
-            'UNKNOWN gmock',
+            'UNKNOWN gtest auracle-git',
+            'UNKNOWN gmock auracle-git',
             'TARGETAUR auracle-git auracle-git'
         ])
 

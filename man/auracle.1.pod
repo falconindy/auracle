@@ -105,11 +105,16 @@ are:
 
 =over 4
 
-B<AUR>        The dependency was found in the AUR and needs to be built and installed. The output will contain an additional column of the pkgbase the package is provided by.
+B<AUR>        The dependency was found in the AUR and needs to be built and
+installed. The output will contain an additional column of the pkgbase the
+package is provided by.
 
 B<REPOS>      The dependency was found in a binary repo and can be installed via pacman.
 
-B<UNKNOWN>    The dependency was unable to be found anywhere. This might indicate a broken dependency chain.
+B<UNKNOWN>    The dependency was unable to be found anywhere. This might
+indicate a broken dependency chain. The output will contain additional columns
+denoting the dependency path that was walked (in reverse) to get to the missing
+dependency.
 
 =back
 
