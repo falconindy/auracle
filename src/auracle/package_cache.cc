@@ -31,48 +31,49 @@ const aur::Package* PackageCache::LookupByPkgbase(
   return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
 }
 
-using DependencyPath = std::vector<std::string>;
-
-class Step {
+class DependencyPath : public std::vector<std::string> {
  public:
-  Step(DependencyPath& dependency_path, std::string step)
-      : dependency_path_(dependency_path) {
-    MaybeReportCycle(step);
+  class Step {
+   public:
+    Step(DependencyPath& dependency_path, std::string step)
+        : dependency_path_(dependency_path) {
+      MaybeReportCycle(step);
 
-    dependency_path_.push_back(step);
-  }
-
-  ~Step() { dependency_path_.pop_back(); }
-
- private:
-  void MaybeReportCycle(const std::string& step) {
-    auto cycle_start =
-        std::find(dependency_path_.cbegin(), dependency_path_.cend(), step);
-    if (cycle_start == dependency_path_.cend()) {
-      return;
+      dependency_path_.push_back(step);
     }
 
-    std::cerr << "warning: found dependency cycle:";
+    ~Step() { dependency_path_.pop_back(); }
 
-    // Print the path leading up to the start of the cycle
-    auto iter = dependency_path_.cbegin();
-    while (iter != cycle_start) {
-      std::cerr << " " << *iter << " ->";
+   private:
+    void MaybeReportCycle(const std::string& step) {
+      auto cycle_start =
+          std::find(dependency_path_.cbegin(), dependency_path_.cend(), step);
+      if (cycle_start == dependency_path_.cend()) {
+        return;
+      }
+
+      std::cerr << "warning: found dependency cycle:";
+
+      // Print the path leading up to the start of the cycle
+      auto iter = dependency_path_.cbegin();
+      while (iter != cycle_start) {
+        std::cerr << " " << *iter << " ->";
+        ++iter;
+      }
+
+      // Print the cycle itself, wrapped in brackets
+      std::cerr << " [ " << *iter;
       ++iter;
+      while (iter != dependency_path_.cend()) {
+        std::cerr << " -> " << *iter;
+        ++iter;
+      }
+
+      std::cerr << " -> " << *cycle_start << " ]\n";
     }
 
-    // Print the cycle itself, wrapped in brackets
-    std::cerr << " [ " << *iter;
-    ++iter;
-    while (iter != dependency_path_.cend()) {
-      std::cerr << " -> " << *iter;
-      ++iter;
-    }
-
-    std::cerr << " -> " << *cycle_start << " ]\n";
-  }
-
-  DependencyPath& dependency_path_;
+    DependencyPath& dependency_path_;
+  };
 };
 
 void PackageCache::WalkDependencies(
@@ -83,7 +84,7 @@ void PackageCache::WalkDependencies(
 
   std::function<void(std::string)> walk;
   walk = [&](const std::string& pkgname) {
-    Step step(dependency_path, pkgname);
+    DependencyPath::Step step(dependency_path, pkgname);
 
     if (!visited.insert(pkgname).second) {
       return;
