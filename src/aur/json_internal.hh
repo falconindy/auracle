@@ -25,7 +25,7 @@ void from_json(const nlohmann::json& j, std::vector<T>& v) {
     return;
   }
 
-  v = std::vector<T>(j.begin(), j.end());
+  v = std::vector<T>(j.cbegin(), j.cend());
 }
 
 template <typename OutputType>

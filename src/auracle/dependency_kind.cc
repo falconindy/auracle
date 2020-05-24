@@ -54,7 +54,7 @@ bool ParseDependencyKinds(std::string_view input,
       kinds->erase(kind);
     }
   } else if (append) {
-    kinds->insert(parsed_kinds.begin(), parsed_kinds.end());
+    kinds->insert(parsed_kinds.cbegin(), parsed_kinds.cend());
   } else {
     kinds->swap(parsed_kinds);
   }

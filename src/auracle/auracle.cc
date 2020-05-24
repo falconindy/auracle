@@ -288,7 +288,7 @@ int Auracle::Search(const std::vector<std::string>& args,
   }
 
   const auto matches = [&patterns, &options](const aur::Package& p) {
-    return std::all_of(patterns.begin(), patterns.end(),
+    return std::all_of(patterns.cbegin(), patterns.cend(),
                        [&p, &options](const std::regex& re) {
                          switch (options.search_by) {
                            case aur::SearchRequest::SearchBy::NAME:
@@ -500,7 +500,7 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     const bool from_aur = pkg != nullptr;
     const bool unknown = !from_aur && !pacman_->HasPackage(name);
     const bool is_target =
-        std::find(args.begin(), args.end(), name) != args.end();
+        std::find(args.cbegin(), args.cend(), name) != args.cend();
 
     if (unknown) {
       std::cout << "UNKNOWN";

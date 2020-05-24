@@ -7,7 +7,7 @@ namespace auracle {
 
 std::pair<const aur::Package*, bool> PackageCache::AddPackage(
     aur::Package package) {
-  const auto iter = std::find(packages_.begin(), packages_.end(), package);
+  const auto iter = std::find(packages_.cbegin(), packages_.cend(), package);
   if (iter != packages_.cend()) {
     return {&*iter, false};
   }
