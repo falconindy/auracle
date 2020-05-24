@@ -114,75 +114,77 @@ run_target(
   ])
 
 # unit tests
-if gtest.found() and gmock.found()
-  gtest_main = static_library(
-    'gtest_main',
-    'src/test/gtest_main.cc')
+if get_option('build_tests')
+  if gtest.found() and gmock.found()
+    gtest_main = static_library(
+      'gtest_main',
+      'src/test/gtest_main.cc')
 
-  foreach input : [
-    {
-      'prefix': 'libaur',
-      'link_with' : [libaur],
-      'tests' : [
-        'src/aur/request_test.cc',
-        'src/aur/response_test.cc',
-      ],
-    },
-    {
-      'prefix': 'libauracle',
-      'link_with' : [libauracle],
-      'tests' : [
-        'src/auracle/dependency_kind_test.cc',
-        'src/auracle/package_cache_test.cc',
-        'src/auracle/format_test.cc',
-        'src/auracle/sort_test.cc',
-      ],
-    },
-  ]
+    foreach input : [
+      {
+        'prefix': 'libaur',
+        'link_with' : [libaur],
+        'tests' : [
+          'src/aur/request_test.cc',
+          'src/aur/response_test.cc',
+        ],
+      },
+      {
+        'prefix': 'libauracle',
+        'link_with' : [libauracle],
+        'tests' : [
+          'src/auracle/dependency_kind_test.cc',
+          'src/auracle/package_cache_test.cc',
+          'src/auracle/format_test.cc',
+          'src/auracle/sort_test.cc',
+        ],
+      },
+    ]
 
-    foreach source : input.get('tests')
-      basename = source.split('/')[-1].split('.')[0]
-      test(
-        '@0@_@1@'.format(input.get('prefix'), basename),
-        executable(
-          basename,
-          source,
-          include_directories : [
-            'src',
-          ],
-          link_with : [gtest_main] + input.get('link_with'),
-          dependencies : [gtest, gmock]))
+      foreach source : input.get('tests')
+        basename = source.split('/')[-1].split('.')[0]
+        test(
+          '@0@_@1@'.format(input.get('prefix'), basename),
+          executable(
+            basename,
+            source,
+            include_directories : [
+              'src',
+            ],
+            link_with : [gtest_main] + input.get('link_with'),
+            dependencies : [gtest, gmock]))
+      endforeach
     endforeach
-  endforeach
-else
-  message('Skipping unit tests, gtest or gmock not found')
-endif
+  else
+    message('Skipping unit tests, gtest or gmock not found')
+  endif
 
-# integration tests
-python_requirement = '>=3.7'
-if py3.found() and py3.language_version().version_compare(python_requirement)
-  foreach input : [
-    'tests/buildorder.py',
-    'tests/clone.py',
-    'tests/custom_format.py',
-    'tests/info.py',
-    'tests/outdated.py',
-    'tests/raw_query.py',
-    'tests/regex_search.py',
-    'tests/search.py',
-    'tests/show.py',
-    'tests/sort.py',
-    'tests/update.py',
-  ]
-    basename = input.split('/')[-1].split('.')[0]
+  # integration tests
+  python_requirement = '>=3.7'
+  if py3.found() and py3.language_version().version_compare(python_requirement)
+    foreach input : [
+      'tests/buildorder.py',
+      'tests/clone.py',
+      'tests/custom_format.py',
+      'tests/info.py',
+      'tests/outdated.py',
+      'tests/raw_query.py',
+      'tests/regex_search.py',
+      'tests/search.py',
+      'tests/show.py',
+      'tests/sort.py',
+      'tests/update.py',
+    ]
+      basename = input.split('/')[-1].split('.')[0]
 
-    test(
-      'auracle_@0@_integration_test'.format(basename),
-      py3,
-      args : [join_paths(meson.source_root(), input)],
-      env : ['PYTHONDONTWRITEBYTECODE=1'])
-  endforeach
-else
-  message('Skipping integration tests, python @0@ not found'.format(
-    python_requirement))
+      test(
+        'auracle_@0@_integration_test'.format(basename),
+        py3,
+        args : [join_paths(meson.source_root(), input)],
+        env : ['PYTHONDONTWRITEBYTECODE=1'])
+    endforeach
+  else
+    message('Skipping integration tests, python @0@ not found'.format(
+      python_requirement))
+  endif
 endif
