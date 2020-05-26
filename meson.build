@@ -31,8 +31,8 @@ libfmt = dependency('fmt',
                     version : '>=6.0.0',
                     fallback : ['fmt', 'fmt_dep'])
 libsystemd = dependency('libsystemd')
-gtest = dependency('gtest', required : false)
-gmock = dependency('gmock', required : false)
+gtest = dependency('gtest', required : get_option('unittests'))
+gmock = dependency('gmock', required : get_option('unittests'))
 
 pod2man = find_program('pod2man')
 
@@ -114,7 +114,7 @@ run_target(
   ])
 
 # unit tests
-if gtest.found() and gmock.found()
+if not get_option('unittests').disabled() and gtest.found() and gmock.found()
   gtest_main = static_library(
     'gtest_main',
     'src/test/gtest_main.cc')
@@ -154,8 +154,6 @@ if gtest.found() and gmock.found()
           dependencies : [gtest, gmock]))
     endforeach
   endforeach
-else
-  message('Skipping unit tests, gtest or gmock not found')
 endif
 
 # integration tests

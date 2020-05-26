@@ -1,0 +1,2 @@
+option('unittests', type : 'feature', value : 'auto',
+       description : 'Include unit tests in the build. Depends on gtest and gmock.')
