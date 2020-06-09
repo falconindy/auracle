@@ -5,7 +5,6 @@
 #include <systemd/sd-event.h>
 #include <unistd.h>
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string_view>
@@ -102,12 +101,6 @@ namespace {
 std::string_view GetEnv(const char* name) {
   auto* value = getenv(name);
   return std::string_view(value ? value : "");
-}
-
-template <typename ClockType>
-auto ToUnixMicros(std::chrono::time_point<ClockType> tp) {
-  auto micros = std::chrono::time_point_cast<std::chrono::microseconds>(tp);
-  return micros.time_since_epoch().count();
 }
 
 class ResponseHandler {
@@ -385,8 +378,8 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
     return 0;
   }
 
-  uint64_t usec = ToUnixMicros(std::chrono::steady_clock::now() +
-                               std::chrono::milliseconds(timeout_ms));
+  uint64_t usec =
+      absl::ToUnixMicros(absl::Now() + absl::Milliseconds(timeout_ms));
 
   if (timer_ != nullptr) {
     if (sd_event_source_set_time(timer_, usec) < 0) {
@@ -397,7 +390,7 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
       return -1;
     }
   } else {
-    if (sd_event_add_time(event_, &timer_, CLOCK_MONOTONIC, usec, 0,
+    if (sd_event_add_time(event_, &timer_, CLOCK_REALTIME, usec, 0,
                           &AurImpl::OnCurlTimer, this) < 0) {
       return -1;
     }

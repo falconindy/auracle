@@ -43,6 +43,7 @@ abseil = declare_dependency(
   dependencies : [
     abseil_proj.get_variable('absl_container_dep'),
     abseil_proj.get_variable('absl_strings_dep'),
+    abseil_proj.get_variable('absl_time_dep'),
   ],
   include_directories : [
     abseil_proj.get_variable('absl_include_dir'),

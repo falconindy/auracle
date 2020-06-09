@@ -57,15 +57,13 @@ fmt::format_parse_context::iterator parse_format_or_default(
 
 FMT_BEGIN_NAMESPACE
 
-// Specialization for formatting std::chrono::seconds
 template <>
-struct formatter<std::chrono::seconds> {
+struct formatter<absl::Time> {
   auto parse(fmt::format_parse_context& ctx) {
     return parse_format_or_default(ctx, "%c", &tm_format);
   }
 
-  auto format(const std::chrono::seconds& seconds, fmt::format_context& ctx) {
-    auto t = absl::FromChrono(std::chrono::system_clock::time_point(seconds));
+  auto format(const absl::Time t, fmt::format_context& ctx) {
     return format_to(ctx.out(), "{}",
                      absl::FormatTime(tm_format, t, absl::LocalTimeZone()));
   }
@@ -142,9 +140,8 @@ void Short(const aur::Package& package,
 
   const auto& l = local_package;
   const auto& p = package;
-  const auto ood_color = p.out_of_date > std::chrono::seconds::zero()
-                             ? &t::BoldRed
-                             : &t::BoldGreen;
+  const auto ood_color =
+      p.out_of_date > absl::UnixEpoch() ? &t::BoldRed : &t::BoldGreen;
 
   std::string installed_package;
   if (l) {
@@ -168,9 +165,8 @@ void Long(const aur::Package& package,
   const auto& l = local_package;
   const auto& p = package;
 
-  const auto ood_color = p.out_of_date > std::chrono::seconds::zero()
-                             ? &t::BoldRed
-                             : &t::BoldGreen;
+  const auto ood_color =
+      p.out_of_date > absl::UnixEpoch() ? &t::BoldRed : &t::BoldGreen;
 
   std::string installed_package;
   if (l) {
@@ -212,7 +208,7 @@ void Long(const aur::Package& package,
       Field("Maintainer", p.maintainer.empty() ? "(orphan)" : p.maintainer));
   std::cout << fmt::format("{}", Field("Submitted", p.submitted));
   std::cout << fmt::format("{}", Field("Last Modified", p.modified));
-  if (p.out_of_date != std::chrono::seconds::zero()) {
+  if (p.out_of_date > absl::UnixEpoch()) {
     std::cout << fmt::format("{}", Field("Out of Date", p.out_of_date));
   }
   std::cout << fmt::format("{}", Field("Description", p.description));

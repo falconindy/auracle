@@ -27,8 +27,6 @@ class ScopedCapturer {
 };
 
 aur::Package MakePackage() {
-  using namespace std::chrono_literals;
-
   aur::Package p;
 
   // string
@@ -39,7 +37,7 @@ aur::Package MakePackage() {
   p.popularity = 5.20238;
 
   // datetime
-  p.submitted = 1499013608s;
+  p.submitted = absl::FromUnixSeconds(1499013608);
 
   // lists
   p.conflicts = {

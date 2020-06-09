@@ -20,31 +20,29 @@ TEST(SortOrderTest, RejectsInvalidSortField) {
 std::vector<aur::Package> MakePackages() {
   std::vector<aur::Package> packages;
 
-  using namespace std::chrono_literals;
-
   {
     auto& p = packages.emplace_back();
     p.name = "cower";
     p.popularity = 1.2345;
     p.votes = 30;
-    p.submitted = 10000s;
-    p.modified = 20000s;
+    p.submitted = absl::FromUnixSeconds(10000);
+    p.modified = absl::FromUnixSeconds(20000);
   }
   {
     auto& p = packages.emplace_back();
     p.name = "auracle";
     p.popularity = 5.3241;
     p.votes = 20;
-    p.submitted = 20000s;
-    p.modified = 40000s;
+    p.submitted = absl::FromUnixSeconds(20000);
+    p.modified = absl::FromUnixSeconds(40000);
   }
   {
     auto& p = packages.emplace_back();
     p.name = "pacman";
     p.popularity = 5.3240;
     p.votes = 10;
-    p.submitted = 30000s;
-    p.modified = 10000s;
+    p.submitted = absl::FromUnixSeconds(30000);
+    p.modified = absl::FromUnixSeconds(10000);
   }
 
   return packages;
@@ -92,30 +90,32 @@ TEST_P(SortOrderTest, ByVotes) {
 }
 
 TEST_P(SortOrderTest, ByFirstSubmitted) {
-  using namespace std::chrono_literals;
-  ExpectSorted("firstsubmitted",
-               ElementsAre(Field(&aur::Package::submitted, 10000s),
-                           Field(&aur::Package::submitted, 20000s),
-                           Field(&aur::Package::submitted, 30000s)));
+  ExpectSorted(
+      "firstsubmitted",
+      ElementsAre(
+          Field(&aur::Package::submitted, absl::FromUnixSeconds(10000)),
+          Field(&aur::Package::submitted, absl::FromUnixSeconds(20000)),
+          Field(&aur::Package::submitted, absl::FromUnixSeconds(30000))));
 }
 
 TEST_P(SortOrderTest, ByLastModified) {
-  using namespace std::chrono_literals;
-  ExpectSorted("lastmodified",
-               ElementsAre(Field(&aur::Package::modified, 10000s),
-                           Field(&aur::Package::modified, 20000s),
-                           Field(&aur::Package::modified, 40000s)));
+  ExpectSorted(
+      "lastmodified",
+      ElementsAre(
+          Field(&aur::Package::modified, absl::FromUnixSeconds(10000)),
+          Field(&aur::Package::modified, absl::FromUnixSeconds(20000)),
+          Field(&aur::Package::modified, absl::FromUnixSeconds(40000))));
 }
 
-INSTANTIATE_TEST_CASE_P(BothOrderings, SortOrderTest,
-                        testing::Values(sort::OrderBy::ORDER_ASC,
-                                        sort::OrderBy::ORDER_DESC),
-                        [](const auto& info) {
-                          switch (info.param) {
-                            case sort::OrderBy::ORDER_ASC:
-                              return "ORDER_ASC";
-                            case sort::OrderBy::ORDER_DESC:
-                              return "ORDER_DESC";
-                          }
-                          return "UNKNOWN";
-                        });
+INSTANTIATE_TEST_SUITE_P(BothOrderings, SortOrderTest,
+                         testing::Values(sort::OrderBy::ORDER_ASC,
+                                         sort::OrderBy::ORDER_DESC),
+                         [](const auto& info) {
+                           switch (info.param) {
+                             case sort::OrderBy::ORDER_ASC:
+                               return "ORDER_ASC";
+                             case sort::OrderBy::ORDER_DESC:
+                               return "ORDER_DESC";
+                           }
+                           return "UNKNOWN";
+                         });

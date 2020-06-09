@@ -8,6 +8,7 @@
 namespace aur {
 
 void from_json(const nlohmann::json& j, Package& p);
+void from_json(const nlohmann::json& j, absl::Time& t);
 
 template <typename T>
 void from_json(const nlohmann::json& j, T& v) {

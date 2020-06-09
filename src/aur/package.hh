@@ -1,9 +1,10 @@
 #ifndef AUR_PACKAGE_H
 #define AUR_PACKAGE_H
 
-#include <chrono>
 #include <string>
 #include <vector>
+
+#include "absl/time/time.h"
 
 namespace aur {
 
@@ -39,9 +40,9 @@ struct Package {
   int votes = 0;
   double popularity = 0.f;
 
-  std::chrono::seconds out_of_date{0};
-  std::chrono::seconds submitted{0};
-  std::chrono::seconds modified{0};
+  absl::Time out_of_date;
+  absl::Time submitted;
+  absl::Time modified;
 
   std::vector<std::string> conflicts;
   std::vector<std::string> groups;

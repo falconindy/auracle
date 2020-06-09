@@ -36,6 +36,14 @@ void from_json(const nlohmann::json& j, Dependency& d) {
   }
 }
 
+void from_json(const nlohmann::json& j, absl::Time& t) {
+  if (j.is_null()) {
+    return;
+  }
+
+  t = absl::FromUnixSeconds(j);
+}
+
 void from_json(const nlohmann::json& j, Package& p) {
   // clang-format off
   static const auto& callbacks = *new CallbackMap<Package>{
