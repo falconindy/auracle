@@ -6,13 +6,14 @@
 #include <unistd.h>
 
 #include <chrono>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <string_view>
-#include <unordered_set>
 #include <variant>
 #include <vector>
+
+#include "absl/container/flat_hash_set.h"
+#include "absl/strings/strip.h"
 
 namespace fs = std::filesystem;
 
@@ -44,7 +45,7 @@ class AurImpl : public Aur {
 
  private:
   using ActiveRequests =
-      std::unordered_set<std::variant<CURL*, sd_event_source*>>;
+      absl::flat_hash_set<std::variant<CURL*, sd_event_source*>>;
 
   template <typename ResponseHandlerType>
   void QueueHttpRequest(
@@ -107,15 +108,6 @@ template <typename ClockType>
 auto ToUnixMicros(std::chrono::time_point<ClockType> tp) {
   auto micros = std::chrono::time_point_cast<std::chrono::microseconds>(tp);
   return micros.time_since_epoch().count();
-}
-
-bool ConsumePrefix(std::string_view* view, std::string_view prefix) {
-  if (view->find(prefix) != 0) {
-    return false;
-  }
-
-  view->remove_prefix(prefix.size());
-  return true;
 }
 
 class ResponseHandler {
@@ -244,7 +236,7 @@ AurImpl::AurImpl(Options options) : options_(std::move(options)) {
   sd_event_default(&event_);
 
   std::string_view debug = GetEnv("AURACLE_DEBUG");
-  if (ConsumePrefix(&debug, "requests:")) {
+  if (absl::ConsumePrefix(&debug, "requests:")) {
     debug_level_ = DebugLevel::REQUESTS;
     debug_stream_.open(std::string(debug), std::ofstream::trunc);
   } else if (!debug.empty()) {
@@ -524,8 +516,8 @@ int AurImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
 
   std::string error;
   if (si->si_status != 0) {
-    error.assign("git exited with unexpected exit status " +
-                 std::to_string(si->si_status));
+    error =
+        absl::StrCat("git exited with unexpected exit status ", si->si_status);
   }
 
   return handler->RunCallback(si->si_status, error);
@@ -540,8 +532,9 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
 
   int pid = fork();
   if (pid < 0) {
-    handler->RunCallback(-errno, "failed to fork new process for git: " +
-                                     std::string(strerror(errno)));
+    handler->RunCallback(
+        -errno,
+        absl::StrCat("failed to fork new process for git: ", strerror(errno)));
     return;
   }
 

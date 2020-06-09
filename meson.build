@@ -4,7 +4,7 @@ project('auracle', 'cpp',
         meson_version : '>=0.50',
         default_options : [
           'cpp_std=c++17',
-          'warning_level=3',
+          'warning_level=2',
         ])
 
 cpp = meson.get_compiler('cpp')
@@ -34,6 +34,20 @@ libsystemd = dependency('libsystemd')
 gtest = dependency('gtest', required : get_option('unittests'))
 gmock = dependency('gmock', required : get_option('unittests'))
 
+abseil_proj = subproject(
+  'abseil-cpp',
+  default_options : [
+    'default_library=static',
+  ])
+abseil = declare_dependency(
+  dependencies : [
+    abseil_proj.get_variable('absl_container_dep'),
+    abseil_proj.get_variable('absl_strings_dep'),
+  ],
+  include_directories : [
+    abseil_proj.get_variable('absl_include_dir'),
+  ])
+
 pod2man = find_program('pod2man')
 
 python = import('python')
@@ -48,7 +62,7 @@ libaur = static_library(
     src/aur/response.cc src/aur/response.hh
     src/aur/json_internal.hh
   '''.split()),
-  dependencies : [json, libcurl, libsystemd])
+  dependencies : [abseil, json, libcurl, libsystemd])
 
 libauracle = static_library(
   'auracle',
@@ -65,7 +79,7 @@ libauracle = static_library(
     'src',
   ],
   link_with : [libaur],
-  dependencies : [libalpm, libfmt])
+  dependencies : [abseil, libalpm, libfmt])
 
 executable(
   'auracle',
@@ -74,6 +88,7 @@ executable(
     'src',
   ],
   link_with : [libauracle],
+  dependencies : [abseil],
   install : true)
 
 custom_target(
@@ -151,7 +166,7 @@ if not get_option('unittests').disabled() and gtest.found() and gmock.found()
             'src',
           ],
           link_with : [gtest_main] + input.get('link_with'),
-          dependencies : [gtest, gmock]))
+          dependencies : [abseil, gtest, gmock]))
     endforeach
   endforeach
 endif

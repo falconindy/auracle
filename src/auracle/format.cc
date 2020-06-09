@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string_view>
 
+#include "absl/time/time.h"
 #include "terminal.hh"
 
 namespace {
@@ -64,14 +65,9 @@ struct formatter<std::chrono::seconds> {
   }
 
   auto format(const std::chrono::seconds& seconds, fmt::format_context& ctx) {
-    auto point = std::chrono::system_clock::to_time_t(
-        std::chrono::system_clock::time_point(seconds));
-
-    std::tm tm{};
-    std::stringstream ss;
-    ss << std::put_time(localtime_r(&point, &tm), &tm_format[0]);
-
-    return format_to(ctx.out(), "{}", ss.str());
+    auto t = absl::FromChrono(std::chrono::system_clock::time_point(seconds));
+    return format_to(ctx.out(), "{}",
+                     absl::FormatTime(tm_format, t, absl::LocalTimeZone()));
   }
 
   std::string tm_format;

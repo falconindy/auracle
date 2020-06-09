@@ -6,6 +6,9 @@
 #include <memory>
 #include <string_view>
 
+#include "absl/strings/str_cat.h"
+#include "absl/strings/str_join.h"
+
 namespace aur {
 
 namespace {
@@ -18,41 +21,8 @@ std::string UrlEscape(const std::string_view sv) {
   return escaped;
 }
 
-template <typename... Views>
-void StrAppendViews(std::string* out, Views... views) {
-  out->reserve((out->size() + ... + views.size()));
-  (out->append(views), ...);
-}
-
-template <typename... StringLike>
-void StrAppend(std::string* out, const StringLike&... args) {
-  StrAppendViews(out, std::string_view(args)...);
-}
-
-template <typename... StringLike>
-std::string StrCat(const StringLike&... args) {
-  std::string out;
-  StrAppend(&out, args...);
-  return out;
-}
-
 void QueryParamFormatter(std::string* out, const HttpRequest::QueryParam& kv) {
-  StrAppend(out, kv.first, "=", UrlEscape(kv.second));
-}
-
-template <typename Container, typename Formatter>
-std::string StrJoin(const Container& container, std::string_view s,
-                    Formatter&& f) {
-  std::string result;
-
-  std::string_view sep;
-  for (const auto& item : container) {
-    result.append(sep.data(), sep.size());
-    f(&result, item);
-    sep = s;
-  }
-
-  return result;
+  absl::StrAppend(out, kv.first, "=", UrlEscape(kv.second));
 }
 
 }  // namespace
@@ -85,14 +55,15 @@ std::vector<std::string> RpcRequest::Build(std::string_view baseurl) const {
     return s;
   };
 
-  const auto qs = StrJoin(args_, "&", &QueryParamFormatter);
+  const auto qs = absl::StrJoin(args_, "&", &QueryParamFormatter);
   std::string_view sv(qs);
 
   std::vector<std::string> requests;
   while (!sv.empty()) {
     const auto span = next_span(sv);
 
-    requests.push_back(StrCat(baseurl, "/rpc?", base_querystring_, "&", span));
+    requests.push_back(
+        absl::StrCat(baseurl, "/rpc?", base_querystring_, "&", span));
     sv.remove_prefix(std::min(sv.length(), span.length() + 1));
   }
 
@@ -101,22 +72,22 @@ std::vector<std::string> RpcRequest::Build(std::string_view baseurl) const {
 
 RpcRequest::RpcRequest(const HttpRequest::QueryParams& base_params,
                        long unsigned approx_max_length)
-    : base_querystring_(StrJoin(base_params, "&", &QueryParamFormatter)),
+    : base_querystring_(absl::StrJoin(base_params, "&", &QueryParamFormatter)),
       approx_max_length_(approx_max_length) {}
 
 // static
 RawRequest RawRequest::ForSourceFile(const Package& package,
                                      std::string_view filename) {
-  return RawRequest(StrCat("/cgit/aur.git/plain/", filename,
-                           "?h=", UrlEscape(package.pkgbase)));
+  return RawRequest(absl::StrCat("/cgit/aur.git/plain/", filename,
+                                 "?h=", UrlEscape(package.pkgbase)));
 }
 
 std::vector<std::string> RawRequest::Build(std::string_view baseurl) const {
-  return {StrCat(baseurl, urlpath_)};
+  return {absl::StrCat(baseurl, urlpath_)};
 }
 
 std::vector<std::string> CloneRequest::Build(std::string_view baseurl) const {
-  return {StrCat(baseurl, "/", reponame_)};
+  return {absl::StrCat(baseurl, "/", reponame_)};
 }
 
 }  // namespace aur

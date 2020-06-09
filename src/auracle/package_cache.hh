@@ -3,9 +3,9 @@
 
 #include <functional>
 #include <set>
-#include <unordered_map>
 #include <utility>
 
+#include "absl/container/flat_hash_map.h"
 #include "aur/package.hh"
 #include "dependency_kind.hh"
 
@@ -40,11 +40,16 @@ class PackageCache {
  private:
   std::vector<aur::Package> packages_;
 
+  using PackageIndex = absl::flat_hash_map<std::string, int>;
+
+  const aur::Package* LookupByIndex(const PackageIndex& index,
+                                    const std::string& item) const;
+
   // We store integer indicies into the packages_ vector above rather than
   // pointers to the packages. This allows the vector to resize and not
   // invalidate our index maps.
-  std::unordered_map<std::string, int> index_by_pkgname_;
-  std::unordered_map<std::string, int> index_by_pkgbase_;
+  PackageIndex index_by_pkgname_;
+  PackageIndex index_by_pkgbase_;
 };
 
 }  // namespace auracle

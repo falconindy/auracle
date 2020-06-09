@@ -7,8 +7,9 @@
 #include <regex>
 #include <string_view>
 #include <tuple>
-#include <unordered_set>
 
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 #include "aur/response.hh"
 #include "format.hh"
 #include "pacman.hh"
@@ -52,12 +53,11 @@ void FormatCustom(const std::vector<aur::Package>& packages,
   }
 }
 
-void SortUnique(std::vector<aur::Package>* packages,
+void SortUnique(std::vector<aur::Package>& packages,
                 const sort::Sorter& sorter) {
-  std::sort(packages->begin(), packages->end(), sorter);
-
-  packages->resize(std::unique(packages->begin(), packages->end()) -
-                   packages->begin());
+  absl::c_sort(packages, sorter);
+  packages.resize(std::unique(packages.begin(), packages.end()) -
+                  packages.begin());
 }
 
 std::vector<std::string> NotFoundPackages(
@@ -70,9 +70,9 @@ std::vector<std::string> NotFoundPackages(
       continue;
     }
 
-    if (std::find_if(got.cbegin(), got.cend(), [&p](const aur::Package& pkg) {
+    if (absl::c_find_if(got, [&p](const aur::Package& pkg) {
           return pkg.name == p;
-        }) != got.cend()) {
+        }) != got.end()) {
       continue;
     }
 
@@ -139,7 +139,7 @@ std::string GetRpcError(
   }
 
   if (response.status() != 200) {
-    return "unexpected HTTP status code " + std::to_string(response.status());
+    return absl::StrCat("unexpected HTTP status code ", response.status());
   }
 
   return response.value().error;
@@ -260,7 +260,7 @@ int Auracle::Info(const std::vector<std::string>& args,
 
   // It's unlikely, but still possible that the results may not be unique when
   // our query is large enough that it needs to be split into multiple requests.
-  SortUnique(&packages, options.sorter);
+  SortUnique(packages, options.sorter);
 
   if (!options.format.empty()) {
     FormatCustom(packages, options.format);
@@ -287,22 +287,21 @@ int Auracle::Search(const std::vector<std::string>& args,
     }
   }
 
-  const auto matches = [&patterns, &options](const aur::Package& p) {
-    return std::all_of(patterns.cbegin(), patterns.cend(),
-                       [&p, &options](const std::regex& re) {
-                         switch (options.search_by) {
-                           case aur::SearchRequest::SearchBy::NAME:
-                             return std::regex_search(p.name, re);
-                           case aur::SearchRequest::SearchBy::NAME_DESC:
-                             return std::regex_search(p.name, re) ||
-                                    std::regex_search(p.description, re);
-                           default:
-                             // The AUR only matches maintainer and *depends
-                             // fields exactly so there's no point in doing
-                             // additional filtering on these types.
-                             return true;
-                         }
-                       });
+  const auto matches = [&](const aur::Package& p) {
+    return absl::c_all_of(patterns, [&](const std::regex& re) {
+      switch (options.search_by) {
+        case aur::SearchRequest::SearchBy::NAME:
+          return std::regex_search(p.name, re);
+        case aur::SearchRequest::SearchBy::NAME_DESC:
+          return std::regex_search(p.name, re) ||
+                 std::regex_search(p.description, re);
+        default:
+          // The AUR only matches maintainer and *depends
+          // fields exactly so there's no point in doing
+          // additional filtering on these types.
+          return true;
+      }
+    });
   };
 
   std::vector<aur::Package> packages;
@@ -337,7 +336,7 @@ int Auracle::Search(const std::vector<std::string>& args,
     return r;
   }
 
-  SortUnique(&packages, options.sorter);
+  SortUnique(packages, options.sorter);
 
   if (!options.format.empty()) {
     FormatCustom(packages, options.format);
@@ -410,12 +409,10 @@ int Auracle::Show(const std::vector<std::string>& args,
 
         resultcount = response.value().resultcount;
 
-        const bool print_header = resultcount > 1;
-
         for (const auto& pkg : response.value().results) {
           aur_->QueueRawRequest(
               aur::RawRequest::ForSourceFile(pkg, options.show_file),
-              [&options, print_header, pkgbase{pkg.pkgbase}](
+              [&options, print_header = resultcount > 1, pkgbase = pkg.pkgbase](
                   aur::ResponseWrapper<aur::RawResponse> response) {
                 if (!response.ok()) {
                   std::cerr << "error: request failed: " << response.error()
@@ -481,12 +478,11 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   std::vector<
       std::tuple<std::string, const aur::Package*, std::vector<std::string>>>
       total_ordering;
-  std::unordered_set<std::string> seen;
+  absl::flat_hash_set<std::string> seen;
   for (const auto& arg : args) {
     iter.package_cache.WalkDependencies(
         arg,
-        [&total_ordering, &seen](
-            const std::string& pkgname, const aur::Package* package,
+        [&](const std::string& pkgname, const aur::Package* package,
             const std::vector<std::string>& dependency_path) {
           if (seen.emplace(pkgname).second) {
             total_ordering.emplace_back(pkgname, package, dependency_path);
@@ -499,8 +495,7 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     const bool satisfied = pacman_->DependencyIsSatisfied(name);
     const bool from_aur = pkg != nullptr;
     const bool unknown = !from_aur && !pacman_->HasPackage(name);
-    const bool is_target =
-        std::find(args.cbegin(), args.cend(), name) != args.cend();
+    const bool is_target = absl::c_find(args, name) != args.end();
 
     if (unknown) {
       std::cout << "UNKNOWN";
@@ -555,11 +550,10 @@ int Auracle::Update(const std::vector<std::string>& args,
 
   int ret = 0;
   PackageIterator iter(
-      options.recurse, options.resolve_depends,
-      [this, &ret](const aur::Package& p) {
+      options.recurse, options.resolve_depends, [&](const aur::Package& p) {
         aur_->QueueCloneRequest(
             aur::CloneRequest(p.pkgbase),
-            [&ret, pkgbase{p.pkgbase}](
+            [&ret, pkgbase = p.pkgbase](
                 aur::ResponseWrapper<aur::CloneResponse> response) {
               if (response.ok()) {
                 std::cout << response.value().operation << " complete: "
@@ -590,8 +584,7 @@ int Auracle::GetOutdatedPackages(const std::vector<std::string>& args,
 
   auto local_pkgs = pacman_->LocalPackages();
   for (const auto& pkg : local_pkgs) {
-    if (args.empty() ||
-        std::find(args.cbegin(), args.cend(), pkg.pkgname) != args.cend()) {
+    if (args.empty() || absl::c_find(args, pkg.pkgname) != args.end()) {
       info_request.AddArg(pkg.pkgname);
     }
   }

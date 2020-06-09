@@ -3,6 +3,7 @@
 #include <clocale>
 #include <iostream>
 
+#include "absl/container/flat_hash_map.h"
 #include "auracle/auracle.hh"
 #include "auracle/format.hh"
 #include "auracle/sort.hh"
@@ -234,10 +235,10 @@ int main(int argc, char** argv) {
   const std::string_view action(argv[1]);
   const std::vector<std::string> args(argv + 2, argv + argc);
 
-  const std::unordered_map<std::string_view,
-                           int (auracle::Auracle::*)(
-                               const std::vector<std::string>& args,
-                               const auracle::Auracle::CommandOptions& options)>
+  const absl::flat_hash_map<std::string_view,
+                            int (auracle::Auracle::*)(
+                                const std::vector<std::string>&,
+                                const auracle::Auracle::CommandOptions&)>
       cmds{
           // clang-format off
           {"buildorder",  &auracle::Auracle::BuildOrder},

@@ -1,14 +1,16 @@
 #include "package_cache.hh"
 
 #include <iostream>
-#include <unordered_set>
+
+#include "absl/algorithm/container.h"
+#include "absl/container/flat_hash_set.h"
 
 namespace auracle {
 
 std::pair<const aur::Package*, bool> PackageCache::AddPackage(
     aur::Package package) {
-  const auto iter = std::find(packages_.cbegin(), packages_.cend(), package);
-  if (iter != packages_.cend()) {
+  const auto iter = absl::c_find(packages_, package);
+  if (iter != packages_.end()) {
     return {&*iter, false};
   }
 
@@ -19,16 +21,20 @@ std::pair<const aur::Package*, bool> PackageCache::AddPackage(
   return {&p, true};
 }
 
+const aur::Package* PackageCache::LookupByIndex(const PackageIndex& index,
+                                                const std::string& item) const {
+  const auto iter = index.find(item);
+  return iter == index.end() ? nullptr : &packages_[iter->second];
+}
+
 const aur::Package* PackageCache::LookupByPkgname(
     const std::string& pkgname) const {
-  const auto iter = index_by_pkgname_.find(pkgname);
-  return iter == index_by_pkgname_.end() ? nullptr : &packages_[iter->second];
+  return LookupByIndex(index_by_pkgname_, pkgname);
 }
 
 const aur::Package* PackageCache::LookupByPkgbase(
     const std::string& pkgbase) const {
-  const auto iter = index_by_pkgbase_.find(pkgbase);
-  return iter == index_by_pkgbase_.end() ? nullptr : &packages_[iter->second];
+  return LookupByIndex(index_by_pkgbase_, pkgbase);
 }
 
 class DependencyPath : public std::vector<std::string> {
@@ -45,10 +51,9 @@ class DependencyPath : public std::vector<std::string> {
     ~Step() { dependency_path_.pop_back(); }
 
    private:
-    void MaybeReportCycle(const std::string& step) {
-      auto cycle_start =
-          std::find(dependency_path_.cbegin(), dependency_path_.cend(), step);
-      if (cycle_start == dependency_path_.cend()) {
+    void MaybeReportCycle(const std::string& step) const {
+      auto cycle_start = absl::c_find(dependency_path_, step);
+      if (cycle_start == dependency_path_.end()) {
         return;
       }
 
@@ -79,7 +84,7 @@ class DependencyPath : public std::vector<std::string> {
 void PackageCache::WalkDependencies(
     const std::string& name, WalkDependenciesFn cb,
     const std::set<DependencyKind>& dependency_kinds) const {
-  std::unordered_set<std::string> visited;
+  absl::flat_hash_set<std::string> visited;
   DependencyPath dependency_path;
 
   std::function<void(std::string)> walk;

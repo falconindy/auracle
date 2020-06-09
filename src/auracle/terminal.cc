@@ -3,8 +3,9 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <sstream>
 #include <string>
+
+#include "absl/strings/str_cat.h"
 
 namespace terminal {
 
@@ -18,9 +19,7 @@ std::string Color(const std::string& s, const char* color) {
     return s;
   }
 
-  std::stringstream ss;
-  ss << color << s << "\033[0m";
-  return ss.str();
+  return absl::StrCat(color, s, "\033[0m");
 }
 
 }  // namespace

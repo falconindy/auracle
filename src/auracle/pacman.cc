@@ -8,7 +8,11 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
+
+#include "absl/strings/ascii.h"
+#include "absl/types/span.h"
 
 namespace std {
 
@@ -24,22 +28,8 @@ struct default_delete<glob_t> {
 
 namespace {
 
-bool notspace(char c) { return !std::isspace(c); }
-
-std::string* ltrim(std::string* s) {
-  s->erase(s->begin(), std::find_if(s->begin(), s->end(), &notspace));
-  return s;
-}
-
-std::string* rtrim(std::string* s) {
-  s->erase(std::find_if(s->rbegin(), s->rend(), &notspace).base(), s->end());
-  return s;
-}
-
-std::string* trim(std::string* s) { return ltrim(rtrim(s)); }
-
-bool IsSection(const std::string& s) {
-  return s.size() > 2 && s[0] == '[' && s[s.size() - 1] == ']';
+bool IsSection(std::string_view s) {
+  return s.size() > 2 && s.front() == '[' && s.back() == ']';
 }
 
 }  // namespace
@@ -63,10 +53,9 @@ struct ParseState {
 bool ParseOneFile(const std::string& path, ParseState* state) {
   std::ifstream file(path);
 
-  std::string line;
-  while (std::getline(file, line)) {
-    trim(&line);
-
+  std::string buffer;
+  while (std::getline(file, buffer)) {
+    std::string_view line = absl::StripAsciiWhitespace(buffer);
     if (line.empty() || line[0] == '#') {
       continue;
     }
@@ -82,11 +71,8 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
       continue;
     }
 
-    auto key = line.substr(0, equals);
-    trim(&key);
-
-    auto value = line.substr(equals + 1);
-    trim(&value);
+    auto key = absl::StripTrailingAsciiWhitespace(line.substr(0, equals));
+    auto value = absl::StripLeadingAsciiWhitespace(line.substr(equals + 1));
 
     if (state->section == "options") {
       if (key == "DBPath") {
@@ -101,12 +87,13 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     if (key == "Include") {
       auto globbuf = std::make_unique<glob_t>();
 
-      if (glob(value.c_str(), GLOB_NOCHECK, nullptr, globbuf.get()) != 0) {
+      if (glob(std::string(value).c_str(), GLOB_NOCHECK, nullptr,
+               globbuf.get()) != 0) {
         return false;
       }
 
-      for (size_t i = 0; i < globbuf->gl_pathc; ++i) {
-        if (!ParseOneFile(globbuf->gl_pathv[i], state)) {
+      for (const auto* p : absl::Span(globbuf->gl_pathv, globbuf->gl_pathc)) {
+        if (!ParseOneFile(p, state)) {
           return false;
         }
       }

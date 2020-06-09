@@ -1,8 +1,7 @@
 #ifndef AUR_JSON_INTERNAL_HH_
 #define AUR_JSON_INTERNAL_HH_
 
-#include <unordered_map>
-
+#include "absl/container/flat_hash_map.h"
 #include "nlohmann/json.hpp"
 #include "package.hh"
 
@@ -39,7 +38,7 @@ ValueCallback<OutputType> MakeValueCallback(FieldType OutputType::*field) {
 
 template <typename OutputType>
 using CallbackMap =
-    std::unordered_map<std::string_view, ValueCallback<OutputType>>;
+    absl::flat_hash_map<std::string_view, ValueCallback<OutputType>>;
 
 template <typename OutputType>
 void DeserializeJsonObject(const nlohmann::json& j,

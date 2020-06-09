@@ -1,7 +1,5 @@
 #include "sort.hh"
 
-#include <unordered_map>
-
 namespace sort {
 
 template <typename T>
