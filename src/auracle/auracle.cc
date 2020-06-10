@@ -132,22 +132,10 @@ bool ChdirIfNeeded(const fs::path& target) {
   return true;
 }
 
-std::string GetRpcError(
-    const aur::ResponseWrapper<aur::RpcResponse>& response) {
-  if (!response.error().empty()) {
-    return response.error();
-  }
-
-  if (response.status() != 200) {
-    return absl::StrCat("unexpected HTTP status code ", response.status());
-  }
-
-  return response.value().error;
-}
-
 bool RpcResponseIsFailure(
     const aur::ResponseWrapper<aur::RpcResponse>& response) {
-  const auto error = GetRpcError(response);
+  const std::string error =
+      response.ok() ? response.value().error : response.status().ToString();
   if (error.empty()) {
     return false;
   }
@@ -372,7 +360,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
                           << (fs::current_path() / pkgbase).string() << "\n";
               } else {
                 std::cerr << "error: clone failed for " << pkgbase << ": "
-                          << response.error() << "\n";
+                          << response.status() << "\n";
                 ret = -EIO;
               }
               return 0;
@@ -414,24 +402,14 @@ int Auracle::Show(const std::vector<std::string>& args,
               aur::RawRequest::ForSourceFile(pkg, options.show_file),
               [&options, print_header = resultcount > 1, pkgbase = pkg.pkgbase](
                   aur::ResponseWrapper<aur::RawResponse> response) {
-                if (!response.ok()) {
-                  std::cerr << "error: request failed: " << response.error()
+                if (absl::IsNotFound(response.status())) {
+                  std::cerr << "error: file '" << options.show_file
+                            << "' not found for package '" << pkgbase << "'\n";
+                  return -ENOENT;
+                } else if (!response.ok()) {
+                  std::cerr << "error: request failed: " << response.status()
                             << "\n";
                   return -EIO;
-                }
-
-                switch (response.status()) {
-                  case 200:
-                    break;
-                  case 404:
-                    std::cerr << "error: file '" << options.show_file
-                              << "' not found for package '" << pkgbase
-                              << "'\n";
-                    return -ENOENT;
-                  default:
-                    std::cerr << "error: unexpected HTTP response "
-                              << response.status() << "\n";
-                    return -EIO;
                 }
 
                 if (print_header) {
@@ -560,7 +538,7 @@ int Auracle::Update(const std::vector<std::string>& args,
                           << (fs::current_path() / pkgbase).string() << "\n";
               } else {
                 std::cerr << "error: clone failed for " << pkgbase << ": "
-                          << response.error() << "\n";
+                          << response.status() << "\n";
                 ret = -EIO;
               }
               return 0;
@@ -644,7 +622,7 @@ namespace {
 
 int RawSearchDone(aur::ResponseWrapper<aur::RawResponse> response) {
   if (!response.ok()) {
-    std::cerr << "error: request failed: " << response.error() << "\n";
+    std::cerr << "error: request failed: " << response.status() << "\n";
     return -EIO;
   }
 

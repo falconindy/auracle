@@ -24,8 +24,15 @@ class TestInfo(auracle_test.TestCase):
     def testBadResponsesFromAur(self):
         r = self.Auracle(['info', '503'])
         self.assertNotEqual(r.process.returncode, 0)
-        self.assertEqual('error: unexpected HTTP status code 503\n',
+        self.assertEqual('error: INTERNAL: HTTP 503\n',
                 r.process.stderr.decode())
+
+        r = self.Auracle(['info', '429'])
+        self.assertNotEqual(r.process.returncode, 0)
+        self.assertEqual((
+            'error: RESOURCE_EXHAUSTED: Too Many Requests '
+            '(your IP is throttled for today)\n'),
+            r.process.stderr.decode())
 
 
 if __name__ == '__main__':

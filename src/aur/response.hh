@@ -1,6 +1,7 @@
 #ifndef AUR_RESPONSE_HH_
 #define AUR_RESPONSE_HH_
 
+#include "absl/status/status.h"
 #include "package.hh"
 
 namespace aur {
@@ -8,8 +9,8 @@ namespace aur {
 template <typename ResponseT>
 class ResponseWrapper {
  public:
-  ResponseWrapper(ResponseT value, long status, std::string error)
-      : value_(std::move(value)), status_(status), error_(std::move(error)) {}
+  ResponseWrapper(ResponseT value, absl::Status status)
+      : value_(std::move(value)), status_(std::move(status)) {}
 
   ResponseWrapper(const ResponseWrapper&) = delete;
   ResponseWrapper& operator=(const ResponseWrapper&) = delete;
@@ -20,15 +21,12 @@ class ResponseWrapper {
   const ResponseT& value() const { return value_; }
   ResponseT&& value() { return std::move(value_); }
 
-  const std::string& error() const { return error_; }
-  long status() const { return status_; }
-
-  bool ok() const { return error_.empty(); }
+  const absl::Status& status() const { return status_; }
+  bool ok() const { return status_.ok(); }
 
  private:
   ResponseT value_;
-  long status_;
-  std::string error_;
+  absl::Status status_;
 };
 
 struct CloneResponse {

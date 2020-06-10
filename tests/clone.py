@@ -75,7 +75,7 @@ class TestClone(auracle_test.TestCase):
         self.assertNotEqual(r.process.returncode, 0)
         self.assertEqual(r.process.stderr.decode().strip(), (
             'error: clone failed for yaourt: '
-            'git exited with unexpected exit status 1'))
+            'INTERNAL: git exited with unexpected exit status 1'))
 
 
 if __name__ == '__main__':

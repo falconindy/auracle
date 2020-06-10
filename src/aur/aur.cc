@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/status.h"
 #include "absl/strings/strip.h"
 
 namespace fs = std::filesystem;
@@ -134,8 +135,8 @@ class ResponseHandler {
     return 0;
   }
 
-  int RunCallback(long status, const std::string& error) {
-    int r = Run(status, error);
+  int RunCallback(absl::Status status) {
+    int r = Run(std::move(status));
     delete this;
     return r;
   }
@@ -146,7 +147,7 @@ class ResponseHandler {
   std::array<char, CURL_ERROR_SIZE> error_buffer = {};
 
  private:
-  virtual int Run(long status, const std::string& error) = 0;
+  virtual int Run(absl::Status status) = 0;
 
   AurImpl* aur_;
 };
@@ -162,8 +163,8 @@ class TypedResponseHandler : public ResponseHandler {
  protected:
   virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
 
-  int Run(long status, const std::string& error) override {
-    return callback_(ResponseWrapper(MakeResponse(), status, error));
+  int Run(absl::Status status) override {
+    return callback_(ResponseWrapper(MakeResponse(), status));
   }
 
  private:
@@ -175,15 +176,15 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
   using TypedResponseHandler<RpcResponse>::TypedResponseHandler;
 
  protected:
-  int Run(long status, const std::string& error) override {
-    if (status != 200) {
+  int Run(absl::Status status) override {
+    if (!status.ok()) {
       // The AUR might supply HTML on non-200 replies. We must avoid parsing
       // this as JSON, so drop the response body and trust the callback to do
       // the right thing with the error.
       body.clear();
     }
 
-    return TypedResponseHandler<RpcResponse>::Run(status, error);
+    return TypedResponseHandler<RpcResponse>::Run(status);
   }
 };
 
@@ -399,6 +400,24 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
   return 0;
 }
 
+absl::Status HttpCodeToStatus(long http_status) {
+  // Most statuses don't need to be specially handled, but some should be
+  // classified and/or given a more descriptive message.
+  switch (http_status) {
+    case 200:
+      return absl::OkStatus();
+    case 404:
+      // Raw requests might result in 404s. Let clients distinguish between this
+      // error and others.
+      return absl::NotFoundError("Not Found");
+    case 429:
+      return absl::ResourceExhaustedError(
+          "Too Many Requests (your IP is throttled for today)");
+  }
+
+  return absl::InternalError(absl::StrCat("HTTP ", http_status));
+}
+
 int AurImpl::FinishRequest(CURL* curl, CURLcode result,
                            bool dispatch_callback) {
   ResponseHandler* handler;
@@ -406,18 +425,16 @@ int AurImpl::FinishRequest(CURL* curl, CURLcode result,
 
   int r = 0;
   if (dispatch_callback) {
-    long response_code;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-
-    std::string error;
+    absl::Status status;
     if (result != CURLE_OK) {
-      error = handler->error_buffer.data();
-      if (error.empty()) {
-        error = curl_easy_strerror(result);
-      }
+      status = absl::UnknownError(handler->error_buffer.data());
+    } else {
+      long response_code;
+      curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+      status = HttpCodeToStatus(response_code);
     }
 
-    r = handler->RunCallback(response_code, error);
+    r = handler->RunCallback(std::move(status));
   } else {
     delete handler;
   }
@@ -507,13 +524,13 @@ int AurImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
 
   handler->aur()->FinishRequest(source);
 
-  std::string error;
+  absl::Status status;
   if (si->si_status != 0) {
-    error =
-        absl::StrCat("git exited with unexpected exit status ", si->si_status);
+    status = absl::InternalError(
+        absl::StrCat("git exited with unexpected exit status ", si->si_status));
   }
 
-  return handler->RunCallback(si->si_status, error);
+  return handler->RunCallback(std::move(status));
 }
 
 void AurImpl::QueueCloneRequest(const CloneRequest& request,
@@ -525,9 +542,8 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
 
   int pid = fork();
   if (pid < 0) {
-    handler->RunCallback(
-        -errno,
-        absl::StrCat("failed to fork new process for git: ", strerror(errno)));
+    handler->RunCallback(absl::InternalError(
+        absl::StrCat("failed to fork new process for git: ", strerror(errno))));
     return;
   }
 
