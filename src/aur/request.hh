@@ -67,10 +67,10 @@ class CloneRequest : public Request {
 class RpcRequest : public HttpRequest {
  public:
   // Upper limit on aur.archlinux.org seems to be somewhere around 8k.
-  static constexpr int kMaxUriLength = 8000;
+  static constexpr size_t kMaxUriLength = 8000;
 
   RpcRequest(const HttpRequest::QueryParams& base_params,
-             long unsigned approx_max_length = kMaxUriLength);
+             size_t approx_max_length = kMaxUriLength);
 
   RpcRequest(const RpcRequest&) = delete;
   RpcRequest& operator=(const RpcRequest&) = delete;
@@ -84,7 +84,7 @@ class RpcRequest : public HttpRequest {
 
  private:
   std::string base_querystring_;
-  long unsigned approx_max_length_;
+  size_t approx_max_length_;
 
   HttpRequest::QueryParams args_;
 };
