@@ -31,8 +31,14 @@ libfmt = dependency('fmt',
                     version : '>=6.0.0',
                     fallback : ['fmt', 'fmt_dep'])
 libsystemd = dependency('libsystemd')
-gtest = dependency('gtest', required : get_option('unittests'))
-gmock = dependency('gmock', required : get_option('unittests'))
+gtest = dependency('gtest',
+                   version : '>=1.10.0',
+                   required : get_option('unittests'),
+                   disabler : true)
+gmock = dependency('gmock',
+                   version : '>=1.10.0',
+                   required : get_option('unittests'),
+                   disabler : true)
 
 abseil_proj = subproject(
   'abseil-cpp',
@@ -131,47 +137,46 @@ run_target(
   ])
 
 # unit tests
-if not get_option('unittests').disabled() and gtest.found() and gmock.found()
-  gtest_main = static_library(
-    'gtest_main',
-    'src/test/gtest_main.cc')
+gtest_main = static_library(
+  'gtest_main',
+  files('src/test/gtest_main.cc'),
+  dependencies : [gtest])
 
-  foreach input : [
-    {
-      'prefix': 'libaur',
-      'link_with' : [libaur],
-      'tests' : [
-        'src/aur/request_test.cc',
-        'src/aur/response_test.cc',
-      ],
-    },
-    {
-      'prefix': 'libauracle',
-      'link_with' : [libauracle],
-      'tests' : [
-        'src/auracle/dependency_kind_test.cc',
-        'src/auracle/package_cache_test.cc',
-        'src/auracle/format_test.cc',
-        'src/auracle/sort_test.cc',
-      ],
-    },
-  ]
+foreach input : [
+  {
+    'prefix': 'libaur',
+    'link_with' : [libaur],
+    'tests' : [
+      'src/aur/request_test.cc',
+      'src/aur/response_test.cc',
+    ],
+  },
+  {
+    'prefix': 'libauracle',
+    'link_with' : [libauracle],
+    'tests' : [
+      'src/auracle/dependency_kind_test.cc',
+      'src/auracle/package_cache_test.cc',
+      'src/auracle/format_test.cc',
+      'src/auracle/sort_test.cc',
+    ],
+  },
+]
 
-    foreach source : input.get('tests')
-      basename = source.split('/')[-1].split('.')[0]
-      test(
-        '@0@_@1@'.format(input.get('prefix'), basename),
-        executable(
-          basename,
-          source,
-          include_directories : [
-            'src',
-          ],
-          link_with : [gtest_main] + input.get('link_with'),
-          dependencies : [abseil, gtest, gmock]))
-    endforeach
+  foreach source : input.get('tests')
+    basename = source.split('/')[-1].split('.')[0]
+    test(
+      '@0@_@1@'.format(input.get('prefix'), basename),
+      executable(
+        basename,
+        source,
+        include_directories : [
+          'src',
+        ],
+        link_with : [gtest_main] + input.get('link_with'),
+        dependencies : [abseil, gtest, gmock]))
   endforeach
-endif
+endforeach
 
 # integration tests
 python_requirement = '>=3.7'
