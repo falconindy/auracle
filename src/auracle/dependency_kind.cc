@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "absl/strings/str_split.h"
+
 namespace auracle {
 
 bool ParseDependencyKinds(std::string_view input,
@@ -10,53 +12,49 @@ bool ParseDependencyKinds(std::string_view input,
     return true;
   }
 
-  bool remove = false;
-  bool append = false;
+  enum : int8_t {
+    MODE_OVERWRITE,
+    MODE_REMOVE,
+    MODE_APPEND,
+  } mode = MODE_OVERWRITE;
 
   switch (input[0]) {
     case '^':
     case '!':
-      remove = true;
       input.remove_prefix(1);
+      mode = MODE_REMOVE;
       break;
     case '+':
-      append = true;
       input.remove_prefix(1);
+      mode = MODE_APPEND;
       break;
   }
 
   std::set<DependencyKind> parsed_kinds;
-  while (input.size() > 0) {
-    auto end = input.find(',');
-    if (end == 0) {
-      input.remove_prefix(1);
-      continue;
-    } else if (end == input.npos) {
-      end = input.size();
-    }
-
-    std::string_view dep_kind = input.substr(0, end);
-    if (dep_kind == "depends") {
+  for (const auto kind : absl::StrSplit(input, ',')) {
+    if (kind == "depends") {
       parsed_kinds.insert(DependencyKind::Depend);
-    } else if (dep_kind == "checkdepends") {
+    } else if (kind == "checkdepends") {
       parsed_kinds.insert(DependencyKind::CheckDepend);
-    } else if (dep_kind == "makedepends") {
+    } else if (kind == "makedepends") {
       parsed_kinds.insert(DependencyKind::MakeDepend);
     } else {
       return false;
     }
-
-    input.remove_prefix(dep_kind.size());
   }
 
-  if (remove) {
-    for (auto kind : parsed_kinds) {
-      kinds->erase(kind);
-    }
-  } else if (append) {
-    kinds->insert(parsed_kinds.cbegin(), parsed_kinds.cend());
-  } else {
-    kinds->swap(parsed_kinds);
+  switch (mode) {
+    case MODE_OVERWRITE:
+      *kinds = std::move(parsed_kinds);
+      break;
+    case MODE_REMOVE:
+      for (auto kind : parsed_kinds) {
+        kinds->erase(kind);
+      }
+      break;
+    case MODE_APPEND:
+      kinds->merge(parsed_kinds);
+      break;
   }
 
   return true;

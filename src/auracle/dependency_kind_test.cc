@@ -76,6 +76,13 @@ TEST(AuracleTest, ParseDependencyKinds) {
     EXPECT_FALSE(ParseDependencyKinds("depends,!makdepends", &kinds));
     EXPECT_THAT(kinds, testing::UnorderedElementsAre(DK::Depend));
   }
+
+  {
+    // Edge case of only a valid prefix
+    std::set<DK> kinds;
+    EXPECT_FALSE(ParseDependencyKinds("+", &kinds));
+    EXPECT_FALSE(ParseDependencyKinds("!", &kinds));
+  }
 }
 
 }  // namespace
