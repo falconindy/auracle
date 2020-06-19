@@ -10,6 +10,6 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: ci-test
-        uses: falconindy/arch-dockerbuild@master
+        uses: falconindy/arch-dockerbuild@v1
         with:
           entrypoint: 'build-aux/ci-test'
