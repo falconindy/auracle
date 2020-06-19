@@ -71,7 +71,7 @@ std::vector<std::string> RpcRequest::Build(std::string_view baseurl) const {
 }
 
 RpcRequest::RpcRequest(const HttpRequest::QueryParams& base_params,
-                       long unsigned approx_max_length)
+                       size_type approx_max_length)
     : base_querystring_(absl::StrJoin(base_params, "&", &QueryParamFormatter)),
       approx_max_length_(approx_max_length) {}
 

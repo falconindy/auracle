@@ -66,11 +66,13 @@ class CloneRequest : public Request {
 // A base class describing a GET request to the RPC endpoint of the AUR.
 class RpcRequest : public HttpRequest {
  public:
+  using size_type = std::string_view::size_type;
+
   // Upper limit on aur.archlinux.org seems to be somewhere around 8k.
-  static constexpr size_t kMaxUriLength = 8000;
+  static constexpr size_type kMaxUriLength = 8000;
 
   RpcRequest(const HttpRequest::QueryParams& base_params,
-             size_t approx_max_length = kMaxUriLength);
+             size_type approx_max_length = kMaxUriLength);
 
   RpcRequest(const RpcRequest&) = delete;
   RpcRequest& operator=(const RpcRequest&) = delete;
@@ -84,7 +86,7 @@ class RpcRequest : public HttpRequest {
 
  private:
   std::string base_querystring_;
-  size_t approx_max_length_;
+  size_type approx_max_length_;
 
   HttpRequest::QueryParams args_;
 };
