@@ -104,6 +104,27 @@ std::string_view GetEnv(const char* name) {
   return std::string_view(value ? value : "");
 }
 
+absl::Status StatusFromCurlHandle(CURL* curl) {
+  long http_status;
+  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_status);
+
+  // Most statuses don't need to be specially handled, but some should be
+  // classified and/or given a more descriptive message.
+  switch (http_status) {
+    case 200:
+      return absl::OkStatus();
+    case 404:
+      // Raw requests might result in 404s. Let clients distinguish between this
+      // error and others.
+      return absl::NotFoundError("Not Found");
+    case 429:
+      return absl::ResourceExhaustedError(
+          "Too many requests: the AUR has throttled your IP for today");
+  }
+
+  return absl::InternalError(absl::StrCat("HTTP ", http_status));
+}
+
 class ResponseHandler {
  public:
   explicit ResponseHandler(AurImpl* aur) : aur_(aur) {}
@@ -400,24 +421,6 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
   return 0;
 }
 
-absl::Status HttpCodeToStatus(long http_status) {
-  // Most statuses don't need to be specially handled, but some should be
-  // classified and/or given a more descriptive message.
-  switch (http_status) {
-    case 200:
-      return absl::OkStatus();
-    case 404:
-      // Raw requests might result in 404s. Let clients distinguish between this
-      // error and others.
-      return absl::NotFoundError("Not Found");
-    case 429:
-      return absl::ResourceExhaustedError(
-          "Too Many Requests (your IP is throttled for today)");
-  }
-
-  return absl::InternalError(absl::StrCat("HTTP ", http_status));
-}
-
 int AurImpl::FinishRequest(CURL* curl, CURLcode result,
                            bool dispatch_callback) {
   ResponseHandler* handler;
@@ -425,14 +428,9 @@ int AurImpl::FinishRequest(CURL* curl, CURLcode result,
 
   int r = 0;
   if (dispatch_callback) {
-    absl::Status status;
-    if (result != CURLE_OK) {
-      status = absl::UnknownError(handler->error_buffer.data());
-    } else {
-      long response_code;
-      curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-      status = HttpCodeToStatus(response_code);
-    }
+    absl::Status status =
+        result == CURLE_OK ? StatusFromCurlHandle(curl)
+                           : absl::UnknownError(handler->error_buffer.data());
 
     r = handler->RunCallback(std::move(status));
   } else {
