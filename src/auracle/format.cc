@@ -20,12 +20,6 @@ struct Field {
   const T& value;
 };
 
-struct OptDepends {
-  const std::vector<std::string>& optdepends;
-
-  bool empty() const { return optdepends.empty(); }
-};
-
 template <typename T>
 struct is_containerlike {
  private:
@@ -76,21 +70,21 @@ struct formatter<absl::Time> {
 template <typename T>
 struct formatter<std::vector<T>> {
   auto parse(fmt::format_parse_context& ctx) {
-    return parse_format_or_default(ctx, "  ", &delimiter);
+    return parse_format_or_default(ctx, "  ", &delimiter_);
   }
 
   auto format(const std::vector<T>& vec, fmt::format_context& ctx) {
-    const char* sep = "";
+    std::string_view sep;
     for (const auto& v : vec) {
       format_to(ctx.out(), "{}{}", sep, v);
-      sep = &delimiter[0];
+      sep = delimiter_;
     }
 
     return ctx.out();
   }
 
  private:
-  std::string delimiter;
+  std::string delimiter_;
 };
 
 // Specialization to format Dependency objects
@@ -99,18 +93,6 @@ struct formatter<aur::Dependency> : formatter<std::string_view> {
   auto format(const aur::Dependency& dep, fmt::format_context& ctx) {
     return formatter<std::string_view>::format(dep.depstring, ctx);
   }
-};
-
-// Specialization to format optdepends since we write these newline delimited,
-// not double-space delimited.
-template <>
-struct formatter<OptDepends> : formatter<std::vector<std::string>> {
-  auto format(const OptDepends& optdep, fmt::format_context& ctx) {
-    return formatter<std::vector<std::string>>::format(optdep.optdepends, ctx);
-  }
-
- private:
-  std::string delimiter = "\n                 ";
 };
 
 template <typename T>
@@ -131,7 +113,7 @@ FMT_END_NAMESPACE
 namespace format {
 
 void NameOnly(const aur::Package& package) {
-  std::cout << fmt::format(terminal::Bold("{}\n"), package.name);
+  fmt::print(terminal::Bold("{}\n"), package.name);
 }
 
 void Short(const aur::Package& package,
@@ -152,10 +134,9 @@ void Short(const aur::Package& package,
         fmt::format("[installed: {}]", local_ver_color(l->pkgver));
   }
 
-  std::cout << fmt::format("{}{} {} ({}, {}) {}\n    {}\n",
-                           t::BoldMagenta("aur/"), t::Bold(p.name),
-                           ood_color(p.version), p.votes, p.popularity,
-                           installed_package, p.description);
+  fmt::print("{}{} {} ({}, {}) {}\n    {}\n", t::BoldMagenta("aur/"),
+             t::Bold(p.name), ood_color(p.version), p.votes, p.popularity,
+             installed_package, p.description);
 }
 
 void Long(const aur::Package& package,
@@ -177,49 +158,46 @@ void Long(const aur::Package& package,
         fmt::format(" [installed: {}]", local_ver_color(l->pkgver));
   }
 
-  std::cout << fmt::format("{}", Field("Repository", t::BoldMagenta("aur")));
-  std::cout << fmt::format("{}", Field("Name", p.name));
-  std::cout << fmt::format(
-      "{}", Field("Version", ood_color(p.version) + installed_package));
+  fmt::print("{}", Field("Repository", t::BoldMagenta("aur")));
+  fmt::print("{}", Field("Name", p.name));
+  fmt::print("{}", Field("Version", ood_color(p.version) + installed_package));
 
   if (p.name != p.pkgbase) {
-    std::cout << fmt::format("{}", Field("PackageBase", p.pkgbase));
+    fmt::print("{}", Field("PackageBase", p.pkgbase));
   }
 
-  std::cout << fmt::format("{}", Field("URL", t::BoldCyan(p.upstream_url)));
-  std::cout << fmt::format(
+  fmt::print("{}", Field("URL", t::BoldCyan(p.upstream_url)));
+  fmt::print(
       "{}", Field("AUR Page",
                   t::BoldCyan("https://aur.archlinux.org/packages/" + p.name)));
-  std::cout << fmt::format("{}", Field("Keywords", p.keywords));
-  std::cout << fmt::format("{}", Field("Groups", p.groups));
-  std::cout << fmt::format("{}", Field("Depends On", p.depends));
-  std::cout << fmt::format("{}", Field("Makedepends", p.makedepends));
-  std::cout << fmt::format("{}", Field("Checkdepends", p.checkdepends));
-  std::cout << fmt::format("{}", Field("Provides", p.provides));
-  std::cout << fmt::format("{}", Field("Conflicts With", p.conflicts));
-  std::cout << fmt::format("{}",
-                           Field("Optional Deps", OptDepends{p.optdepends}));
-  std::cout << fmt::format("{}", Field("Replaces", p.replaces));
-  std::cout << fmt::format("{}", Field("Licenses", p.licenses));
-  std::cout << fmt::format("{}", Field("Votes", p.votes));
-  std::cout << fmt::format("{}", Field("Popularity", p.popularity));
-  std::cout << fmt::format(
-      "{}",
-      Field("Maintainer", p.maintainer.empty() ? "(orphan)" : p.maintainer));
-  std::cout << fmt::format("{}", Field("Submitted", p.submitted));
-  std::cout << fmt::format("{}", Field("Last Modified", p.modified));
+  fmt::print("{}", Field("Keywords", p.keywords));
+  fmt::print("{}", Field("Groups", p.groups));
+  fmt::print("{}", Field("Depends On", p.depends));
+  fmt::print("{}", Field("Makedepends", p.makedepends));
+  fmt::print("{}", Field("Checkdepends", p.checkdepends));
+  fmt::print("{}", Field("Provides", p.provides));
+  fmt::print("{}", Field("Conflicts With", p.conflicts));
+  fmt::print("{}", Field("Optional Deps", p.optdepends));
+  fmt::print("{}", Field("Replaces", p.replaces));
+  fmt::print("{}", Field("Licenses", p.licenses));
+  fmt::print("{}", Field("Votes", p.votes));
+  fmt::print("{}", Field("Popularity", p.popularity));
+  fmt::print("{}", Field("Maintainer",
+                         p.maintainer.empty() ? "(orphan)" : p.maintainer));
+  fmt::print("{}", Field("Submitted", p.submitted));
+  fmt::print("{}", Field("Last Modified", p.modified));
   if (p.out_of_date > absl::UnixEpoch()) {
-    std::cout << fmt::format("{}", Field("Out of Date", p.out_of_date));
+    fmt::print("{}", Field("Out of Date", p.out_of_date));
   }
-  std::cout << fmt::format("{}", Field("Description", p.description));
-  std::cout << fmt::format("\n");
+  fmt::print("{}", Field("Description", p.description));
+  fmt::print("\n");
 }
 
 void Update(const auracle::Pacman::Package& from, const aur::Package& to) {
   namespace t = terminal;
 
-  std::cout << fmt::format("{} {} -> {}\n", t::Bold(from.pkgname),
-                           t::BoldRed(from.pkgver), t::BoldGreen(to.version));
+  fmt::print("{} {} -> {}\n", t::Bold(from.pkgname), t::BoldRed(from.pkgver),
+             t::BoldGreen(to.version));
 }
 
 namespace {
