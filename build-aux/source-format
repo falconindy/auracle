@@ -3,3 +3,4 @@
 set -e
 
 git ls-files -z -- '*.cc' '*.hh' | xargs -0 clang-format -i
+git ls-files -z -- 'tests/*.py' | xargs -0 yapf -i

@@ -127,7 +127,7 @@ install_data(
 run_target(
   'fmt',
   command : [
-    join_paths(meson.source_root(), 'build-aux/clang-format')
+    join_paths(meson.source_root(), 'build-aux/source-format')
   ])
 
 run_target(

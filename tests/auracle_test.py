@@ -18,19 +18,19 @@ def FindMesonBuildDir():
     # When run manually, we're probably in the repo root.
     paths = glob.glob('*/.ninja_log')
     if len(paths) > 1:
-        raise ValueError('Multiple build directories found. Unable to proceed.')
+        raise ValueError(
+            'Multiple build directories found. Unable to proceed.')
     if len(paths) == 0:
         raise ValueError(
-                'No build directory found. Have you run "meson build" yet?')
+            'No build directory found. Have you run "meson build" yet?')
 
     return os.path.dirname(paths[0])
 
 
 class HTTPRequest(object):
-
     def __init__(self, request):
-        self.requestline = request.pop(0)
-        self.command, self.path, self.request_version = self.requestline.split()
+        requestline = request.pop(0)
+        self.command, self.path, self.request_version = requestline.split()
 
         self.headers = {}
         for line in request:
@@ -39,16 +39,14 @@ class HTTPRequest(object):
 
 
 class TimeLoggingTestResult(unittest.runner.TextTestResult):
-
     def startTest(self, test):
         self._started_at = time.time()
         super().startTest(test)
 
-
     def addSuccess(self, test):
         elapsed = time.time() - self._started_at
-        self.stream.write('\n{} ({:.03}s)'.format(
-            self.getDescription(test), elapsed))
+        self.stream.write('\n{} ({:.03}s)'.format(self.getDescription(test),
+                                                  elapsed))
 
 
 class AuracleRunResult(object):
@@ -66,7 +64,6 @@ class AuracleRunResult(object):
 
         return requests_sent
 
-
     def __init__(self, process, request_log):
         self.process = process
         self.requests_sent = self._ProcessDebugOutput(request_log)
@@ -74,26 +71,24 @@ class AuracleRunResult(object):
 
 
 class TestCase(unittest.TestCase):
-
     def setUp(self):
         self.build_dir = FindMesonBuildDir()
         self._tempdir = tempfile.TemporaryDirectory()
         self.tempdir = self._tempdir.name
 
         q = multiprocessing.Queue()
-        self.server = multiprocessing.Process(
-                target=fakeaur.server.Serve, args=(q,))
+        self.server = multiprocessing.Process(target=fakeaur.server.Serve,
+                                              args=(q, ))
         self.server.start()
         self.baseurl = q.get()
 
         self._WritePacmanConf()
 
-
     def tearDown(self):
         self.server.terminate()
         self.server.join()
-        self.assertEqual(0, self.server.exitcode, 'Server did not exit cleanly')
-
+        self.assertEqual(0, self.server.exitcode,
+                         'Server did not exit cleanly')
 
     def _WritePacmanConf(self):
         with open(os.path.join(self.tempdir, 'pacman.conf'), 'w') as f:
@@ -108,44 +103,48 @@ class TestCase(unittest.TestCase):
             Server = file:///dev/null
             '''.format(os.path.dirname(os.path.realpath(__file__))))
 
-
     def Auracle(self, args):
-        requests_file = tempfile.NamedTemporaryFile(
-                dir=self.tempdir, prefix='requests-', delete=False).name
+        requests_file = tempfile.NamedTemporaryFile(dir=self.tempdir,
+                                                    prefix='requests-',
+                                                    delete=False).name
 
         env = {
-            'PATH': '{}/fakeaur:{}'.format(
-                os.path.dirname(os.path.realpath(__file__)), os.getenv('PATH')),
-            'AURACLE_TEST_TMPDIR': self.tempdir,
-            'AURACLE_DEBUG': 'requests:{}'.format(requests_file),
-            'LC_TIME': 'C',
-            'TZ': 'UTC',
+            'PATH':
+            '{}/fakeaur:{}'.format(os.path.dirname(os.path.realpath(__file__)),
+                                   os.getenv('PATH')),
+            'AURACLE_TEST_TMPDIR':
+            self.tempdir,
+            'AURACLE_DEBUG':
+            'requests:{}'.format(requests_file),
+            'LC_TIME':
+            'C',
+            'TZ':
+            'UTC',
         }
 
         cmdline = [
             os.path.join(self.build_dir, 'auracle'),
-            '--baseurl', self.baseurl,
+            '--baseurl={}'.format(self.baseurl),
             '--color=never',
             '--pacmanconfig={}/pacman.conf'.format(self.tempdir),
-            '--chdir', self.tempdir,
+            '--chdir={}'.format(self.tempdir),
         ] + args
 
         return AuracleRunResult(
-                subprocess.run(cmdline, env=env, capture_output=True),
-                requests_file)
-
+            subprocess.run(cmdline, env=env, capture_output=True),
+            requests_file)
 
     def assertPkgbuildExists(self, pkgname):
         self.assertTrue(
-                os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
+            os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
         self.assertTrue(
-                os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+            os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
     def assertPkgbuildNotExists(self, pkgname):
         self.assertFalse(
-                os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
+            os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
         self.assertFalse(
-                os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+            os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
 
 def main():

@@ -11,13 +11,11 @@ import tarfile
 import tempfile
 import urllib.parse
 
-
 DBROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'db')
 AUR_SERVER_VERSION = 5
 
 
 class FakeAurHandler(http.server.BaseHTTPRequestHandler):
-
     def do_GET(self):
         handlers = {
             '/rpc': self.handle_rpc,
@@ -33,11 +31,9 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
         return self.respond(status_code=404)
 
-
     @staticmethod
     def last_of(l):
         return l[-1] if l else None
-
 
     def make_json_reply(self, querytype, results=[], error=None):
         return json.dumps({
@@ -48,18 +44,14 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             'error': error,
         }).encode()
 
-
     def make_package_reply(self, querytype, results):
         return self.make_json_reply(querytype, results)
-
 
     def make_error_reply(self, error_message):
         return self.make_json_reply('error', [], error_message)
 
-
     def make_pkgbuild(self, pkgname):
         return 'pkgname={}\npkgver=1.2.3\n'.format(pkgname).encode()
-
 
     def lookup_response(self, querytype, fragment):
         path = os.path.join(DBROOT, querytype, fragment)
@@ -69,7 +61,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         except FileNotFoundError:
             return self.make_package_reply(querytype, [])
 
-
     def handle_rpc_info(self, args):
         results = []
 
@@ -77,8 +68,8 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             try:
                 status_code = int(next(iter(args)))
                 return self.respond(status_code=status_code,
-                        response='{}: fridge too loud\n'.format(
-                            status_code).encode())
+                                    response='{}: fridge too loud\n'.format(
+                                        status_code).encode())
             except ValueError:
                 pass
 
@@ -87,20 +78,18 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             # extract the results from each DB file
             results.extend(json.loads(reply)['results'])
 
-        return self.respond(response=self.make_package_reply(
-            'multiinfo', results))
-
+        return self.respond(
+            response=self.make_package_reply('multiinfo', results))
 
     def handle_rpc_search(self, arg, by):
         if len(arg) < 2:
-            return self.respond(response=self.make_error_reply(
-                'Query arg too small.'))
+            return self.respond(
+                response=self.make_error_reply('Query arg too small.'))
 
-        reply = self.lookup_response(
-                'search', '{}|{}'.format(by, arg) if by else arg)
+        reply = self.lookup_response('search',
+                                     '{}|{}'.format(by, arg) if by else arg)
 
         return self.respond(response=reply)
-
 
     def handle_rpc(self, url):
         queryparams = urllib.parse.parse_qs(url.query)
@@ -110,11 +99,10 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             return self.handle_rpc_info(set(queryparams.get('arg[]', [])))
         elif rpc_type == 'search':
             return self.handle_rpc_search(self.last_of(queryparams.get('arg')),
-                                   self.last_of(queryparams.get('by')))
+                                          self.last_of(queryparams.get('by')))
         else:
             return self.respond(response=self.make_json_error_reply(
                 'Incorrect request type specified.'))
-
 
     def handle_download(self, url):
         pkgname = os.path.basename(url.path).split('.')[0]
@@ -140,7 +128,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
             return self.respond(headers=headers, response=response)
 
-
     def handle_source_file(self, url):
         queryparams = urllib.parse.parse_qs(url.query)
         pkgname = self.last_of(queryparams.get('h'))
@@ -150,7 +137,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             return self.respond(response=self.make_pkgbuild(pkgname))
         else:
             return self.respond(status_code=404)
-
 
     def respond(self, status_code=200, headers=[], response=None):
         self.send_response(status_code)
