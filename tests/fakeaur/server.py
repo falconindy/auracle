@@ -11,7 +11,7 @@ import tarfile
 import tempfile
 import urllib.parse
 
-DBROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'db')
+DBROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 AUR_SERVER_VERSION = 5
 
 
@@ -51,7 +51,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         return self.make_json_reply('error', [], error_message)
 
     def make_pkgbuild(self, pkgname):
-        return 'pkgname={}\npkgver=1.2.3\n'.format(pkgname).encode()
+        return f'pkgname={pkgname}\npkgver=1.2.3\n'.encode()
 
     def lookup_response(self, querytype, fragment):
         path = os.path.join(DBROOT, querytype, fragment)
@@ -67,9 +67,9 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         if len(args) == 1:
             try:
                 status_code = int(next(iter(args)))
-                return self.respond(status_code=status_code,
-                                    response='{}: fridge too loud\n'.format(
-                                        status_code).encode())
+                return self.respond(
+                    status_code=status_code,
+                    response=f'{status_code}: fridge too loud\n'.encode())
             except ValueError:
                 pass
 
@@ -86,8 +86,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             return self.respond(
                 response=self.make_error_reply('Query arg too small.'))
 
-        reply = self.lookup_response('search',
-                                     '{}|{}'.format(by, arg) if by else arg)
+        reply = self.lookup_response('search', f'{by}|{arg}' if by else arg)
 
         return self.respond(response=reply)
 
@@ -115,14 +114,13 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             with tarfile.open(f.name, mode='w') as tar:
                 b = self.make_pkgbuild(pkgname)
 
-                t = tarfile.TarInfo('{}/PKGBUILD'.format(pkgname))
+                t = tarfile.TarInfo(f'{pkgname}/PKGBUILD')
                 t.size = len(b)
                 tar.addfile(t, io.BytesIO(b))
 
-            headers = [(
-                'content-disposition',
-                'inline, filename={}.tar.gz'.format(pkgname),
-            )]
+            headers = {
+                'content-disposition': f'inline, filename={pkgname}.tar.gz'
+            }
 
             response = gzip.compress(f.read())
 
@@ -149,27 +147,25 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(response)
 
 
-class FakeAurServer(http.server.HTTPServer):
-    def handle_error(self, request, client_address):
-        raise
-
-
 def Serve(queue=None, port=0):
-    server = FakeAurServer(('localhost', port), FakeAurHandler)
-    endpoint = 'http://{}:{}'.format(*server.socket.getsockname())
+    class FakeAurServer(http.server.HTTPServer):
+        def handle_error(self, request, client_address):
+            raise
 
-    if queue:
-        queue.put(endpoint)
-    else:
-        print('serving on', endpoint)
+    with FakeAurServer(('localhost', port), FakeAurHandler) as server:
+        host, port = server.socket.getsockname()[:2]
+        endpoint = f'http://{host}:{port}'
 
-    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(0))
+        print(f'serving on {endpoint}')
+        if queue:
+            queue.put(endpoint)
 
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    server.server_close()
+        signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(0))
+
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':

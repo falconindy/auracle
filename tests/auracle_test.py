@@ -6,8 +6,11 @@ import multiprocessing
 import os.path
 import subprocess
 import tempfile
+import textwrap
 import time
 import unittest
+
+__scriptdir__ = os.path.dirname(os.path.abspath(__file__))
 
 
 def FindMesonBuildDir():
@@ -45,8 +48,7 @@ class TimeLoggingTestResult(unittest.runner.TextTestResult):
 
     def addSuccess(self, test):
         elapsed = time.time() - self._started_at
-        self.stream.write('\n{} ({:.03}s)'.format(self.getDescription(test),
-                                                  elapsed))
+        self.stream.write(f'\n{self.getDescription(test)} ({elapsed:.03}s)')
 
 
 class AuracleRunResult(object):
@@ -92,16 +94,17 @@ class TestCase(unittest.TestCase):
 
     def _WritePacmanConf(self):
         with open(os.path.join(self.tempdir, 'pacman.conf'), 'w') as f:
-            f.write('''
-            [options]
-            DBPath = {}/fakepacman
+            f.write(
+                textwrap.dedent(f'''\
+                [options]
+                DBPath = {__scriptdir__}/fakepacman
 
-            [extra]
-            Server = file:///dev/null
+                [extra]
+                Server = file:///dev/null
 
-            [community]
-            Server = file:///dev/null
-            '''.format(os.path.dirname(os.path.realpath(__file__))))
+                [community]
+                Server = file:///dev/null
+            '''))
 
     def Auracle(self, args):
         requests_file = tempfile.NamedTemporaryFile(dir=self.tempdir,
@@ -109,25 +112,19 @@ class TestCase(unittest.TestCase):
                                                     delete=False).name
 
         env = {
-            'PATH':
-            '{}/fakeaur:{}'.format(os.path.dirname(os.path.realpath(__file__)),
-                                   os.getenv('PATH')),
-            'AURACLE_TEST_TMPDIR':
-            self.tempdir,
-            'AURACLE_DEBUG':
-            'requests:{}'.format(requests_file),
-            'LC_TIME':
-            'C',
-            'TZ':
-            'UTC',
+            'PATH': f'{__scriptdir__}/fakeaur:{os.getenv("PATH")}',
+            'AURACLE_TEST_TMPDIR': self.tempdir,
+            'AURACLE_DEBUG': f'requests:{requests_file}',
+            'LC_TIME': 'C',
+            'TZ': 'UTC',
         }
 
         cmdline = [
             os.path.join(self.build_dir, 'auracle'),
-            '--baseurl={}'.format(self.baseurl),
             '--color=never',
-            '--pacmanconfig={}/pacman.conf'.format(self.tempdir),
-            '--chdir={}'.format(self.tempdir),
+            f'--baseurl={self.baseurl}',
+            f'--pacmanconfig={self.tempdir}/pacman.conf',
+            f'--chdir={self.tempdir}',
         ] + args
 
         return AuracleRunResult(

@@ -30,7 +30,7 @@ class TestSearch(auracle_test.TestCase):
             self.assertEqual(0, r.process.returncode)
 
             self.assertEqual(1, len(r.requests_sent))
-            self.assertIn('by={}'.format(dim), r.requests_sent[0].path)
+            self.assertIn(f'by={dim}', r.requests_sent[0].path)
 
     def testSearchByInvalidDimension(self):
         r = self.Auracle(['search', '--searchby=notvalid', 'somesearchterm'])
