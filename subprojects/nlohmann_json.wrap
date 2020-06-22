@@ -1,7 +1,7 @@
 [wrap-file]
-directory = nlohmann_json-3.7.3
+directory = nlohmann_json-3.8.0
 lead_directory_missing = true
 
-source_url = https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip
-source_filename = nlohmann_json-3.7.3.zip
-source_hash = 87b5884741427220d3a33df1363ae0e8b898099fbc59f1c451113f6732891014
+source_url = https://github.com/nlohmann/json/releases/download/v3.8.0/include.zip
+source_filename = nlohmann_json-3.8.0.zip
+source_hash = 8590fbcc2346a3eefc341935765dd57598022ada1081b425678f0da9a939a3c0
