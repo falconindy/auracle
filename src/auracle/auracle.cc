@@ -13,6 +13,7 @@
 #include "aur/response.hh"
 #include "format.hh"
 #include "pacman.hh"
+#include "search_fragment.hh"
 #include "sort.hh"
 
 namespace fs = std::filesystem;
@@ -80,40 +81,6 @@ std::vector<std::string> NotFoundPackages(
   }
 
   return missing;
-}
-
-std::string_view GetSearchFragment(std::string_view s) {
-  static constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
-
-  int span = 0;
-  const char* argstr;
-  for (argstr = s.data(); *argstr != '\0'; argstr++) {
-    span = strcspn(argstr, kRegexChars);
-
-    /* given 'cow?', we can't include w in the search */
-    if (argstr[span] == '?' || argstr[span] == '*') {
-      span--;
-    }
-
-    /* a string inside [] or {} cannot be a valid span */
-    if (strchr("[{", *argstr) != nullptr) {
-      argstr = strpbrk(argstr + span, "]}");
-      if (argstr == nullptr) {
-        return std::string_view();
-      }
-      continue;
-    }
-
-    if (span >= 2) {
-      break;
-    }
-  }
-
-  if (span < 2) {
-    return std::string_view();
-  }
-
-  return std::string_view(argstr, span);
 }
 
 bool ChdirIfNeeded(const fs::path& target) {

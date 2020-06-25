@@ -80,6 +80,7 @@ libauracle = static_library(
     src/auracle/format.cc src/auracle/format.hh
     src/auracle/package_cache.cc src/auracle/package_cache.hh
     src/auracle/pacman.cc src/auracle/pacman.hh
+    src/auracle/search_fragment.cc src/auracle/search_fragment.hh
     src/auracle/sort.cc src/auracle/sort.hh
     src/auracle/terminal.cc src/auracle/terminal.hh
   '''.split()),
@@ -158,6 +159,7 @@ foreach input : [
       'src/auracle/dependency_kind_test.cc',
       'src/auracle/package_cache_test.cc',
       'src/auracle/format_test.cc',
+      'src/auracle/search_fragment_test.cc',
       'src/auracle/sort_test.cc',
     ],
   },
