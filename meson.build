@@ -145,7 +145,7 @@ gtest_main = static_library(
 
 foreach input : [
   {
-    'prefix': 'libaur',
+    'suite': 'libaur',
     'link_with' : [libaur],
     'tests' : [
       'src/aur/request_test.cc',
@@ -153,7 +153,7 @@ foreach input : [
     ],
   },
   {
-    'prefix': 'libauracle',
+    'suite': 'libauracle',
     'link_with' : [libauracle],
     'tests' : [
       'src/auracle/dependency_kind_test.cc',
@@ -168,7 +168,7 @@ foreach input : [
   foreach source : input.get('tests')
     basename = source.split('/')[-1].split('.')[0]
     test(
-      '@0@_@1@'.format(input.get('prefix'), basename),
+      basename,
       executable(
         basename,
         source,
@@ -176,7 +176,8 @@ foreach input : [
           'src',
         ],
         link_with : [gtest_main] + input.get('link_with'),
-        dependencies : [abseil, gtest, gmock]))
+        dependencies : [abseil, gtest, gmock]),
+      suite : input.get('suite'))
   endforeach
 endforeach
 
@@ -199,8 +200,9 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
     basename = input.split('/')[-1].split('.')[0]
 
     test(
-      'auracle_@0@_integration_test'.format(basename),
+      basename,
       py3,
+      suite : 'auracle',
       args : [join_paths(meson.source_root(), input)],
       env : ['PYTHONDONTWRITEBYTECODE=1'])
   endforeach
