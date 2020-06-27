@@ -6,35 +6,51 @@
 
 namespace auracle {
 
+// We know that the AUR will reject search strings shorter than 2 characters.
+constexpr std::string_view::size_type kMinCandidateSize = 2;
+
+constexpr std::string_view regex_chars = R"(^.+*?$[](){}|\)";
+
 std::string_view GetSearchFragment(std::string_view input) {
-  constexpr char kRegexChars[] = "^.+*?$[](){}|\\";
-
   std::vector<std::string_view> candidates;
-  for (const char* argstr = input.data(); *argstr != '\0'; argstr++) {
-    int span = strcspn(argstr, kRegexChars);
 
-    // given 'cow?', we can't include w in the search
-    if (argstr[span] == '?' || argstr[span] == '*') {
-      span--;
-    }
-
-    // a string inside [] or {} cannot be a valid span
-    if (strchr("[{", *argstr) != nullptr) {
-      argstr = strpbrk(argstr + span, "]}");
-      if (argstr == nullptr) {
+  while (input.size() >= 2) {
+    if (input.front() == '[' || input.front() == '{') {
+      auto brace_end = input.find_first_of("]}");
+      if (brace_end == input.npos) {
         // This may or may not be an invalid regex, e.g. we might have
         // "foo\[bar". In practice, this should never happen because package
         // names shouldn't have such characters.
         return std::string_view();
       }
+
+      input.remove_prefix(brace_end);
       continue;
     }
 
-    if (span >= 2) {
-      candidates.emplace_back(argstr, span);
-      argstr += span - 1;
+    auto span = input.find_first_of(regex_chars);
+    if (span == input.npos) {
+      span = input.size();
+    } else if (span == 0) {
+      input.remove_prefix(1);
       continue;
     }
+
+    // given 'cow?', we can't include w in the search
+    // Looking one character past the end of the candidate is safe because we
+    // know that our input is null delimited.
+    auto cand = input.substr(0, span);
+    if (cand[span] == '?' || cand[span] == '*') {
+      cand.remove_suffix(1);
+    }
+
+    if (cand.size() < kMinCandidateSize) {
+      input.remove_prefix(1);
+      continue;
+    }
+
+    candidates.push_back(cand);
+    input.remove_prefix(span);
   }
 
   std::string_view longest;
