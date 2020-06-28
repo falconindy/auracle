@@ -1,6 +1,5 @@
 #include "pacman.hh"
 
-#include <fnmatch.h>
 #include <glob.h>
 
 #include <algorithm>
@@ -14,19 +13,35 @@
 #include "absl/strings/ascii.h"
 #include "absl/types/span.h"
 
-namespace std {
-
-template <>
-struct default_delete<glob_t> {
-  void operator()(glob_t* globbuf) {
-    globfree(globbuf);
-    delete globbuf;
-  }
-};
-
-}  // namespace std
-
 namespace {
+
+class Glob {
+ public:
+  explicit Glob(std::string_view pattern) {
+    glob_ok_ =
+        glob(std::string(pattern).c_str(), GLOB_NOCHECK, nullptr, &glob_) == 0;
+    if (glob_ok_) {
+      results_ = absl::MakeSpan(glob_.gl_pathv, glob_.gl_pathc);
+    }
+  }
+
+  bool ok() const { return glob_ok_; }
+
+  ~Glob() {
+    if (glob_ok_) {
+      globfree(&glob_);
+    }
+  }
+
+  using iterator = absl::Span<char*>::iterator;
+  iterator begin() { return results_.begin(); }
+  iterator end() { return results_.end(); }
+
+ private:
+  glob_t glob_;
+  bool glob_ok_;
+  absl::Span<char*> results_;
+};
 
 bool IsSection(std::string_view s) {
   return s.size() > 2 && s.front() == '[' && s.back() == ']';
@@ -66,7 +81,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     }
 
     auto equals = line.find('=');
-    if (equals == std::string::npos) {
+    if (equals == line.npos) {
       // There aren't any directives we care about which are valueless.
       continue;
     }
@@ -85,14 +100,12 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     }
 
     if (key == "Include") {
-      auto globbuf = std::make_unique<glob_t>();
-
-      if (glob(std::string(value).c_str(), GLOB_NOCHECK, nullptr,
-               globbuf.get()) != 0) {
+      Glob includes(value);
+      if (!includes.ok()) {
         return false;
       }
 
-      for (const auto* p : absl::Span(globbuf->gl_pathv, globbuf->gl_pathc)) {
+      for (const auto* p : includes) {
         if (!ParseOneFile(p, state)) {
           return false;
         }
