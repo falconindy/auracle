@@ -43,8 +43,37 @@ class Glob {
   absl::Span<char*> results_;
 };
 
+class FileReader {
+ public:
+  explicit FileReader(const std::string& path) : file_(path) {}
+
+  ~FileReader() {
+    if (ok()) {
+      file_.close();
+    }
+  }
+
+  bool GetLine(std::string& line) { return bool(std::getline(file_, line)); }
+
+  bool ok() const { return file_.is_open(); }
+
+ private:
+  std::ifstream file_;
+};
+
 bool IsSection(std::string_view s) {
   return s.size() > 2 && s.front() == '[' && s.back() == ']';
+}
+
+std::pair<std::string_view, std::string_view> SplitKeyValue(
+    std::string_view line) {
+  auto equals = line.find('=');
+  if (equals == line.npos) {
+    return {line, ""};
+  }
+
+  return {absl::StripTrailingAsciiWhitespace(line.substr(0, equals)),
+          absl::StripLeadingAsciiWhitespace(line.substr(equals + 1))};
 }
 
 }  // namespace
@@ -57,7 +86,6 @@ Pacman::Pacman(alpm_handle_t* alpm)
 Pacman::~Pacman() { alpm_release(alpm_); }
 
 struct ParseState {
-  alpm_handle_t* alpm;
   std::string dbpath = "/var/lib/pacman";
   std::string rootdir = "/";
 
@@ -66,10 +94,9 @@ struct ParseState {
 };
 
 bool ParseOneFile(const std::string& path, ParseState* state) {
-  std::ifstream file(path);
+  FileReader reader(path);
 
-  std::string buffer;
-  while (std::getline(file, buffer)) {
+  for (std::string buffer; reader.GetLine(buffer);) {
     std::string_view line = absl::StripAsciiWhitespace(buffer);
     if (line.empty() || line[0] == '#') {
       continue;
@@ -80,14 +107,11 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
       continue;
     }
 
-    auto equals = line.find('=');
-    if (equals == line.npos) {
+    auto [key, value] = SplitKeyValue(line);
+    if (value.empty()) {
       // There aren't any directives we care about which are valueless.
       continue;
     }
-
-    auto key = absl::StripTrailingAsciiWhitespace(line.substr(0, equals));
-    auto value = absl::StripLeadingAsciiWhitespace(line.substr(equals + 1));
 
     if (state->section == "options") {
       if (key == "DBPath") {
@@ -113,9 +137,7 @@ bool ParseOneFile(const std::string& path, ParseState* state) {
     }
   }
 
-  file.close();
-
-  return true;
+  return reader.ok();
 }
 
 // static
@@ -127,17 +149,16 @@ std::unique_ptr<Pacman> Pacman::NewFromConfig(const std::string& config_file) {
   }
 
   alpm_errno_t err;
-  state.alpm = alpm_initialize("/", state.dbpath.c_str(), &err);
-  if (state.alpm == nullptr) {
+  alpm_handle_t* alpm = alpm_initialize("/", state.dbpath.c_str(), &err);
+  if (alpm == nullptr) {
     return nullptr;
   }
 
   for (const auto& repo : state.repos) {
-    alpm_register_syncdb(state.alpm, repo.c_str(),
-                         static_cast<alpm_siglevel_t>(0));
+    alpm_register_syncdb(alpm, repo.c_str(), alpm_siglevel_t(0));
   }
 
-  return std::unique_ptr<Pacman>(new Pacman(state.alpm));
+  return std::unique_ptr<Pacman>(new Pacman(alpm));
 }
 
 std::string Pacman::RepoForPackage(const std::string& package) const {
