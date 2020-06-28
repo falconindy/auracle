@@ -1,7 +1,6 @@
 #ifndef AURACLE_TERMINAL_HH_
 #define AURACLE_TERMINAL_HH_
 
-#include <sstream>
 #include <string>
 
 namespace terminal {

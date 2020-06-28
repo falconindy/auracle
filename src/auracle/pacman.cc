@@ -2,10 +2,7 @@
 
 #include <glob.h>
 
-#include <algorithm>
 #include <fstream>
-#include <iterator>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
