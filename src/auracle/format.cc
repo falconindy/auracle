@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "format.hh"
 
 #include <fmt/printf.h>

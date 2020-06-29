@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "auracle.hh"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

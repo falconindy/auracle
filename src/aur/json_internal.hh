@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef AUR_JSON_INTERNAL_HH_
 #define AUR_JSON_INTERNAL_HH_
 

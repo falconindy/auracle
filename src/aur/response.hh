@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef AUR_RESPONSE_HH_
 #define AUR_RESPONSE_HH_
 

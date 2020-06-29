@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef AUR_REQUEST_HH_
 #define AUR_REQUEST_HH_
 

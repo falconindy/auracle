@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef AURACLE_PACMAN_HH_
 #define AURACLE_PACMAN_HH_
 

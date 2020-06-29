@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "sort.hh"
 
 #include <vector>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "aur.hh"
 
 #include <curl/curl.h>

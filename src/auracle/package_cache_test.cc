@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "package_cache.hh"
 
 #include "aur/package.hh"

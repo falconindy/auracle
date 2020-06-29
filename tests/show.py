@@ -1,4 +1,5 @@
 import auracle_test
+# SPDX-License-Identifier: MIT
 
 
 class TestPkgbuild(auracle_test.TestCase):

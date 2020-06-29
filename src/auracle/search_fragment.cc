@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "search_fragment.hh"
 
 #include <string.h>

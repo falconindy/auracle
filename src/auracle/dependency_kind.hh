@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #ifndef AURACLE_DEPENDENCY_KIND_HH_
 #define AURACLE_DEPENDENCY_KIND_HH_
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "terminal.hh"
 
 #include <sys/ioctl.h>

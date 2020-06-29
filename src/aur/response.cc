@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "response.hh"
 
 #include "json_internal.hh"

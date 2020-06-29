@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 #include "dependency_kind.hh"
 
 #include <stdexcept>
