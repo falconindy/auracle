@@ -61,43 +61,43 @@ pod2man = find_program('pod2man')
 python = import('python')
 py3 = python.find_installation('python3')
 
-libaur = static_library(
-  'aur',
-  files('''
-    src/aur/aur.cc src/aur/aur.hh
-    src/aur/package.cc src/aur/package.hh
-    src/aur/request.cc src/aur/request.hh
-    src/aur/response.cc src/aur/response.hh
-    src/aur/json_internal.hh
-  '''.split()),
-  dependencies : [abseil, json, libcurl, libsystemd])
-
-libauracle = static_library(
-  'auracle',
-  files('''
-    src/auracle/auracle.cc src/auracle/auracle.hh
-    src/auracle/dependency_kind.cc src/auracle/dependency_kind.hh
-    src/auracle/format.cc src/auracle/format.hh
-    src/auracle/package_cache.cc src/auracle/package_cache.hh
-    src/auracle/pacman.cc src/auracle/pacman.hh
-    src/auracle/search_fragment.cc src/auracle/search_fragment.hh
-    src/auracle/sort.cc src/auracle/sort.hh
-    src/auracle/terminal.cc src/auracle/terminal.hh
-  '''.split()),
-  include_directories : [
-    'src',
+libaur = declare_dependency(
+  link_with : [
+    static_library(
+      'aur',
+      files('''
+        src/aur/aur.cc src/aur/aur.hh
+        src/aur/package.cc src/aur/package.hh
+        src/aur/request.cc src/aur/request.hh
+        src/aur/response.cc src/aur/response.hh
+        src/aur/json_internal.hh
+      '''.split()),
+      dependencies : [abseil, json, libcurl, libsystemd])
   ],
-  link_with : [libaur],
-  dependencies : [abseil, libalpm, libfmt])
+  include_directories : ['src'])
+
+libauracle = declare_dependency(
+  link_with : [
+    static_library(
+      'auracle',
+      files('''
+        src/auracle/auracle.cc src/auracle/auracle.hh
+        src/auracle/dependency_kind.cc src/auracle/dependency_kind.hh
+        src/auracle/format.cc src/auracle/format.hh
+        src/auracle/package_cache.cc src/auracle/package_cache.hh
+        src/auracle/pacman.cc src/auracle/pacman.hh
+        src/auracle/search_fragment.cc src/auracle/search_fragment.hh
+        src/auracle/sort.cc src/auracle/sort.hh
+        src/auracle/terminal.cc src/auracle/terminal.hh
+      '''.split()),
+      dependencies : [abseil, libalpm, libaur, libfmt])
+  ],
+  include_directories : ['src'])
 
 executable(
   'auracle',
   files('src/auracle_main.cc'),
-  include_directories : [
-    'src',
-  ],
-  link_with : [libauracle],
-  dependencies : [abseil],
+  dependencies : [abseil, libauracle],
   install : true)
 
 custom_target(
@@ -138,48 +138,32 @@ run_target(
   ])
 
 # unit tests
-gtest_main = static_library(
-  'gtest_main',
-  files('src/test/gtest_main.cc'),
-  dependencies : [gtest])
+test(
+  'libaur',
+  executable(
+    'libaur_test',
+    files('''
+      src/test/gtest_main.cc
+      src/aur/request_test.cc
+      src/aur/response_test.cc
+    '''.split()),
+    dependencies : [abseil, gtest, gmock, libaur]),
+  suite : 'libaur')
 
-foreach input : [
-  {
-    'suite': 'libaur',
-    'link_with' : [libaur],
-    'tests' : [
-      'src/aur/request_test.cc',
-      'src/aur/response_test.cc',
-    ],
-  },
-  {
-    'suite': 'libauracle',
-    'link_with' : [libauracle],
-    'tests' : [
-      'src/auracle/dependency_kind_test.cc',
-      'src/auracle/package_cache_test.cc',
-      'src/auracle/format_test.cc',
-      'src/auracle/search_fragment_test.cc',
-      'src/auracle/sort_test.cc',
-    ],
-  },
-]
-
-  foreach source : input.get('tests')
-    basename = source.split('/')[-1].split('.')[0]
-    test(
-      basename,
-      executable(
-        basename,
-        source,
-        include_directories : [
-          'src',
-        ],
-        link_with : [gtest_main] + input.get('link_with'),
-        dependencies : [abseil, gtest, gmock]),
-      suite : input.get('suite'))
-  endforeach
-endforeach
+test(
+  'libauracle',
+  executable(
+    'libauracle_test',
+    files('''
+      src/test/gtest_main.cc
+      src/auracle/dependency_kind_test.cc
+      src/auracle/package_cache_test.cc
+      src/auracle/format_test.cc
+      src/auracle/search_fragment_test.cc
+      src/auracle/sort_test.cc
+    '''.split()),
+    dependencies : [abseil, gtest, gmock, libauracle]),
+  suite : 'libauracle')
 
 # integration tests
 python_requirement = '>=3.7'
