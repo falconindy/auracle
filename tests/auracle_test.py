@@ -49,7 +49,12 @@ class TimeLoggingTestResult(unittest.runner.TextTestResult):
 
     def addSuccess(self, test):
         elapsed = time.time() - self._started_at
-        self.stream.write(f'\n{self.getDescription(test)} ({elapsed:.03}s)')
+        super(unittest.runner.TextTestResult, self).addSuccess(test)
+        if self.showAll:
+            self.stream.writeln(f'ok ({elapsed:.03}s)')
+        elif self.dots:
+            self.stream.write('.')
+            self.stream.flush()
 
 
 class AuracleRunResult(object):
