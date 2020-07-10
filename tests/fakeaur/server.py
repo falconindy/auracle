@@ -147,6 +147,12 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         if response:
             self.wfile.write(response)
 
+    def log_message(self, format, *args):
+        # TODO: would be nice to make these visible:
+        #  1) when the server is being run outside of a test context
+        #  2) at the end of a failing test
+        pass
+
 
 def Serve(queue=None, port=0):
     class FakeAurServer(http.server.HTTPServer):
@@ -157,9 +163,10 @@ def Serve(queue=None, port=0):
         host, port = server.socket.getsockname()[:2]
         endpoint = f'http://{host}:{port}'
 
-        print(f'serving on {endpoint}')
         if queue:
             queue.put(endpoint)
+        else:
+            print(f'serving on {endpoint}')
 
         signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit(0))
 
