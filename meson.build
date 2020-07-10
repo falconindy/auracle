@@ -187,7 +187,10 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
       basename,
       py3,
       suite : 'auracle',
-      args : [join_paths(meson.source_root(), input)],
+      args : [
+        '-W', '-all',
+        join_paths(meson.source_root(), input)
+      ],
       env : ['PYTHONDONTWRITEBYTECODE=1'])
   endforeach
 else

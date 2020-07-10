@@ -90,6 +90,7 @@ class TestCase(unittest.TestCase):
     def tearDown(self):
         self.server.terminate()
         self.server.join()
+        self._tempdir.cleanup()
         self.assertEqual(0, self.server.exitcode,
                          'Server did not exit cleanly')
 
