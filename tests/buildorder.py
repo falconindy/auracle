@@ -10,7 +10,7 @@ class TestBuildOrder(auracle_test.TestCase):
     def testSinglePackage(self):
         r = self.Auracle(['buildorder', 'ocaml-configurator'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual(
+        self.assertMultiLineEqual(
             textwrap.dedent('''\
                 SATISFIEDREPOS ocaml
                 REPOS dune
@@ -24,7 +24,7 @@ class TestBuildOrder(auracle_test.TestCase):
         r = self.Auracle(
             ['buildorder', 'ocaml-configurator', 'ocaml-cryptokit'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual(
+        self.assertMultiLineEqual(
             textwrap.dedent('''\
                 SATISFIEDREPOS ocaml
                 REPOS dune
@@ -43,7 +43,7 @@ class TestBuildOrder(auracle_test.TestCase):
     def testDuplicatePackage(self):
         r = self.Auracle(['buildorder'] + 2 * ['ocaml-configurator'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual(
+        self.assertMultiLineEqual(
             textwrap.dedent('''\
                 SATISFIEDREPOS ocaml
                 REPOS dune
@@ -57,7 +57,7 @@ class TestBuildOrder(auracle_test.TestCase):
         r = self.Auracle(
             ['buildorder', 'google-drive-ocamlfuse', 'ocaml-configurator'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual(
+        self.assertMultiLineEqual(
             textwrap.dedent('''\
                 SATISFIEDREPOS ocaml
                 REPOS ocaml-findlib
@@ -99,7 +99,7 @@ class TestBuildOrder(auracle_test.TestCase):
     def testUnsatisfiedPackage(self):
         r = self.Auracle(['buildorder', 'auracle-git'])
         self.assertEqual(1, r.process.returncode)
-        self.assertEqual(
+        self.assertMultiLineEqual(
             textwrap.dedent('''\
                 UNKNOWN pacman auracle-git
                 UNKNOWN libarchive.so auracle-git
