@@ -57,6 +57,9 @@ class TimeLoggingTestResult(unittest.runner.TextTestResult):
             self.stream.flush()
 
 
+unittest.runner.TextTestRunner.resultclass = TimeLoggingTestResult
+
+
 class AuracleRunResult(object):
     def _ProcessDebugOutput(self, requests_file):
         requests_sent = []
@@ -152,5 +155,4 @@ class TestCase(unittest.TestCase):
 
 
 def main():
-    test_runner = unittest.TextTestRunner(resultclass=TimeLoggingTestResult)
-    unittest.main(testRunner=test_runner)
+    unittest.main()
