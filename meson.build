@@ -169,17 +169,17 @@ test(
 python_requirement = '>=3.7'
 if py3.found() and py3.language_version().version_compare(python_requirement)
   foreach input : [
-    'tests/buildorder.py',
-    'tests/clone.py',
-    'tests/custom_format.py',
-    'tests/info.py',
-    'tests/outdated.py',
-    'tests/raw_query.py',
-    'tests/regex_search.py',
-    'tests/search.py',
-    'tests/show.py',
-    'tests/sort.py',
-    'tests/update.py',
+    'tests/test_buildorder.py',
+    'tests/test_clone.py',
+    'tests/test_custom_format.py',
+    'tests/test_info.py',
+    'tests/test_outdated.py',
+    'tests/test_raw_query.py',
+    'tests/test_regex_search.py',
+    'tests/test_search.py',
+    'tests/test_show.py',
+    'tests/test_sort.py',
+    'tests/test_update.py',
   ]
     basename = input.split('/')[-1].split('.')[0]
 
