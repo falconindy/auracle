@@ -202,7 +202,7 @@ void Update(const auracle::Pacman::Package& from, const aur::Package& to) {
 
 namespace {
 
-void FormatCustomTo(std::string& out, const std::string& format,
+void FormatCustomTo(std::string& out, std::string_view format,
                     const aur::Package& package) {
   // clang-format off
   fmt::format_to(
@@ -237,7 +237,7 @@ void FormatCustomTo(std::string& out, const std::string& format,
 
 }  // namespace
 
-void Custom(const std::string& format, const aur::Package& package) {
+void Custom(const std::string_view format, const aur::Package& package) {
   std::string out;
 
   FormatCustomTo(out, format, package);
@@ -255,6 +255,16 @@ bool FormatIsValid(const std::string& format, std::string* error) {
   }
 
   return true;
+}
+
+absl::Status Validate(std::string_view format) {
+  try {
+    std::string out;
+    FormatCustomTo(out, format, aur::Package());
+  } catch (const fmt::format_error& e) {
+    return absl::InvalidArgumentError(e.what());
+  }
+  return absl::OkStatus();
 }
 
 }  // namespace format

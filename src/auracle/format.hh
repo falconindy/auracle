@@ -4,6 +4,7 @@
 
 #include <string_view>
 
+#include "absl/status/status.h"
 #include "aur/package.hh"
 #include "pacman.hh"
 
@@ -15,9 +16,9 @@ void Short(const aur::Package& package,
            const std::optional<auracle::Pacman::Package>& local_package);
 void Long(const aur::Package& package,
           const std::optional<auracle::Pacman::Package>& local_package);
-void Custom(const std::string& format, const aur::Package& package);
+void Custom(std::string_view format, const aur::Package& package);
 
-bool FormatIsValid(const std::string& format, std::string* error);
+absl::Status Validate(std::string_view format);
 
 }  // namespace format
 

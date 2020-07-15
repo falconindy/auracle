@@ -51,9 +51,7 @@ aur::Package MakePackage() {
 }
 
 TEST(FormatTest, DetectsInvalidFormats) {
-  std::string err;
-  EXPECT_FALSE(format::FormatIsValid("{invalid}", &err));
-  EXPECT_FALSE(err.empty());
+  EXPECT_FALSE(format::Validate("{invalid}").ok());
 }
 
 TEST(FormatTest, CustomStringFormat) {

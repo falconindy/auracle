@@ -125,9 +125,9 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         command_options.directory = optarg;
         break;
       case 'F': {
-        std::string error;
-        if (!format::FormatIsValid(optarg, &error)) {
-          std::cerr << "error: invalid arg to --format (" << error
+        auto status = format::Validate(sv_optarg);
+        if (!status.ok()) {
+          std::cerr << "error: invalid arg to --format (" << status.message()
                     << "): " << sv_optarg << "\n";
           return false;
         }
