@@ -67,18 +67,18 @@ std::vector<std::string> NotFoundPackages(
     const auracle::PackageCache& package_cache) {
   std::vector<std::string> missing;
 
-  for (const auto& p : want) {
-    if (package_cache.LookupByPkgname(p) != nullptr) {
+  for (const auto& name : want) {
+    if (package_cache.LookupByPkgname(name) != nullptr) {
       continue;
     }
 
-    if (absl::c_find_if(got, [&p](const aur::Package& pkg) {
-          return pkg.name == p;
+    if (absl::c_find_if(got, [&](const aur::Package& pkg) {
+          return pkg.name == name;
         }) != got.end()) {
       continue;
     }
 
-    missing.push_back(p);
+    missing.push_back(name);
   }
 
   return missing;
