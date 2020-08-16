@@ -1,7 +1,7 @@
 project('auracle', 'cpp',
         version : '0',
         license : 'MIT',
-        meson_version : '>=0.50',
+        meson_version : '>=0.55',
         default_options : [
           'cpp_std=c++17',
           'warning_level=2',
@@ -148,6 +148,7 @@ test(
       src/aur/response_test.cc
     '''.split()),
     dependencies : [abseil, gtest, gmock, libaur]),
+  protocol : 'gtest',
   suite : 'libaur')
 
 test(
@@ -163,6 +164,7 @@ test(
       src/auracle/sort_test.cc
     '''.split()),
     dependencies : [abseil, gtest, gmock, libauracle]),
+  protocol : 'gtest',
   suite : 'libauracle')
 
 # integration tests
