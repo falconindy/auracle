@@ -40,8 +40,8 @@ class AurImpl : public Aur {
   void QueueCloneRequest(const CloneRequest& request,
                          const CloneResponseCallback& callback) override;
 
-  // Wait for all pending requests to complete. Returns non-zero if the event
-  // loop fails or is terminated by a user callback.
+  // Wait for all pending requests to complete. Returns non-zero if any request
+  // failed or was cancelled by a callback.
   int Wait() override;
 
  private:
@@ -53,10 +53,12 @@ class AurImpl : public Aur {
       const HttpRequest& request,
       const typename ResponseHandlerType::CallbackType& callback);
 
-  int FinishRequest(CURL* curl, CURLcode result);
+  int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
   int FinishRequest(sd_event_source* source);
 
   int CheckFinished();
+  void CancelAll();
+  void Cancel(const ActiveRequests::value_type& request);
 
   enum class DebugLevel {
     // No debugging.
@@ -90,6 +92,7 @@ class AurImpl : public Aur {
   sigset_t saved_ss_{};
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
+  bool cancelled_ = false;
 
   DebugLevel debug_level_ = DebugLevel::NONE;
   std::ofstream debug_stream_;
@@ -271,6 +274,31 @@ AurImpl::~AurImpl() {
   }
 }
 
+void AurImpl::Cancel(const ActiveRequests::value_type& request) {
+  struct Visitor {
+    constexpr explicit Visitor(AurImpl* aur) : aur(aur) {}
+
+    void operator()(CURL* curl) {
+      aur->FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
+                         /*dispatch_callback=*/false);
+    }
+
+    void operator()(sd_event_source* source) { aur->FinishRequest(source); }
+
+    AurImpl* aur;
+  };
+
+  std::visit(Visitor(this), request);
+}
+
+void AurImpl::CancelAll() {
+  while (!active_requests_.empty()) {
+    Cancel(*active_requests_.begin());
+  }
+
+  cancelled_ = true;
+}
+
 // static
 int AurImpl::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
                             void* sockptr) {
@@ -373,9 +401,8 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
     return 0;
   }
 
-  uint64_t usec;
-  sd_event_now(event_, CLOCK_MONOTONIC, &usec);
-  usec += timeout_ms * 1000;
+  uint64_t usec =
+      absl::ToUnixMicros(absl::Now() + absl::Milliseconds(timeout_ms));
 
   if (timer_ != nullptr) {
     if (sd_event_source_set_time(timer_, usec) < 0) {
@@ -386,8 +413,7 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
       return -1;
     }
   } else {
-    // TODO: use sd_event_add_time_relative once its available.
-    if (sd_event_add_time(event_, &timer_, CLOCK_MONOTONIC, usec, 0,
+    if (sd_event_add_time(event_, &timer_, CLOCK_REALTIME, usec, 0,
                           &AurImpl::OnCurlTimer, this) < 0) {
       return -1;
     }
@@ -396,15 +422,21 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
   return 0;
 }
 
-int AurImpl::FinishRequest(CURL* curl, CURLcode result) {
+int AurImpl::FinishRequest(CURL* curl, CURLcode result,
+                           bool dispatch_callback) {
   ResponseHandler* handler;
   curl_easy_getinfo(curl, CURLINFO_PRIVATE, &handler);
 
-  absl::Status status = result == CURLE_OK
-                            ? StatusFromCurlHandle(curl)
-                            : absl::UnknownError(handler->error_buffer.data());
+  int r = 0;
+  if (dispatch_callback) {
+    absl::Status status =
+        result == CURLE_OK ? StatusFromCurlHandle(curl)
+                           : absl::UnknownError(handler->error_buffer.data());
 
-  int r = handler->RunCallback(std::move(status));
+    r = handler->RunCallback(std::move(status));
+  } else {
+    delete handler;
+  }
 
   active_requests_.erase(curl);
   curl_multi_remove_handle(curl_multi_, curl);
@@ -427,27 +459,25 @@ int AurImpl::CheckFinished() {
     return 0;
   }
 
-  int r = FinishRequest(msg->easy_handle, msg->data.result);
+  auto r = FinishRequest(msg->easy_handle, msg->data.result,
+                         /* dispatch_callback = */ true);
   if (r < 0) {
-    sd_event_exit(event_, r);
+    CancelAll();
   }
 
   return r;
 }
 
 int AurImpl::Wait() {
+  cancelled_ = false;
+
   while (!active_requests_.empty()) {
     if (sd_event_run(event_, 1) < 0) {
       return -EIO;
     }
   }
 
-  int r;
-  if (sd_event_get_exit_code(event_, &r) == 0) {
-    return r;
-  }
-
-  return 0;
+  return cancelled_ ? -ECANCELED : 0;
 }
 
 template <typename ResponseHandlerType>
