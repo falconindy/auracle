@@ -83,6 +83,7 @@ class AurImpl : public Aur {
   static int OnCurlTimer(sd_event_source* s, uint64_t usec, void* userdata);
   static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
                          void* userdata);
+  static int OnCancel(sd_event_source* s, void* userdata);
 
   Options options_;
 
@@ -291,12 +292,22 @@ void AurImpl::Cancel(const ActiveRequests::value_type& request) {
   std::visit(Visitor(this), request);
 }
 
-void AurImpl::CancelAll() {
-  while (!active_requests_.empty()) {
-    Cancel(*active_requests_.begin());
+int AurImpl::OnCancel(sd_event_source*, void* userdata) {
+  auto* aur = static_cast<AurImpl*>(userdata);
+
+  while (!aur->active_requests_.empty()) {
+    aur->Cancel(*aur->active_requests_.begin());
   }
 
-  cancelled_ = true;
+  aur->cancelled_ = true;
+
+  return 0;
+}
+
+void AurImpl::CancelAll() {
+  sd_event_source* cancel;
+  sd_event_add_defer(event_, &cancel, &AurImpl::OnCancel, this);
+  active_requests_.insert(cancel);
 }
 
 // static
