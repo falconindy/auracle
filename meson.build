@@ -44,6 +44,7 @@ abseil_proj = subproject(
   'abseil-cpp',
   default_options : [
     'default_library=static',
+    'warning_level=0',
   ])
 abseil = declare_dependency(
   dependencies : [
