@@ -107,6 +107,7 @@ function(create_manpage generated_file)
             "${OUTFILE}"
         DEPENDS "${POD2MAN}" "${SOURCEFILE}"
     )
+    install(FILES "${MANFILE}" DESTINATION "${CMAKE_INSTALL_MANDIR}/man${SECTION}")
     set(${generated_file} "${OUTFILE}" PARENT_SCOPE)
 endfunction()
 
@@ -116,7 +117,6 @@ if(POD2MAN)
         SECTION 1
         CENTER "Auracle Manual")
     add_custom_target(manpage ALL DEPENDS "${MANFILE}")
-    install(FILES "${MANFILE}" DESTINATION "${CMAKE_INSTALL_MANDIR}")
 elseif(POD2MAN)
     message(WARNING "Failed to find pod2man, not generating manpage")
 endif(POD2MAN)
