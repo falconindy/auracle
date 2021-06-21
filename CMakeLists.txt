@@ -25,6 +25,16 @@ target_link_libraries(aur
     PkgConfig::libsystemd
     absl::time
 )
+
+# Original meson did this (not really, but it tried, participation award for
+# meson), but it really doesn't matter:
+#if(APPLE)
+#    target_link_options(aur PUBLIC LINKER:-dead_strip)
+#elseif(CMAKE_COMPILER_IS_GNUCC)
+#    target_link_options(aur PUBLIC LINKER:--gc-sections)
+#    target_compile_options(aur PUBLIC -fdata-sections -ffunction-sections)
+#endif()
+
 add_library(libauracle STATIC
     src/auracle/auracle.cc src/auracle/auracle.hh
     src/auracle/dependency_kind.cc src/auracle/dependency_kind.hh
@@ -53,6 +63,43 @@ target_link_libraries(auracle
     libauracle
 )
 install(TARGETS auracle)
+
+find_program(POD2MAN pod2man)
+function(create_manpage generated_file)
+    set(options)
+    set(oneValueArgs SECTION RELEASE CENTER)
+    set(multiValueArgs)
+    cmake_parse_arguments(arg "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    set(OUTFILE "${ARGV1}.${arg_SECTION}")
+    set(SOURCEFILE "${CMAKE_CURRENT_SOURCE_DIR}/man/${OUTFILE}.pod")
+    string(TOUPPER "${ARGV1}" NAME_UPCASE)
+
+    add_custom_command(
+        OUTPUT "${OUTFILE}"
+        COMMAND "${POD2MAN}"
+            --section=${arg_SECTION}
+            --center=${arg_CENTER}
+            --name=${NAME_UPCASE}
+            --release=${arg_RELEASE}
+            "${SOURCEFILE}"
+            "${OUTFILE}"
+        DEPENDS "${POD2MAN}" "${SOURCEFILE}"
+    )
+    set(${generated_file} "${OUTFILE}" PARENT_SCOPE)
+endfunction()
+
+if(POD2MAN)
+    include(GNUInstallDirs)
+    create_manpage(MANFILE "auracle"
+        RELEASE "Auracle ${CMAKE_PROJECT_VERSION}"
+        SECTION 1
+        CENTER "Auracle Manual")
+    add_custom_target(manpage ALL DEPENDS "${MANFILE}")
+    install(FILES "${MANFILE}" DESTINATION "${CMAKE_INSTALL_MANDIR}")
+elseif(POD2MAN)
+    message(WARNING "Failed to find pod2man, not generating manpage")
+endif(POD2MAN)
 
 if (BUILD_TESTS)
     find_package(GTest REQUIRED COMPONENTS gtest_main gmock CONFIG)
