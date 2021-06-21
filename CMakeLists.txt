@@ -7,7 +7,7 @@ set(CXX_STANDARD_REQUIRED ON)
 find_package(nlohmann_json REQUIRED)
 find_package(CURL REQUIRED)
 find_package(fmt REQUIRED)
-find_package(absl REQUIRED COMPONENTS container status strings time format hash)
+find_package(absl REQUIRED COMPONENTS status strings time format hash container_common)
 
 find_package(GTest REQUIRED COMPONENTS gtest_main gmock CONFIG)
 include(GoogleTest)
@@ -43,7 +43,7 @@ target_link_libraries(libauracle aur)
 add_executable(auracle src/auracle_main.cc)
 target_link_libraries(auracle
     CURL::libcurl
-    absl::container
+    absl::container_common
     absl::flat_hash_set
     absl::status
     absl::strings
