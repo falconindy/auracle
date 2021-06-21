@@ -86,7 +86,7 @@ install(FILES extra/zsh_completion
 #endif()
 
 find_program(POD2MAN pod2man)
-function(create_manpage generated_file)
+function(add_manpage)
     set(options)
     set(oneValueArgs SECTION RELEASE CENTER)
     set(multiValueArgs)
@@ -107,16 +107,16 @@ function(create_manpage generated_file)
             "${OUTFILE}"
         DEPENDS "${POD2MAN}" "${SOURCEFILE}"
     )
-    install(FILES "${MANFILE}" DESTINATION "${CMAKE_INSTALL_MANDIR}/man${SECTION}")
-    set(${generated_file} "${OUTFILE}" PARENT_SCOPE)
+
+    install(FILES "${OUTFILE}" DESTINATION "${CMAKE_INSTALL_MANDIR}/man${arg_SECTION}")
+    add_custom_target("manpage-${NAME}" ALL DEPENDS "${OUTFILE}")
 endfunction()
 
 if(POD2MAN)
-    create_manpage(MANFILE "auracle"
+    add_manpage(MANFILE "auracle"
         RELEASE "Auracle ${CMAKE_PROJECT_VERSION}"
         SECTION 1
         CENTER "Auracle Manual")
-    add_custom_target(manpage ALL DEPENDS "${MANFILE}")
 elseif(POD2MAN)
     message(WARNING "Failed to find pod2man, not generating manpage")
 endif(POD2MAN)
