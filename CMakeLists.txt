@@ -4,13 +4,12 @@ project(auracle VERSION 0)
 set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED ON)
 
+option(BUILD_TESTS "Build tests" ON)
+
 find_package(nlohmann_json REQUIRED)
 find_package(CURL REQUIRED)
 find_package(fmt REQUIRED)
 find_package(absl REQUIRED COMPONENTS status strings time format hash container_common)
-
-find_package(GTest REQUIRED COMPONENTS gtest_main gmock CONFIG)
-include(GoogleTest)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libalpm REQUIRED IMPORTED_TARGET libalpm)
@@ -55,27 +54,31 @@ target_link_libraries(auracle
 )
 install(TARGETS auracle)
 
-# Tests
-enable_testing()
+if (BUILD_TESTS)
+    find_package(GTest REQUIRED COMPONENTS gtest_main gmock CONFIG)
+    include(GoogleTest)
 
-add_executable(libaur_test src/aur/request_test.cc src/aur/response_test.cc)
-target_link_libraries(libaur_test aur absl::flat_hash_set CURL::libcurl GTest::gtest_main GTest::gmock)
-gtest_discover_tests(libaur_test)
+    enable_testing()
 
-add_executable(libauracle_test
-    src/auracle/dependency_kind_test.cc
-    src/auracle/package_cache_test.cc
-    src/auracle/format_test.cc
-    src/auracle/search_fragment_test.cc
-    src/auracle/sort_test.cc
-)
-target_link_libraries(libauracle_test
-    libauracle
-    PkgConfig::libalpm
-    absl::flat_hash_set
-    absl::status
-    fmt::fmt
-    GTest::gtest_main
-    GTest::gmock
-)
-gtest_discover_tests(libauracle_test)
+    add_executable(libaur_test src/aur/request_test.cc src/aur/response_test.cc)
+    target_link_libraries(libaur_test aur absl::flat_hash_set CURL::libcurl GTest::gtest_main GTest::gmock)
+    gtest_discover_tests(libaur_test)
+
+    add_executable(libauracle_test
+        src/auracle/dependency_kind_test.cc
+        src/auracle/package_cache_test.cc
+        src/auracle/format_test.cc
+        src/auracle/search_fragment_test.cc
+        src/auracle/sort_test.cc
+        )
+    target_link_libraries(libauracle_test
+        libauracle
+        PkgConfig::libalpm
+        absl::flat_hash_set
+        absl::status
+        fmt::fmt
+        GTest::gtest_main
+        GTest::gmock
+        )
+    gtest_discover_tests(libauracle_test)
+endif(BUILD_TESTS)
