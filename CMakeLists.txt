@@ -15,6 +15,8 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(libalpm REQUIRED IMPORTED_TARGET libalpm)
 pkg_check_modules(libsystemd REQUIRED IMPORTED_TARGET libsystemd)
 
+include(GNUInstallDirs)
+
 add_library(libaur STATIC
     src/aur/aur.cc src/aur/aur.hh
     src/aur/package.cc src/aur/package.hh
@@ -60,6 +62,29 @@ target_link_libraries(auracle
 )
 install(TARGETS auracle)
 
+install(FILES extra/bash_completion
+    RENAME auracle
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/bash-completion/completions
+)
+install(FILES extra/zsh_completion
+    RENAME auracle
+    DESTINATION
+    ${CMAKE_INSTALL_DATADIR}/zsh/site-functions
+)
+
+
+#find_program(
+#    CLANG_TIDY_EXE
+#    NAMES "clang-tidy"
+#    DOC "Path to clang-tidy executable"
+#    )
+#if(CLANG_TIDY_EXE)
+#    set_target_properties(
+#        auracle PROPERTIES
+#        CXX_CLANG_TIDY "${DO_CLANG_TIDY}"
+#        )
+#endif()
+
 find_program(POD2MAN pod2man)
 function(create_manpage generated_file)
     set(options)
@@ -86,7 +111,6 @@ function(create_manpage generated_file)
 endfunction()
 
 if(POD2MAN)
-    include(GNUInstallDirs)
     create_manpage(MANFILE "auracle"
         RELEASE "Auracle ${CMAKE_PROJECT_VERSION}"
         SECTION 1
