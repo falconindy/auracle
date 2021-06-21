@@ -60,6 +60,7 @@ if (BUILD_TESTS)
 
     enable_testing()
 
+    # Unit tests
     add_executable(libaur_test src/aur/request_test.cc src/aur/response_test.cc)
     target_link_libraries(libaur_test aur absl::flat_hash_set CURL::libcurl GTest::gtest_main GTest::gmock)
     gtest_discover_tests(libaur_test)
@@ -70,7 +71,7 @@ if (BUILD_TESTS)
         src/auracle/format_test.cc
         src/auracle/search_fragment_test.cc
         src/auracle/sort_test.cc
-        )
+    )
     target_link_libraries(libauracle_test
         libauracle
         PkgConfig::libalpm
@@ -79,6 +80,30 @@ if (BUILD_TESTS)
         fmt::fmt
         GTest::gtest_main
         GTest::gmock
-        )
+    )
     gtest_discover_tests(libauracle_test)
+
+    # Integration tests
+    include(FindPythonInterp)
+    set(PYTHON_TESTS
+        "buildorder"
+        "clone"
+        "custom_format"
+        "info"
+        "outdated"
+        "raw_query"
+        "regex_search"
+        "search"
+        "show"
+        "sort"
+        "update"
+    )
+    foreach(TEST ${PYTHON_TESTS})
+        add_test(
+            NAME ${TEST}
+            COMMAND
+                ${PYTHON_EXECUTABLE} "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_${TEST}.py"
+            WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
+        )
+    endforeach()
 endif(BUILD_TESTS)
