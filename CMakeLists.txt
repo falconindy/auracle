@@ -25,6 +25,7 @@ target_link_libraries(libaur
     PkgConfig::libsystemd
     absl::time
     absl::flat_hash_set
+    CURL::libcurl
 )
 
 # Original meson did this (not really, but it tried, participation award for
@@ -51,7 +52,6 @@ target_compile_definitions(libauracle PUBLIC -DPROJECT_VERSION=\"${CMAKE_PROJECT
 target_link_libraries(libauracle libaur fmt::fmt absl::status PkgConfig::libalpm)
 add_executable(auracle src/auracle_main.cc)
 target_link_libraries(auracle
-    CURL::libcurl
     absl::container_common
     absl::strings
     nlohmann_json::nlohmann_json
@@ -105,7 +105,7 @@ if (BUILD_TESTS)
 
     # Unit tests
     add_executable(libaur_test src/aur/request_test.cc src/aur/response_test.cc)
-    target_link_libraries(libaur_test libaur CURL::libcurl GTest::gtest_main GTest::gmock)
+    target_link_libraries(libaur_test libaur GTest::gtest_main GTest::gmock)
     gtest_discover_tests(libaur_test)
 
     add_executable(libauracle_test
