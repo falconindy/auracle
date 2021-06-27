@@ -99,8 +99,8 @@ function(add_manpage)
     set(multiValueArgs)
     cmake_parse_arguments(arg "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    set(OUTFILE "${ARGV1}.${arg_SECTION}")
-    set(SOURCEFILE "${CMAKE_CURRENT_SOURCE_DIR}/man/${OUTFILE}.pod")
+    set(OUTFILE "${CMAKE_CURRENT_BINARY_DIR}/${ARGV1}.${arg_SECTION}")
+    set(SOURCEFILE "${CMAKE_CURRENT_SOURCE_DIR}/man/${ARGV1}.${arg_SECTION}.pod")
     string(TOUPPER "${ARGV1}" NAME_UPCASE)
 
     add_custom_command(
