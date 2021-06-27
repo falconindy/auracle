@@ -116,7 +116,7 @@ function(add_manpage)
     )
 
     install(FILES "${OUTFILE}" DESTINATION "${CMAKE_INSTALL_MANDIR}/man${arg_SECTION}")
-    add_custom_target("manpage-${NAME}" ALL DEPENDS "${OUTFILE}")
+    add_custom_target("manpage-${ARGV1}" ALL DEPENDS "${OUTFILE}")
 endfunction()
 
 if(POD2MAN)
