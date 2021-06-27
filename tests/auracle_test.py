@@ -16,11 +16,11 @@ __scriptdir__ = os.path.dirname(os.path.abspath(__file__))
 
 def FindMesonBuildDir():
     # When run through meson or ninja, we're already in the build dir
-    if os.path.exists('.ninja_log'):
+    if os.path.exists('.ninja_log') or os.path.exists('Makefile'):
         return os.path.curdir
 
     # When run manually, we're probably in the repo root.
-    paths = glob.glob('*/.ninja_log')
+    paths = glob.glob('*/{.ninja_log,Makefile}')
     if len(paths) > 1:
         raise ValueError(
             'Multiple build directories found. Unable to proceed.')
