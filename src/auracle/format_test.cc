@@ -79,11 +79,12 @@ TEST(FormatTest, CustomDateTimeFormat) {
 
   auto p = MakePackage();
 
-  format::Custom("{submitted}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "Sun Jul  2 16:40:08 2017\n");
-
   format::Custom("{submitted:%s}", p);
   EXPECT_EQ(capture.GetCapturedOutput(), "1499013608\n");
+
+  setenv("TZ", "UTC", 1); // hack, but whatever, sue me
+  format::Custom("{submitted}", p);
+  EXPECT_EQ(capture.GetCapturedOutput(), "Sun Jul  2 16:40:08 2017\n");
 }
 
 TEST(FormatTest, ListFormat) {
