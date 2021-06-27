@@ -52,7 +52,7 @@ If you're hacking on auracle, you can do this manually:
 
 ```sh
 $ cmake -GNinja .
-$ cmake --build .
+$ ninja
 ```
 
 And running the tests is simply a matter of:
