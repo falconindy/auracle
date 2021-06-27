@@ -26,7 +26,7 @@ def FindMesonBuildDir():
             'Multiple build directories found. Unable to proceed.')
     if len(paths) == 0:
         raise ValueError(
-            'No build directory found. Have you run "meson build" yet?')
+            'No build directory found. Have you run "cmake" yet?')
 
     return os.path.dirname(paths[0])
 

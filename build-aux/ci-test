@@ -5,14 +5,14 @@ cd /github/workspace
 # Needed to ensure PATH is properly set for perl, etc.
 source /etc/profile
 
-pacman -Syu --noconfirm base-devel git gmock gtest python meson fmt
+pacman -Syu --noconfirm base-devel git gmock gtest python cmake ninja fmt
 
 # build
-meson build --prefix=/usr --buildtype=debugoptimized
-ninja -C build
+cmake -DCMAKE_BUILD_TYPE=RelDebug .
+cmake . --build
 
 # test
-meson test -C build
+make test
 
 # package
-ninja -C build install
+make install

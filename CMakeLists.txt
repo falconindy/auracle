@@ -6,6 +6,13 @@ set(CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_TESTS "Build tests" ON)
 
+option(ENABLE_SANITIZERS "Enable runtime sanitizing (for development)")
+if (ENABLE_SANITIZERS)
+    message("Enabling asan and ubsan")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined")
+endif()
+
 find_package(nlohmann_json REQUIRED)
 find_package(CURL REQUIRED)
 find_package(fmt REQUIRED)

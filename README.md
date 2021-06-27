@@ -33,7 +33,8 @@ Auracle does not currently, and will probably never:
 Building auracle requires:
 
 * A C++17 compiler
-* meson
+* cmake
+* ninja
 * libsystemd
 * libalpm
 * libcurl
@@ -50,12 +51,12 @@ You're probably building this from the AUR, though, so just go use the
 If you're hacking on auracle, you can do this manually:
 
 ```sh
-$ meson build
-$ ninja -C build
+$ cmake -GNinja .
+$ cmake --build .
 ```
 
 And running the tests is simply a matter of:
 
 ```sh
-$ meson test -C build
+$ ninja test
 ```
