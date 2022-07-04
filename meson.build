@@ -44,7 +44,9 @@ gmock = dependency('gmock',
 abseil_proj = subproject(
   'abseil-cpp',
   default_options : [
+    'cpp_std=c++17',
     'default_library=static',
+    'warning_level=0',
   ])
 abseil = declare_dependency(
   dependencies : [
