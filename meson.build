@@ -1,7 +1,7 @@
 project('auracle', 'cpp',
         version : '0',
         license : 'MIT',
-        meson_version : '>=0.55',
+        meson_version : '>=0.56',
         default_options : [
           'cpp_std=c++17',
           'warning_level=2',
@@ -128,13 +128,13 @@ install_data(
 run_target(
   'fmt',
   command : [
-    join_paths(meson.source_root(), 'build-aux/source-format')
+    join_paths(meson.project_source_root(), 'build-aux/source-format')
   ])
 
 run_target(
   'tidy',
   command : [
-    join_paths(meson.source_root(), 'build-aux/clang-tidy')
+    join_paths(meson.project_source_root(), 'build-aux/clang-tidy')
   ])
 
 # unit tests
@@ -191,7 +191,7 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
       suite : 'auracle',
       args : [
         '-W', 'all',
-        join_paths(meson.source_root(), input)
+        join_paths(meson.project_source_root(), input)
       ],
       env : ['PYTHONDONTWRITEBYTECODE=1'])
   endforeach
