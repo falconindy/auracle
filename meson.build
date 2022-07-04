@@ -29,7 +29,8 @@ libalpm = dependency('libalpm')
 libcurl = dependency('libcurl')
 libfmt = dependency('fmt',
                     version : '>=6.0.0',
-                    fallback : ['fmt', 'fmt_dep'])
+                    fallback : ['fmt', 'fmt_dep'],
+                    static: 'true')
 libsystemd = dependency('libsystemd')
 gtest = dependency('gtest',
                    version : '>=1.10.0',
