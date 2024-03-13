@@ -38,10 +38,9 @@ std::string_view GetSearchFragment(std::string_view input) {
     }
 
     // given 'cow?', we can't include w in the search
-    // Looking one character past the end of the candidate is safe because we
-    // know that our input is null delimited.
+    // see if a ? or * follows cand
     auto cand = input.substr(0, span);
-    if (cand[span] == '?' || cand[span] == '*') {
+    if (input.size() > span && (input[span] == '?' || input[span] == '*')) {
       cand.remove_suffix(1);
     }
 
