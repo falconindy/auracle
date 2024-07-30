@@ -5,7 +5,7 @@ cd /github/workspace
 # Needed to ensure PATH is properly set for perl, etc.
 source /etc/profile
 
-pacman -Syu --noconfirm base-devel git gmock gtest python meson fmt
+pacman -Syu --noconfirm base-devel git gmock gtest python meson fmt perl
 
 # build
 meson build-asan --prefix=/usr --buildtype=debugoptimized -Db_sanitize=address
