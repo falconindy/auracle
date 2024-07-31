@@ -5,6 +5,7 @@ import auracle_test
 
 
 class SortTest(auracle_test.TestCase):
+
     def testSortInfoByPopularity(self):
         r = self.Auracle([
             '--sort', 'popularity', 'info', 'auracle-git', 'pkgfile-git',

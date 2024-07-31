@@ -17,6 +17,7 @@ AUR_SERVER_VERSION = 5
 
 
 class FakeAurHandler(http.server.BaseHTTPRequestHandler):
+
     def do_GET(self):
         handlers = {
             '/rpc': self.handle_rpc,
@@ -155,7 +156,9 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 
 
 def Serve(queue=None, port=0):
+
     class FakeAurServer(http.server.HTTPServer):
+
         def handle_error(self, request, client_address):
             raise
 

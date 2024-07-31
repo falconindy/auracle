@@ -5,6 +5,7 @@ import auracle_test
 
 
 class TestRegexSearch(auracle_test.TestCase):
+
     def testFragmentTooShort(self):
         r = self.Auracle(['search', 'f'])
         self.assertNotEqual(0, r.process.returncode)

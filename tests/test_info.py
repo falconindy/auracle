@@ -6,6 +6,7 @@ import json
 
 
 class TestInfo(auracle_test.TestCase):
+
     def testSingleInfoQuery(self):
         r = self.Auracle(['info', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)

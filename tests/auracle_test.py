@@ -32,6 +32,7 @@ def FindMesonBuildDir():
 
 
 class HTTPRequest:
+
     def __init__(self, request):
         requestline = request.pop(0)
         self.command, self.path, self.request_version = requestline.split()
@@ -43,6 +44,7 @@ class HTTPRequest:
 
 
 class TimeLoggingTestResult(unittest.runner.TextTestResult):
+
     def startTest(self, test):
         self._started_at = time.time()
         super().startTest(test)
@@ -61,6 +63,7 @@ unittest.runner.TextTestRunner.resultclass = TimeLoggingTestResult
 
 
 class AuracleRunResult:
+
     def _ProcessDebugOutput(self, requests_file):
         requests_sent = []
 
@@ -82,6 +85,7 @@ class AuracleRunResult:
 
 
 class TestCase(unittest.TestCase):
+
     def setUp(self):
         self.build_dir = FindMesonBuildDir()
         self._tempdir = tempfile.TemporaryDirectory()

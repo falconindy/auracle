@@ -3,6 +3,7 @@ import auracle_test
 
 
 class TestPkgbuild(auracle_test.TestCase):
+
     def testSinglePkgbuild(self):
         r = self.Auracle(['show', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)

@@ -6,6 +6,7 @@ import os
 
 
 class TestClone(auracle_test.TestCase):
+
     def testCloneSingle(self):
         r = self.Auracle(['clone', 'auracle-git'])
         self.assertEqual(r.process.returncode, 0)

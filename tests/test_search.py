@@ -6,6 +6,7 @@ import json
 
 
 class TestSearch(auracle_test.TestCase):
+
     def testExitSuccessOnNoResults(self):
         r = self.Auracle(['search', 'wontfindanypackages'])
         self.assertEqual(0, r.process.returncode)

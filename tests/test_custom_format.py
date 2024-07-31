@@ -5,6 +5,7 @@ import auracle_test
 
 
 class TestInfo(auracle_test.TestCase):
+
     def testStringFormat(self):
         r = self.Auracle(['info', '-F', '{name} {version}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)

@@ -5,6 +5,7 @@ import auracle_test
 
 
 class TestDownload(auracle_test.TestCase):
+
     def testOutdatedFindsPackagesNeedingUpgrade(self):
         r = self.Auracle(['update', '--quiet'])
         self.assertEqual(0, r.process.returncode)

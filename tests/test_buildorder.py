@@ -7,6 +7,7 @@ import textwrap
 
 
 class TestBuildOrder(auracle_test.TestCase):
+
     def testSinglePackage(self):
         r = self.Auracle(['buildorder', 'ocaml-configurator'])
         self.assertEqual(0, r.process.returncode)
