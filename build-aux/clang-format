@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -e
-
-git ls-files -z -- '*.cc' '*.hh' | xargs -0 clang-format -i

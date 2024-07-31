@@ -129,12 +129,6 @@ install_data(
   install_dir : join_paths(get_option('datadir'), 'zsh/site-functions'))
 
 run_target(
-  'fmt',
-  command : [
-    join_paths(meson.project_source_root(), 'build-aux/source-format')
-  ])
-
-run_target(
   'tidy',
   command : [
     join_paths(meson.project_source_root(), 'build-aux/clang-tidy')
