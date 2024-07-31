@@ -33,6 +33,10 @@ TEST(SearchFragmentTest, ExtractsSuitableFragment) {
   EXPECT_EQ("co", GetSearchFragment("cow?fu?"));
   EXPECT_EQ("fu", GetSearchFragment("co*fun*"));
 
+  EXPECT_EQ("foo", GetSearchFragment("fooo*"));
+  EXPECT_EQ("foo", GetSearchFragment("fooo?"));
+  EXPECT_EQ("fooo", GetSearchFragment("fooo+"));
+
   EXPECT_EQ("foo", GetSearchFragment("(foo|bar)"));
   EXPECT_EQ("foooo", GetSearchFragment("vim.*(foooo|barr)"));
 
