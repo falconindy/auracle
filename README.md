@@ -32,7 +32,7 @@ Auracle does not currently, and will probably never:
 
 Building auracle requires:
 
-* A C++17 compiler
+* A C++20 compiler
 * meson
 * libsystemd
 * libalpm

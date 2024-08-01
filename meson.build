@@ -3,7 +3,7 @@ project('auracle', 'cpp',
         license : 'MIT',
         meson_version : '>=0.56',
         default_options : [
-          'cpp_std=c++17',
+          'cpp_std=c++20',
           'warning_level=2',
         ])
 
@@ -44,7 +44,7 @@ gmock = dependency('gmock',
 abseil_proj = subproject(
   'abseil-cpp',
   default_options : [
-    'cpp_std=c++17',
+    'cpp_std=c++20',
     'default_library=static',
     'warning_level=0',
   ])

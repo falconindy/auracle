@@ -321,7 +321,7 @@ int Auracle::Clone(const std::vector<std::string>& args,
       [this, &ret](const aur::Package& p) {
         aur_->QueueCloneRequest(
             aur::CloneRequest(p.pkgbase),
-            [&ret, pkgbase{p.pkgbase}](
+            [&ret, pkgbase = p.pkgbase](
                 aur::ResponseWrapper<aur::CloneResponse> response) {
               if (response.ok()) {
                 std::cout << response.value().operation << " complete: "

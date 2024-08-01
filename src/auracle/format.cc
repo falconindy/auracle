@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 #include "format.hh"
 
-#include <fmt/printf.h>
-
 #include <iomanip>
 #include <iostream>
 #include <string_view>
 
 #include "absl/time/time.h"
+#include "fmt/printf.h"
 #include "terminal.hh"
 
 namespace {
 
 template <typename T>
 struct Field {
-  Field(std::string_view name, const T& value) : name(name), value(value) {}
+  constexpr Field(std::string_view name, const T& value)
+      : name(name), value(value) {}
 
   const std::string_view name;
   const T& value;
@@ -58,8 +58,8 @@ struct formatter<absl::Time> {
   }
 
   auto format(const absl::Time t, fmt::format_context& ctx) {
-    return format_to(ctx.out(), "{}",
-                     absl::FormatTime(tm_format, t, absl::LocalTimeZone()));
+    return fmt::format_to(
+        ctx.out(), "{}", absl::FormatTime(tm_format, t, absl::LocalTimeZone()));
   }
 
   std::string tm_format;
@@ -76,7 +76,7 @@ struct formatter<std::vector<T>> {
   auto format(const std::vector<T>& vec, fmt::format_context& ctx) {
     std::string_view sep;
     for (const auto& v : vec) {
-      format_to(ctx.out(), "{}{}", sep, v);
+      fmt::format_to(ctx.out(), "{}{}", sep, v);
       sep = delimiter_;
     }
 
@@ -104,7 +104,11 @@ struct formatter<Field<T>> : formatter<std::string_view> {
       }
     }
 
-    return format_to(ctx.out(), "{:14s} : {}\n", f.name, f.value);
+    // The value is not guaranteed to be consteval in this context, so the
+    // format string has to be runtime evaluated. Icky, but at least this
+    // is fully under our control.
+    return fmt::format_to(ctx.out(), fmt::runtime("{:14s} : {}\n"), f.name,
+                          f.value);
   }
 };
 
@@ -113,7 +117,7 @@ FMT_END_NAMESPACE
 namespace format {
 
 void NameOnly(const aur::Package& package) {
-  fmt::print(terminal::Bold("{}\n"), package.name);
+  fmt::print("{}\n", terminal::Bold(package.name));
 }
 
 void Short(const aur::Package& package,
@@ -206,7 +210,7 @@ void FormatCustomTo(std::string& out, std::string_view format,
                     const aur::Package& package) {
   // clang-format off
   fmt::format_to(
-      std::back_inserter(out), format,
+      std::back_inserter(out), fmt::runtime(format),
       fmt::arg("name", package.name),
       fmt::arg("description", package.description),
       fmt::arg("maintainer", package.maintainer),
