@@ -1,6 +1,0 @@
----
-Checks:          'abseil-*,bugprone-*,modernize-*,performance-*,readability-*,-readability-named-parameter,-readability-implicit-bool-conversion,-modernize-use-trailing-return-type'
-WarningsAsErrors: false
-AnalyzeTemporaryDtors: false
-FormatStyle:     file
-...
