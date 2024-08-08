@@ -1,16 +1,71 @@
 #!/bin/bash -le
 
+debug() {
+  echo "::debug::$*"
+}
+
+error() {
+  echo "::error::$*"
+}
+
+fatal() {
+  error "$*"
+  exit 1
+}
+
+group() {
+  echo "::group::$*"
+}
+
+endgroup() {
+  echo "::endgroup::"
+}
+
+debug "Running with buildmode=$buildmode"
+
+group 'setup'
+
+buildmode=$1
+setup_flags=()
+builddir=build-$buildmode
+test_install=0
+
+case $buildmode in
+  plain)
+    test_install=1
+    ;;
+  asan)
+    setup_flags=('-Db_sanitize=address')
+    ;;
+  *)
+    fatal "unknown build mode $buildmode"
+    ;;
+esac
+
 pacman -Syu --noconfirm base-devel git gmock gtest python meson perl
 
 # Needed to ensure PATH is properly set for perl, etc.
 source /etc/profile
 
+endgroup
+
 # build
-meson setup build --prefix=/usr --buildtype=debugoptimized
-meson compile -C build
+group 'build'
+meson setup "$builddir" \
+  --prefix=/usr \
+  --buildtype=debugoptimized \
+  "${setup_flags[@]}"
+meson compile -C "$builddir"
+endgroup
 
 # test
-meson test -C build
+group 'test'
+meson test -C "$builddir"
+endgroup
 
-# package
-meson install -C build
+# install
+if (( test_install )); then
+  group 'install'
+  meson install -C "$builddir"
+  endgroup
+fi

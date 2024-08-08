@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - run: build-aux/ci-test
+      - run: build-aux/ci-test plain
 
   test_asan:
     runs-on: ubuntu-latest
@@ -20,4 +20,4 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - run: build-aux/ci-test-asan
+      - run: build-aux/ci-test asan
