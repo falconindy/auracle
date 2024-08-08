@@ -54,7 +54,7 @@ FMT_BEGIN_NAMESPACE
 template <>
 struct formatter<absl::Time> {
   auto parse(fmt::format_parse_context& ctx) {
-    return parse_format_or_default(ctx, "%c", &tm_format);
+    return parse_format_or_default(ctx, absl::RFC3339_sec, &tm_format);
   }
 
   auto format(const absl::Time t, fmt::format_context& ctx) {

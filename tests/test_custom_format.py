@@ -24,7 +24,7 @@ class TestInfo(auracle_test.TestCase):
     def testDateTimeFormat(self):
         r = self.Auracle(['info', '-F', '{submitted}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual('Sun Jul  2 16:40:08 2017',
+        self.assertEqual('2017-07-02T16:40:08+00:00',
                          r.process.stdout.decode().strip())
 
         r = self.Auracle(['info', '-F', '{submitted::%s}', 'auracle-git'])
