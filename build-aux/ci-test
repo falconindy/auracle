@@ -1,6 +1,6 @@
 #!/bin/bash -le
 
-pacman -Syu --noconfirm base-devel git gmock gtest python meson fmt perl
+pacman -Syu --noconfirm base-devel git gmock gtest python meson perl
 
 # Needed to ensure PATH is properly set for perl, etc.
 source /etc/profile
