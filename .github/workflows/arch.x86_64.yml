@@ -2,14 +2,22 @@ name: arch.x86_64
 on: [push, pull_request]
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v1
+    container:
+      image: archlinux
 
-      - name: ci-test
-        uses: falconindy/arch-dockerbuild@v1
-        with:
-          entrypoint: 'build-aux/ci-test'
+    steps:
+      - uses: actions/checkout@v4
+      - run: build-aux/ci-test
+
+  test_asan:
+    runs-on: ubuntu-latest
+
+    container:
+      image: archlinux
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: build-aux/ci-test-asan
