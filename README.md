@@ -50,8 +50,8 @@ You're probably building this from the AUR, though, so just go use the
 If you're hacking on auracle, you can do this manually:
 
 ```sh
-$ meson build
-$ ninja -C build
+$ meson setup build
+$ meson compile -C build
 ```
 
 And running the tests is simply a matter of:
