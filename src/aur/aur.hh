@@ -14,7 +14,7 @@ namespace aur {
 class Aur {
  public:
   template <typename ResponseType>
-  using ResponseCallback = std::function<int(ResponseWrapper<ResponseType>)>;
+  using ResponseCallback = std::function<int(absl::StatusOr<ResponseType>)>;
 
   using RpcResponseCallback = ResponseCallback<RpcResponse>;
   using RawResponseCallback = ResponseCallback<RawResponse>;

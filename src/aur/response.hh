@@ -3,32 +3,10 @@
 #define AUR_RESPONSE_HH_
 
 #include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "package.hh"
 
 namespace aur {
-
-template <typename ResponseT>
-class ResponseWrapper {
- public:
-  ResponseWrapper(ResponseT value, absl::Status status)
-      : value_(std::move(value)), status_(std::move(status)) {}
-
-  ResponseWrapper(const ResponseWrapper&) = delete;
-  ResponseWrapper& operator=(const ResponseWrapper&) = delete;
-
-  ResponseWrapper(ResponseWrapper&&) noexcept = default;
-  ResponseWrapper& operator=(ResponseWrapper&&) noexcept = default;
-
-  const ResponseT& value() const { return value_; }
-  ResponseT&& value() { return std::move(value_); }
-
-  const absl::Status& status() const { return status_; }
-  bool ok() const { return status_.ok(); }
-
- private:
-  ResponseT value_;
-  absl::Status status_;
-};
 
 struct CloneResponse {
   explicit CloneResponse(std::string operation)

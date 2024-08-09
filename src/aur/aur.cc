@@ -49,9 +49,8 @@ class AurImpl : public Aur {
       absl::flat_hash_set<std::variant<CURL*, sd_event_source*>>;
 
   template <typename ResponseHandlerType>
-  void QueueHttpRequest(
-      const HttpRequest& request,
-      const typename ResponseHandlerType::CallbackType& callback);
+  void QueueHttpRequest(const HttpRequest& request,
+                        const ResponseHandlerType::CallbackType& callback);
 
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
   int FinishRequest(sd_event_source* source);
@@ -187,7 +186,11 @@ class TypedResponseHandler : public ResponseHandler {
   virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
 
   int Run(absl::Status status) override {
-    return callback_(ResponseWrapper(MakeResponse(), status));
+    if (status.ok()) {
+      return callback_(MakeResponse());
+    } else {
+      return callback_(std::move(status));
+    }
   }
 
  private:
@@ -494,7 +497,7 @@ int AurImpl::Wait() {
 template <typename ResponseHandlerType>
 void AurImpl::QueueHttpRequest(
     const HttpRequest& request,
-    const typename ResponseHandlerType::CallbackType& callback) {
+    const ResponseHandlerType::CallbackType& callback) {
   for (const auto& r : request.Build(options_.baseurl)) {
     auto* curl = curl_easy_init();
     auto* handler = new ResponseHandlerType(this, callback);

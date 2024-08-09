@@ -11,6 +11,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/statusor.h"
 #include "aur/response.hh"
 #include "format.hh"
 #include "pacman.hh"
@@ -100,8 +101,7 @@ bool ChdirIfNeeded(const fs::path& target) {
   return true;
 }
 
-bool RpcResponseIsFailure(
-    const aur::ResponseWrapper<aur::RpcResponse>& response) {
+bool RpcResponseIsFailure(const absl::StatusOr<aur::RpcResponse>& response) {
   const std::string error =
       response.ok() ? response.value().error : response.status().ToString();
   if (error.empty()) {
@@ -134,7 +134,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
 
   aur_->QueueRpcRequest(
       info_request, [this, state, want{std::move(args)}](
-                        aur::ResponseWrapper<aur::RpcResponse> response) {
+                        absl::StatusOr<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
@@ -191,19 +191,18 @@ int Auracle::Info(const std::vector<std::string>& args,
   }
 
   std::vector<aur::Package> packages;
-  aur_->QueueRpcRequest(aur::InfoRequest(args),
-                        [&](aur::ResponseWrapper<aur::RpcResponse> response) {
-                          if (RpcResponseIsFailure(response)) {
-                            return -EIO;
-                          }
+  aur_->QueueRpcRequest(
+      aur::InfoRequest(args), [&](absl::StatusOr<aur::RpcResponse> response) {
+        if (RpcResponseIsFailure(response)) {
+          return -EIO;
+        }
 
-                          auto results = response.value().results;
-                          packages.reserve(packages.size() + results.size());
-                          std::move(results.begin(), results.end(),
-                                    std::back_inserter(packages));
+        auto results = response.value().results;
+        packages.reserve(packages.size() + results.size());
+        std::move(results.begin(), results.end(), std::back_inserter(packages));
 
-                          return 0;
-                        });
+        return 0;
+      });
 
   auto r = aur_->Wait();
   if (r < 0) {
@@ -273,7 +272,7 @@ int Auracle::Search(const std::vector<std::string>& args,
     }
 
     aur_->QueueRpcRequest(aur::SearchRequest(options.search_by, frag),
-                          [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+                          [&](absl::StatusOr<aur::RpcResponse> response) {
                             if (RpcResponseIsFailure(response)) {
                               return -EIO;
                             }
@@ -321,8 +320,8 @@ int Auracle::Clone(const std::vector<std::string>& args,
       [this, &ret](const aur::Package& p) {
         aur_->QueueCloneRequest(
             aur::CloneRequest(p.pkgbase),
-            [&ret, pkgbase = p.pkgbase](
-                aur::ResponseWrapper<aur::CloneResponse> response) {
+            [&ret,
+             pkgbase = p.pkgbase](absl::StatusOr<aur::CloneResponse> response) {
               if (response.ok()) {
                 std::cout << response.value().operation << " complete: "
                           << (fs::current_path() / pkgbase).string() << "\n";
@@ -357,8 +356,7 @@ int Auracle::Show(const std::vector<std::string>& args,
 
   int resultcount = 0;
   aur_->QueueRpcRequest(
-      aur::InfoRequest(args),
-      [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+      aur::InfoRequest(args), [&](absl::StatusOr<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
@@ -369,7 +367,7 @@ int Auracle::Show(const std::vector<std::string>& args,
           aur_->QueueRawRequest(
               aur::RawRequest::ForSourceFile(pkg, options.show_file),
               [&options, print_header = resultcount > 1, pkgbase = pkg.pkgbase](
-                  aur::ResponseWrapper<aur::RawResponse> response) {
+                  absl::StatusOr<aur::RawResponse> response) {
                 if (absl::IsNotFound(response.status())) {
                   std::cerr << "error: file '" << options.show_file
                             << "' not found for package '" << pkgbase << "'\n";
@@ -499,8 +497,8 @@ int Auracle::Update(const std::vector<std::string>& args,
       options.recurse, options.resolve_depends, [&](const aur::Package& p) {
         aur_->QueueCloneRequest(
             aur::CloneRequest(p.pkgbase),
-            [&ret, pkgbase = p.pkgbase](
-                aur::ResponseWrapper<aur::CloneResponse> response) {
+            [&ret,
+             pkgbase = p.pkgbase](absl::StatusOr<aur::CloneResponse> response) {
               if (response.ok()) {
                 std::cout << response.value().operation << " complete: "
                           << (fs::current_path() / pkgbase).string() << "\n";
@@ -536,7 +534,7 @@ int Auracle::GetOutdatedPackages(const std::vector<std::string>& args,
   }
 
   aur_->QueueRpcRequest(
-      info_request, [&](aur::ResponseWrapper<aur::RpcResponse> response) {
+      info_request, [&](absl::StatusOr<aur::RpcResponse> response) {
         if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
@@ -588,7 +586,7 @@ int Auracle::Outdated(const std::vector<std::string>& args,
 
 namespace {
 
-int RawSearchDone(aur::ResponseWrapper<aur::RawResponse> response) {
+int RawSearchDone(absl::StatusOr<aur::RawResponse> response) {
   if (!response.ok()) {
     std::cerr << "error: request failed: " << response.status() << "\n";
     return -EIO;
