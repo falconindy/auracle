@@ -4,7 +4,7 @@ project(
     version: '0',
     license: 'MIT',
     meson_version: '>=0.56',
-    default_options: ['cpp_std=c++20', 'warning_level=2'],
+    default_options: ['cpp_std=c++23', 'warning_level=2'],
 )
 
 cpp = meson.get_compiler('cpp')
