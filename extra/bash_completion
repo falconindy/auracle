@@ -26,7 +26,9 @@ _auracle() {
         comps='always never auto'
         ;;
       '--searchby')
-        comps='name name-desc maintainer depends makedepends optdepends checkdepends'
+        comps='name name-desc maintainer depends makedepends optdepends
+               checkdepends submitter provides conflicts replaces
+               keywords groups maintainers'
         ;;
       '--sort'|'--rsort')
         comps="name votes popularity firstsubmitted lastmodified"

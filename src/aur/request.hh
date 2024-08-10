@@ -122,6 +122,13 @@ class SearchRequest : public RpcRequest {
     MAKEDEPENDS,
     OPTDEPENDS,
     CHECKDEPENDS,
+    SUBMITTER,
+    PROVIDES,
+    CONFLICTS,
+    REPLACES,
+    KEYWORDS,
+    GROUPS,
+    COMAINTAINERS,
   };
 
   static SearchBy ParseSearchBy(std::string_view searchby) {
@@ -145,6 +152,27 @@ class SearchRequest : public RpcRequest {
     }
     if (searchby == "checkdepends") {
       return SearchBy::CHECKDEPENDS;
+    }
+    if (searchby == "submitter") {
+      return SearchBy::SUBMITTER;
+    }
+    if (searchby == "provides") {
+      return SearchBy::PROVIDES;
+    }
+    if (searchby == "conflicts") {
+      return SearchBy::CONFLICTS;
+    }
+    if (searchby == "replaces") {
+      return SearchBy::REPLACES;
+    }
+    if (searchby == "keywords,") {
+      return SearchBy::KEYWORDS;
+    }
+    if (searchby == "groups") {
+      return SearchBy::GROUPS;
+    }
+    if (searchby == "comaintainers") {
+      return SearchBy::COMAINTAINERS;
     }
     return SearchBy::INVALID;
   }
@@ -178,6 +206,20 @@ class SearchRequest : public RpcRequest {
         return "optdepends";
       case SearchBy::CHECKDEPENDS:
         return "checkdepends";
+      case SearchBy::SUBMITTER:
+        return "submitter";
+      case SearchBy::PROVIDES:
+        return "provides";
+      case SearchBy::CONFLICTS:
+        return "conflicts";
+      case SearchBy::REPLACES:
+        return "replaces";
+      case SearchBy::KEYWORDS:
+        return "keywords";
+      case SearchBy::GROUPS:
+        return "groups";
+      case SearchBy::COMAINTAINERS:
+        return "comaintainers";
       default:
         return "";
     }
