@@ -4,7 +4,7 @@
 
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
-#include "package.hh"
+#include "aur/package.hh"
 
 namespace aur {
 

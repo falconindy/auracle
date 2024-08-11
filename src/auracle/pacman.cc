@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "pacman.hh"
+#include "auracle/pacman.hh"
 
 #include <glob.h>
 

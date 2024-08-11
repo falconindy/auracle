@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
-#include "format.hh"
+#include "auracle/format.hh"
 
 #include <iomanip>
 #include <iostream>
 #include <string_view>
 
 #include "absl/time/time.h"
+#include "auracle/terminal.hh"
 #include "fmt/printf.h"
-#include "terminal.hh"
 
 namespace {
 

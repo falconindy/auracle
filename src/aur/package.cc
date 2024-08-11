@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-#include "package.hh"
+#include "aur/package.hh"
 
-#include "json_internal.hh"
+#include "aur/json_internal.hh"
 
 namespace aur {
 

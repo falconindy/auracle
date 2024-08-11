@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "package.hh"
+#include "aur/package.hh"
 
 namespace aur {
 

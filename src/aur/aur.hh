@@ -6,8 +6,8 @@
 #include <memory>
 #include <string>
 
-#include "request.hh"
-#include "response.hh"
+#include "aur/request.hh"
+#include "aur/response.hh"
 
 namespace aur {
 

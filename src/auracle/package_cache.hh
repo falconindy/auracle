@@ -8,7 +8,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "aur/package.hh"
-#include "dependency_kind.hh"
+#include "auracle/dependency_kind.hh"
 
 namespace auracle {
 

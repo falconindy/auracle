@@ -3,8 +3,8 @@
 #define AUR_JSON_INTERNAL_HH_
 
 #include "absl/container/flat_hash_map.h"
+#include "aur/package.hh"
 #include "nlohmann/json.hpp"
-#include "package.hh"
 
 namespace aur {
 

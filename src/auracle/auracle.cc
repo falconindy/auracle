@@ -13,10 +13,11 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/statusor.h"
 #include "aur/response.hh"
-#include "format.hh"
-#include "pacman.hh"
-#include "search_fragment.hh"
-#include "sort.hh"
+#include "auracle/format.hh"
+#include "auracle/pacman.hh"
+#include "auracle/parsed_dependency.hh"
+#include "auracle/search_fragment.hh"
+#include "auracle/sort.hh"
 
 namespace fs = std::filesystem;
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "format.hh"
+#include "auracle/format.hh"
 
 #include <iostream>
 #include <sstream>

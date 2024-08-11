@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "aur/aur.hh"
-#include "dependency_kind.hh"
-#include "package_cache.hh"
-#include "pacman.hh"
-#include "sort.hh"
+#include "auracle/dependency_kind.hh"
+#include "auracle/package_cache.hh"
+#include "auracle/pacman.hh"
+#include "auracle/sort.hh"
 
 namespace auracle {
 

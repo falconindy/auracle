@@ -6,7 +6,7 @@
 
 #include "absl/status/status.h"
 #include "aur/package.hh"
-#include "pacman.hh"
+#include "auracle/pacman.hh"
 
 namespace format {
 
