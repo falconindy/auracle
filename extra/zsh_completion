@@ -29,6 +29,7 @@ case $state in
       'info:Show detailed information'
       'rawinfo:Dump unformatted JSON for info query'
       'rawsearch:Dump unformatted JSON for search query'
+      'resolve:Resolve dependencies'
       'search:Search for packages'
       'show:Dump package source file'
       'outdated:Check for updates for foreign packages'

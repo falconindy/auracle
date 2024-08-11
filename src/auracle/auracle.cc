@@ -227,6 +227,70 @@ int Auracle::Info(const std::vector<std::string>& args,
   return 0;
 }
 
+int Auracle::Resolve(const std::vector<std::string>& args,
+                     const CommandOptions& options) {
+  if (args.empty()) {
+    return ErrorNotEnoughArgs();
+  }
+  const ParsedDependency dep(args.front());
+
+  std::vector<aur::Package> providers;
+  aur_->QueueRpcRequest(
+      aur::SearchRequest(aur::SearchRequest::SearchBy::PROVIDES, dep.name()),
+      [&](absl::StatusOr<aur::RpcResponse> response) {
+        if (RpcResponseIsFailure(response)) {
+          return -EIO;
+        }
+
+        std::vector<std::string> candidates;
+        for (const auto& result : response->results) {
+          candidates.push_back(result.name);
+        }
+
+        if (candidates.empty()) {
+          return -ENOENT;
+        }
+
+        aur_->QueueRpcRequest(aur::InfoRequest(candidates),
+                              [&](absl::StatusOr<aur::RpcResponse> response) {
+                                if (RpcResponseIsFailure(response)) {
+                                  return -EIO;
+                                }
+
+                                for (auto& result : response->results) {
+                                  if (dep.SatisfiedBy(result)) {
+                                    providers.push_back(std::move(result));
+                                  }
+                                }
+
+                                if (providers.empty()) {
+                                  return -ENOENT;
+                                }
+
+                                return 0;
+                              });
+
+        return 0;
+      });
+
+  int r = aur_->Wait();
+  if (r < 0) {
+    return r;
+  }
+
+  SortUnique(providers, options.sorter);
+
+  if (!options.format.empty()) {
+    FormatCustom(providers, options.format);
+  } else if (options.quiet) {
+    FormatNameOnly(providers);
+  } else {
+    FormatShort(providers, pacman_);
+  }
+
+  return 0;
+}
+
 int Auracle::Search(const std::vector<std::string>& args,
                     const CommandOptions& options) {
   if (args.empty()) {

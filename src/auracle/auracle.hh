@@ -68,6 +68,8 @@ class Auracle {
   int Clone(const std::vector<std::string>& args,
             const CommandOptions& options);
   int Info(const std::vector<std::string>& args, const CommandOptions& options);
+  int Resolve(const std::vector<std::string>& arg,
+              const CommandOptions& options);
   int Show(const std::vector<std::string>& args, const CommandOptions& options);
   int RawInfo(const std::vector<std::string>& args,
               const CommandOptions& options);

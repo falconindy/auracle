@@ -105,6 +105,7 @@ libauracle = declare_dependency(
         src/auracle/format.cc src/auracle/format.hh
         src/auracle/package_cache.cc src/auracle/package_cache.hh
         src/auracle/pacman.cc src/auracle/pacman.hh
+        src/auracle/parsed_dependency.cc src/auracle/parsed_dependency.hh
         src/auracle/search_fragment.cc src/auracle/search_fragment.hh
         src/auracle/sort.cc src/auracle/sort.hh
         src/auracle/terminal.cc src/auracle/terminal.hh
@@ -187,6 +188,7 @@ test(
       src/test/gtest_main.cc
       src/auracle/dependency_kind_test.cc
       src/auracle/package_cache_test.cc
+      src/auracle/parsed_dependency_test.cc
       src/auracle/format_test.cc
       src/auracle/search_fragment_test.cc
       src/auracle/sort_test.cc
@@ -209,6 +211,7 @@ if py3.found() and py3.language_version().version_compare(python_requirement)
         'tests/test_outdated.py',
         'tests/test_raw_query.py',
         'tests/test_regex_search.py',
+        'tests/test_resolve.py',
         'tests/test_search.py',
         'tests/test_show.py',
         'tests/test_sort.py',

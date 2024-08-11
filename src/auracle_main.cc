@@ -27,7 +27,7 @@ struct Flags {
 
 [[noreturn]] void usage() {
   fputs(
-      "auracle [options] command\n"
+      "auracle [options] command [args...]\n"
       "\n"
       "Query the AUR or clone packages.\n"
       "\n"
@@ -54,6 +54,7 @@ struct Flags {
       "  outdated                 Check for updates for foreign packages\n"
       "  rawinfo                  Dump unformatted JSON for info query\n"
       "  rawsearch                Dump unformatted JSON for search query\n"
+      "  resolve                  Resolve dependency strings\n"
       "  search                   Search for packages\n"
       "  show                     Dump package source file\n"
       "  update                   Clone out of date foreign packages\n",
@@ -249,6 +250,7 @@ int main(int argc, char** argv) {
           {"rawinfo",     &auracle::Auracle::RawInfo},
           {"rawsearch",   &auracle::Auracle::RawSearch},
           {"outdated",    &auracle::Auracle::Outdated},
+          {"resolve",     &auracle::Auracle::Resolve},
           {"search",      &auracle::Auracle::Search},
           {"show",        &auracle::Auracle::Show},
           {"sync",        &auracle::Auracle::Outdated},
