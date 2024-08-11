@@ -12,10 +12,9 @@ class TestPkgbuild(auracle_test.TestCase):
 
         self.assertIn('pkgname=auracle-git', pkgbuild)
 
-        self.assertCountEqual([
-            '/rpc?v=5&type=info&arg[]=auracle-git',
-            '/cgit/aur.git/plain/PKGBUILD?h=auracle-git'
-        ], r.request_uris)
+        self.assertCountEqual(
+            ['/rpc/v5/info', '/cgit/aur.git/plain/PKGBUILD?h=auracle-git'],
+            r.request_uris)
 
     def testMultiplePkgbuilds(self):
         r = self.Auracle(['show', 'auracle-git', 'pkgfile-git'])
@@ -31,7 +30,7 @@ class TestPkgbuild(auracle_test.TestCase):
         self.assertNotEqual(0, r.process.returncode)
 
         self.assertCountEqual([
-            '/rpc?v=5&type=info&arg[]=totesnotfoundpackage',
+            '/rpc/v5/info',
         ], r.request_uris)
 
     def testFileNotFound(self):

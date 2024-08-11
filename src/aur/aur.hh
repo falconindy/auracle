@@ -51,14 +51,16 @@ class Aur {
   Aur(Aur&&) = default;
   Aur& operator=(Aur&&) = default;
 
-  // Asynchronously issue an RPC request. The callback will be invoked when the
-  // call completes.
+  // Asynchronously issue an RPC request using the REST API. The callback will
+  // be invoked when the call completes.
   virtual void QueueRpcRequest(const RpcRequest& request,
                                const RpcResponseCallback& callback) = 0;
 
   // Asynchronously issue a raw request. The callback will be invoked when the
   // call completes.
   virtual void QueueRawRequest(const HttpRequest& request,
+                               const RawResponseCallback& callback) = 0;
+  virtual void QueueRawRequest(const RpcRequest& request,
                                const RawResponseCallback& callback) = 0;
 
   // Clone a git repository.

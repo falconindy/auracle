@@ -12,8 +12,7 @@ class TestClone(auracle_test.TestCase):
         self.assertEqual(r.process.returncode, 0)
         self.assertPkgbuildExists('auracle-git')
 
-        self.assertCountEqual(r.request_uris,
-                              ['/rpc?v=5&type=info&arg[]=auracle-git'])
+        self.assertCountEqual(r.request_uris, ['/rpc/v5/info'])
 
     def testCloneNotFound(self):
         r = self.Auracle(['clone', 'packagenotfound'])
@@ -26,9 +25,7 @@ class TestClone(auracle_test.TestCase):
         self.assertPkgbuildExists('auracle-git')
         self.assertPkgbuildExists('pkgfile-git')
 
-        self.assertCountEqual(
-            r.request_uris,
-            ['/rpc?v=5&type=info&arg[]=auracle-git&arg[]=pkgfile-git'])
+        self.assertCountEqual(r.request_uris, ['/rpc/v5/info'])
 
     def testCloneRecursive(self):
         r = self.Auracle(['clone', '-r', 'auracle-git'])
@@ -37,7 +34,7 @@ class TestClone(auracle_test.TestCase):
         self.assertPkgbuildExists('nlohmann-json')
 
         self.assertGreater(len(r.request_uris), 1)
-        self.assertIn('/rpc?v=5&type=info&arg[]=auracle-git', r.request_uris)
+        self.assertIn('/rpc/v5/info', r.request_uris)
 
     def testCloneRecursiveWithRestrictedDeps(self):
         r = self.Auracle(
@@ -47,7 +44,7 @@ class TestClone(auracle_test.TestCase):
         self.assertPkgbuildNotExists('nlohmann-json')
 
         self.assertGreater(len(r.request_uris), 1)
-        self.assertIn('/rpc?v=5&type=info&arg[]=auracle-git', r.request_uris)
+        self.assertIn('/rpc/v5/info', r.request_uris)
 
     def testCloneUpdatesExistingCheckouts(self):
         # Package doesn't initially exist, expect a clone.

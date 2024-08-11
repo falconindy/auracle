@@ -12,17 +12,13 @@ class TestDownload(auracle_test.TestCase):
         self.assertListEqual(r.process.stdout.decode().strip().splitlines(),
                              ['auracle-git', 'pkgfile-git'])
 
-        # TODO: build this dynamically from the filesystem?
-        self.assertCountEqual(r.request_uris, [
-            '/rpc?v=5&type=info&arg[]=auracle-git&arg[]=ocaml&arg[]=pkgfile-git'
-        ])
+        self.assertCountEqual(r.request_uris, ['/rpc/v5/info'])
 
     def testOutdatedFiltersUpdatesToArgs(self):
         r = self.Auracle(['outdated', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
 
-        self.assertCountEqual(['/rpc?v=5&type=info&arg[]=auracle-git'],
-                              r.request_uris)
+        self.assertCountEqual(['/rpc/v5/info'], r.request_uris)
 
     def testExitsNonZeroWithoutUpgrades(self):
         r = self.Auracle(['outdated', '--quiet', 'ocaml'])

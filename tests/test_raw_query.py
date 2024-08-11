@@ -17,9 +17,7 @@ class TestRawQuery(auracle_test.TestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
-        self.assertCountEqual([
-            '/rpc?v=5&type=info&arg[]=auracle-git',
-        ], r.request_uris)
+        self.assertCountEqual(['/rpc/v5/info'], r.request_uris)
 
     def testRawSearch(self):
         r = self.Auracle(['rawsearch', 'aura'])
@@ -32,7 +30,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertIn('auracle-git', names)
 
         self.assertCountEqual([
-            '/rpc?v=5&type=search&by=name-desc&arg=aura',
+            '/rpc/v5/search/aura?by=name-desc',
         ], r.request_uris)
 
     def testMultipleRawSearch(self):
@@ -44,8 +42,8 @@ class TestRawQuery(auracle_test.TestCase):
             self.assertGreater(parsed['resultcount'], 1)
 
         self.assertCountEqual([
-            '/rpc?v=5&type=search&by=name-desc&arg=aura',
-            '/rpc?v=5&type=search&by=name-desc&arg=systemd',
+            '/rpc/v5/search/aura?by=name-desc',
+            '/rpc/v5/search/systemd?by=name-desc',
         ], r.request_uris)
 
     def testRawSearchBy(self):
@@ -59,7 +57,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertIn('auracle-git', names)
 
         self.assertCountEqual([
-            '/rpc?v=5&type=search&by=maintainer&arg=falconindy',
+            '/rpc/v5/search/falconindy?by=maintainer',
         ], r.request_uris)
 
     def testLiteralSearch(self):
@@ -67,7 +65,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertEqual(0, r.process.returncode)
 
         self.assertListEqual([
-            '/rpc?v=5&type=search&by=name-desc&arg=%5Eaurac.%2B',
+            '/rpc/v5/search/^aurac.+?by=name-desc',
         ], r.request_uris)
 
 

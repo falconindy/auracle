@@ -36,6 +36,8 @@ class AurImpl : public Aur {
 
   void QueueRawRequest(const HttpRequest& request,
                        const RawResponseCallback& callback) override;
+  void QueueRawRequest(const RpcRequest& request,
+                       const RawResponseCallback& callback) override;
 
   void QueueCloneRequest(const CloneRequest& request,
                          const CloneResponseCallback& callback) override;
@@ -51,6 +53,10 @@ class AurImpl : public Aur {
   template <typename ResponseHandlerType>
   void QueueHttpRequest(const HttpRequest& request,
                         const ResponseHandlerType::CallbackType& callback);
+
+  template <typename ResponseHandlerType>
+  void QueueRpcRequest(const RpcRequest& request,
+                       const ResponseHandlerType::CallbackType& callback);
 
   int FinishRequest(CURL* curl, CURLcode result, bool dispatch_callback);
   int FinishRequest(sd_event_source* source);
@@ -498,36 +504,39 @@ template <typename ResponseHandlerType>
 void AurImpl::QueueHttpRequest(
     const HttpRequest& request,
     const ResponseHandlerType::CallbackType& callback) {
-  for (const auto& r : request.Build(options_.baseurl)) {
-    auto* curl = curl_easy_init();
-    auto* handler = new ResponseHandlerType(this, callback);
+  auto* curl = curl_easy_init();
+  auto* handler = new ResponseHandlerType(this, callback);
 
-    using RH = ResponseHandler;
-    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
-    curl_easy_setopt(curl, CURLOPT_URL, r.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &RH::BodyCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, handler);
-    curl_easy_setopt(curl, CURLOPT_PRIVATE, handler);
-    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, handler->error_buffer.data());
-    curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, options_.useragent.c_str());
+  using RH = ResponseHandler;
+  curl_easy_setopt(curl, CURLOPT_URL, request.Url(options_.baseurl).c_str());
+  curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
+  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+  curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+  curl_easy_setopt(curl, CURLOPT_USERAGENT, options_.useragent.c_str());
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &RH::BodyCallback);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, handler);
+  curl_easy_setopt(curl, CURLOPT_PRIVATE, handler);
+  curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, handler->error_buffer.data());
 
-    switch (debug_level_) {
-      case DebugLevel::NONE:
-        break;
-      case DebugLevel::REQUESTS:
-        curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &RH::DebugCallback);
-        curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_stream_);
-        [[fallthrough]];
-      case DebugLevel::VERBOSE_STDERR:
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-        break;
-    }
-
-    curl_multi_add_handle(curl_multi_, curl);
-    active_requests_.emplace(curl);
+  if (request.command() == RpcRequest::Command::POST) {
+    curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, request.Payload().c_str());
   }
+
+  switch (debug_level_) {
+    case DebugLevel::NONE:
+      break;
+    case DebugLevel::REQUESTS:
+      curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION,
+                       &ResponseHandler::DebugCallback);
+      curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_stream_);
+      [[fallthrough]];
+    case DebugLevel::VERBOSE_STDERR:
+      curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+      break;
+  }
+
+  curl_multi_add_handle(curl_multi_, curl);
+  active_requests_.emplace(curl);
 }
 
 // static
@@ -561,7 +570,7 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
   }
 
   if (pid == 0) {
-    const auto url = request.Build(options_.baseurl)[0];
+    const auto url = request.Url(options_.baseurl);
 
     std::vector<const char*> cmd;
     if (update) {
@@ -601,6 +610,11 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
 }
 
 void AurImpl::QueueRawRequest(const HttpRequest& request,
+                              const RawResponseCallback& callback) {
+  QueueHttpRequest<RawResponseHandler>(request, callback);
+}
+
+void AurImpl::QueueRawRequest(const RpcRequest& request,
                               const RawResponseCallback& callback) {
   QueueHttpRequest<RawResponseHandler>(request, callback);
 }

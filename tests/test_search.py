@@ -48,8 +48,8 @@ class TestSearch(auracle_test.TestCase):
         # resultcount is the same as the results are deduped.
         r2 = self.Auracle(['search', '--quiet', 'aura', 'aura'])
         self.assertCountEqual([
-            '/rpc?v=5&type=search&by=name-desc&arg=aura',
-            '/rpc?v=5&type=search&by=name-desc&arg=aura',
+            '/rpc/v5/search/aura?by=name-desc',
+            '/rpc/v5/search/aura?by=name-desc',
         ], r2.request_uris)
         self.assertEqual(packagecount,
                          len(r2.process.stdout.decode().splitlines()))
@@ -59,7 +59,7 @@ class TestSearch(auracle_test.TestCase):
         self.assertEqual(0, r.process.returncode)
 
         self.assertListEqual([
-            '/rpc?v=5&type=search&by=name-desc&arg=%5Eaurac.%2B',
+            '/rpc/v5/search/^aurac.+?by=name-desc',
         ], r.request_uris)
 
     def testLiteralSearchWithShortTerm(self):
@@ -67,7 +67,7 @@ class TestSearch(auracle_test.TestCase):
         self.assertEqual(1, r.process.returncode)
 
         self.assertListEqual([
-            '/rpc?v=5&type=search&by=name-desc&arg=a',
+            '/rpc/v5/search/a?by=name-desc',
         ], r.request_uris)
 
 

@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "package.hh"
 
 namespace aur {
@@ -15,13 +16,42 @@ class Request {
  public:
   virtual ~Request() = default;
 
-  virtual std::vector<std::string> Build(std::string_view baseurl) const = 0;
+  virtual std::string Url(std::string_view baseurl) const = 0;
 };
 
 class HttpRequest : public Request {
  public:
+  enum class Command : int8_t {
+    GET,
+    POST,
+  };
+
   using QueryParam = std::pair<std::string, std::string>;
   using QueryParams = std::vector<QueryParam>;
+
+  explicit HttpRequest(Command command) : command_(command) {}
+
+  Command command() const { return command_; }
+
+  virtual std::string Payload() const = 0;
+
+ protected:
+  Command command_;
+};
+
+class RpcRequest : public HttpRequest {
+ public:
+  RpcRequest(Command command, std::string endpoint)
+      : HttpRequest(command), endpoint_(std::move(endpoint)) {}
+
+  std::string Url(std::string_view baseurl) const override;
+  std::string Payload() const override;
+
+  void AddArg(std::string key, std::string value);
+
+ private:
+  std::string endpoint_;
+  QueryParams params_;
 };
 
 // A class describing a GET request for an arbitrary URL on the AUR.
@@ -30,7 +60,8 @@ class RawRequest : public HttpRequest {
   static RawRequest ForSourceFile(const Package& package,
                                   std::string_view filename);
 
-  explicit RawRequest(std::string urlpath) : urlpath_(std::move(urlpath)) {}
+  explicit RawRequest(std::string urlpath)
+      : HttpRequest(HttpRequest::Command::GET), urlpath_(std::move(urlpath)) {}
 
   RawRequest(const RawRequest&) = delete;
   RawRequest& operator=(const RawRequest&) = delete;
@@ -38,7 +69,8 @@ class RawRequest : public HttpRequest {
   RawRequest(RawRequest&&) = default;
   RawRequest& operator=(RawRequest&&) = default;
 
-  std::vector<std::string> Build(std::string_view baseurl) const override;
+  std::string Url(std::string_view baseurl) const override;
+  std::string Payload() const override { return std::string(); }
 
  private:
   std::string urlpath_;
@@ -58,38 +90,10 @@ class CloneRequest : public Request {
 
   const std::string& reponame() const { return reponame_; }
 
-  std::vector<std::string> Build(std::string_view baseurl) const override;
+  std::string Url(std::string_view baseurl) const override;
 
  private:
   std::string reponame_;
-};
-
-// A base class describing a GET request to the RPC endpoint of the AUR.
-class RpcRequest : public HttpRequest {
- public:
-  using size_type = std::string_view::size_type;
-
-  // Upper limit on aur.archlinux.org seems to be somewhere around 8k.
-  static constexpr size_type kMaxUriLength = 8000;
-
-  RpcRequest(const HttpRequest::QueryParams& base_params,
-             size_type approx_max_length = kMaxUriLength);
-
-  RpcRequest(const RpcRequest&) = delete;
-  RpcRequest& operator=(const RpcRequest&) = delete;
-
-  RpcRequest(RpcRequest&&) = default;
-  RpcRequest& operator=(RpcRequest&&) = default;
-
-  std::vector<std::string> Build(std::string_view baseurl) const override;
-
-  void AddArg(std::string_view key, std::string_view value);
-
- private:
-  std::string base_querystring_;
-  size_type approx_max_length_;
-
-  HttpRequest::QueryParams args_;
 };
 
 class InfoRequest : public RpcRequest {
@@ -106,9 +110,9 @@ class InfoRequest : public RpcRequest {
   InfoRequest(InfoRequest&&) = default;
   InfoRequest& operator=(InfoRequest&&) = default;
 
-  InfoRequest() : RpcRequest({{"v", "5"}, {"type", "info"}}) {}
+  InfoRequest() : RpcRequest(HttpRequest::Command::POST, "/rpc/v5/info") {}
 
-  void AddArg(std::string_view arg) { RpcRequest::AddArg("arg[]", arg); }
+  void AddArg(std::string arg) { RpcRequest::AddArg("arg[]", std::move(arg)); }
 };
 
 class SearchRequest : public RpcRequest {
@@ -178,13 +182,9 @@ class SearchRequest : public RpcRequest {
   }
 
   SearchRequest(SearchBy by, std::string_view arg)
-      : RpcRequest({
-            {"v", "5"},
-            {"type", "search"},
-            {"by", SearchByToString(by)},
-        }) {
-    AddArg("arg", arg);
-  }
+      : RpcRequest(HttpRequest::Command::GET,
+                   absl::StrFormat("/rpc/v5/search/%s?by=%s", arg,
+                                   SearchByToString(by))) {}
 
   SearchRequest(const SearchRequest&) = delete;
   SearchRequest& operator=(const SearchRequest&) = delete;
