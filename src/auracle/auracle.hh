@@ -2,10 +2,10 @@
 #ifndef AURACLE_AURACLE_HH_
 #define AURACLE_AURACLE_HH_
 
-#include <set>
 #include <string>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "aur/aur.hh"
 #include "auracle/dependency_kind.hh"
 #include "auracle/package_cache.hh"
@@ -58,9 +58,9 @@ class Auracle {
     sort::Sorter sorter =
         sort::MakePackageSorter("name", sort::OrderBy::ORDER_ASC);
     std::string format;
-    std::set<DependencyKind> resolve_depends = {DependencyKind::Depend,
-                                                DependencyKind::CheckDepend,
-                                                DependencyKind::MakeDepend};
+    absl::btree_set<DependencyKind> resolve_depends = {
+        DependencyKind::Depend, DependencyKind::CheckDepend,
+        DependencyKind::MakeDepend};
   };
 
   int BuildOrder(const std::vector<std::string>& args,
@@ -86,14 +86,15 @@ class Auracle {
   struct PackageIterator {
     using PackageCallback = std::function<void(const aur::Package&)>;
 
-    PackageIterator(bool recurse, std::set<DependencyKind> resolve_depends,
+    PackageIterator(bool recurse,
+                    absl::btree_set<DependencyKind> resolve_depends,
                     PackageCallback callback)
         : recurse(recurse),
           resolve_depends(resolve_depends),
           callback(std::move(callback)) {}
 
     bool recurse;
-    std::set<DependencyKind> resolve_depends;
+    absl::btree_set<DependencyKind> resolve_depends;
 
     const PackageCallback callback;
     PackageCache package_cache;

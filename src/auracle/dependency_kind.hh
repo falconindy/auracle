@@ -2,10 +2,10 @@
 #ifndef AURACLE_DEPENDENCY_KIND_HH_
 #define AURACLE_DEPENDENCY_KIND_HH_
 
-#include <set>
 #include <string_view>
 #include <vector>
 
+#include "absl/container/btree_set.h"
 #include "aur/package.hh"
 
 namespace auracle {
@@ -17,7 +17,7 @@ enum class DependencyKind : int {
 };
 
 bool ParseDependencyKinds(std::string_view input,
-                          std::set<DependencyKind>* dependency_kinds);
+                          absl::btree_set<DependencyKind>* dependency_kinds);
 
 const std::vector<aur::Dependency>& GetDependenciesByKind(
     const aur::Package* package, DependencyKind kind);

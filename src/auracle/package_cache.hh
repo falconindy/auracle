@@ -6,6 +6,7 @@
 #include <set>
 #include <utility>
 
+#include "absl/container/btree_set.h"
 #include "absl/container/flat_hash_map.h"
 #include "aur/package.hh"
 #include "auracle/dependency_kind.hh"
@@ -35,8 +36,9 @@ class PackageCache {
   using WalkDependenciesFn =
       std::function<void(const std::string& name, const aur::Package* package,
                          const std::vector<std::string>& dependency_path)>;
-  void WalkDependencies(const std::string& name, WalkDependenciesFn cb,
-                        const std::set<DependencyKind>& dependency_kinds) const;
+  void WalkDependencies(
+      const std::string& name, WalkDependenciesFn cb,
+      const absl::btree_set<DependencyKind>& dependency_kinds) const;
 
  private:
   std::vector<aur::Package> packages_;

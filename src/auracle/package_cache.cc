@@ -84,7 +84,7 @@ class DependencyPath : public std::vector<std::string> {
 
 void PackageCache::WalkDependencies(
     const std::string& name, WalkDependenciesFn cb,
-    const std::set<DependencyKind>& dependency_kinds) const {
+    const absl::btree_set<DependencyKind>& dependency_kinds) const {
   absl::flat_hash_set<std::string> visited;
   DependencyPath dependency_path;
 

@@ -8,7 +8,7 @@
 namespace auracle {
 
 bool ParseDependencyKinds(std::string_view input,
-                          std::set<DependencyKind>* kinds) {
+                          absl::btree_set<DependencyKind>* kinds) {
   if (input.empty()) {
     return true;
   }
@@ -31,7 +31,7 @@ bool ParseDependencyKinds(std::string_view input,
       break;
   }
 
-  std::set<DependencyKind> parsed_kinds;
+  absl::btree_set<DependencyKind> parsed_kinds;
   for (const auto kind : absl::StrSplit(input, ',')) {
     if (kind == "depends") {
       parsed_kinds.insert(DependencyKind::Depend);

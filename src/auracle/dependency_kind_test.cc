@@ -28,7 +28,7 @@ TEST(AuracleTest, ParseDependencyKinds) {
 
   {
     // Overwrite
-    std::set<DK> kinds;
+    absl::btree_set<DK> kinds;
     EXPECT_TRUE(ParseDependencyKinds("depends", &kinds));
     EXPECT_THAT(kinds, testing::UnorderedElementsAre(DK::Depend));
     EXPECT_TRUE(
@@ -39,7 +39,7 @@ TEST(AuracleTest, ParseDependencyKinds) {
 
   {
     // Remove
-    std::set<DK> kinds = {DK::Depend, DK::MakeDepend, DK::CheckDepend};
+    absl::btree_set<DK> kinds = {DK::Depend, DK::MakeDepend, DK::CheckDepend};
     EXPECT_TRUE(ParseDependencyKinds("^checkdepends", &kinds));
     EXPECT_THAT(kinds,
                 testing::UnorderedElementsAre(DK::Depend, DK::MakeDepend));
@@ -49,7 +49,7 @@ TEST(AuracleTest, ParseDependencyKinds) {
 
   {
     // Append
-    std::set<DK> kinds;
+    absl::btree_set<DK> kinds;
     EXPECT_TRUE(ParseDependencyKinds("+depends", &kinds));
     EXPECT_THAT(kinds, testing::UnorderedElementsAre(DK::Depend));
     EXPECT_TRUE(ParseDependencyKinds("+makedepends,checkdepends", &kinds));
@@ -59,28 +59,28 @@ TEST(AuracleTest, ParseDependencyKinds) {
 
   {
     // Bad spelling
-    std::set<DK> kinds = {DK::Depend};
+    absl::btree_set<DK> kinds = {DK::Depend};
     EXPECT_FALSE(ParseDependencyKinds("derpends", &kinds));
     EXPECT_THAT(kinds, testing::UnorderedElementsAre(DK::Depend));
   }
 
   {
     // Negation in the middle of a string isn't allowed
-    std::set<DK> kinds = {DK::Depend};
+    absl::btree_set<DK> kinds = {DK::Depend};
     EXPECT_FALSE(ParseDependencyKinds("depends,!makedepends", &kinds));
     EXPECT_THAT(kinds, testing::UnorderedElementsAre(DK::Depend));
   }
 
   {
     // Bad second element still leaves out param untouched.
-    std::set<DK> kinds = {DK::Depend};
+    absl::btree_set<DK> kinds = {DK::Depend};
     EXPECT_FALSE(ParseDependencyKinds("depends,!makdepends", &kinds));
     EXPECT_THAT(kinds, testing::UnorderedElementsAre(DK::Depend));
   }
 
   {
     // Edge case of only a valid prefix
-    std::set<DK> kinds;
+    absl::btree_set<DK> kinds;
     EXPECT_FALSE(ParseDependencyKinds("+", &kinds));
     EXPECT_FALSE(ParseDependencyKinds("!", &kinds));
   }

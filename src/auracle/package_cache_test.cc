@@ -121,7 +121,7 @@ TEST(PackageCacheTest, WalkDependencies) {
           aur_packages.push_back(pkg);
         }
       },
-      std::set<auracle::DependencyKind>{
+      absl::btree_set<auracle::DependencyKind>{
           auracle::DependencyKind::Depend,
           auracle::DependencyKind::CheckDepend,
           auracle::DependencyKind::MakeDepend,
@@ -182,7 +182,7 @@ TEST(PackageCacheTest, WalkDependenciesWithLimitedDeps) {
   };
 
   cache.WalkDependencies("pkgfile-git", walk_dependencies_fn,
-                         std::set<auracle::DependencyKind>{
+                         absl::btree_set<auracle::DependencyKind>{
                              auracle::DependencyKind::Depend,
                              auracle::DependencyKind::MakeDepend,
                          });
@@ -194,7 +194,7 @@ TEST(PackageCacheTest, WalkDependenciesWithLimitedDeps) {
   aur_packages.clear();
 
   cache.WalkDependencies("pkgfile-git", walk_dependencies_fn,
-                         std::set<auracle::DependencyKind>{
+                         absl::btree_set<auracle::DependencyKind>{
                              auracle::DependencyKind::Depend,
                          });
   EXPECT_THAT(
@@ -205,7 +205,7 @@ TEST(PackageCacheTest, WalkDependenciesWithLimitedDeps) {
   aur_packages.clear();
 
   cache.WalkDependencies("pacman-git", walk_dependencies_fn,
-                         std::set<auracle::DependencyKind>{
+                         absl::btree_set<auracle::DependencyKind>{
                              auracle::DependencyKind::CheckDepend,
                          });
   EXPECT_THAT(walked_packages,

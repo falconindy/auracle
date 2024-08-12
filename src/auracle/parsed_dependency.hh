@@ -1,7 +1,9 @@
-#ifndef AURACLE_PARSED_DEPENDENCY_H
-#define AURACLE_PARSED_DEPENDENCY_H
+// SPDX-License-Identifier: MIT
+#ifndef AURACLE_PARSED_DEPENDENCY_HH_
+#define AURACLE_PARSED_DEPENDENCY_HH_
 
 #include <string>
+#include <string_view>
 
 #include "aur/package.hh"
 
