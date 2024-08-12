@@ -31,11 +31,8 @@ struct RpcResponse {
   RpcResponse(RpcResponse&&) = default;
   RpcResponse& operator=(RpcResponse&&) = default;
 
-  std::string type;
   std::string error;
-  int resultcount;
   std::vector<Package> results;
-  int version;
 };
 
 struct RawResponse {

@@ -426,7 +426,7 @@ int Auracle::Show(const std::vector<std::string>& args,
           return -EIO;
         }
 
-        resultcount = response.value().resultcount;
+        resultcount = response.value().results.size();
 
         for (const auto& pkg : response.value().results) {
           aur_->QueueRawRequest(

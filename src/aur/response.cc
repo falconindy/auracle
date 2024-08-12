@@ -8,10 +8,7 @@ namespace aur {
 void from_json(const nlohmann::json& j, RpcResponse& r) {
   // clang-format off
   static const auto& callbacks = *new CallbackMap<RpcResponse>{
-    { "type",         MakeValueCallback(&RpcResponse::type) },
     { "error",        MakeValueCallback(&RpcResponse::error) },
-    { "resultcount",  MakeValueCallback(&RpcResponse::resultcount) },
-    { "version",      MakeValueCallback(&RpcResponse::version) },
     { "results",      MakeValueCallback(&RpcResponse::results) },
   };
   // clang-format on
@@ -28,7 +25,6 @@ RpcResponse::RpcResponse(const std::string& json_bytes) {
   try {
     *this = nlohmann::json::parse(json_bytes);
   } catch (const std::exception& e) {
-    type = "error";
     error = e.what();
   }
 }

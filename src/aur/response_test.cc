@@ -67,9 +67,6 @@ TEST(ResponseTest, ParsesSuccessResponse) {
     ]
   })");
 
-  EXPECT_EQ(response.type, "multiinfo");
-  EXPECT_EQ(response.version, 5);
-  EXPECT_EQ(response.resultcount, 1);
   ASSERT_EQ(response.results.size(), 1);
 
   const auto& result = response.results[0];
@@ -116,9 +113,6 @@ TEST(ResponseTest, ParsesErrorResponse) {
     "error": "something"
   })");
 
-  EXPECT_EQ(response.version, 5);
-  EXPECT_EQ(response.type, "error");
-  EXPECT_EQ(response.resultcount, 0);
   EXPECT_THAT(response.results, testing::IsEmpty());
   EXPECT_EQ(response.error, "something");
 }
@@ -132,6 +126,5 @@ TEST(ResponseTest, GracefullyHandlesInvalidJson) {
     "error": "something"
   })");
 
-  ASSERT_EQ(response.type, "error");
   ASSERT_THAT(response.error, testing::HasSubstr("parse error"));
 }
