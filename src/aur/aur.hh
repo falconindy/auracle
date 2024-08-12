@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/functional/any_invocable.h"
 #include "aur/request.hh"
 #include "aur/response.hh"
 
@@ -14,7 +15,8 @@ namespace aur {
 class Aur {
  public:
   template <typename ResponseType>
-  using ResponseCallback = std::function<int(absl::StatusOr<ResponseType>)>;
+  using ResponseCallback =
+      absl::AnyInvocable<int(absl::StatusOr<ResponseType>)>;
 
   using RpcResponseCallback = ResponseCallback<RpcResponse>;
   using RawResponseCallback = ResponseCallback<RawResponse>;
@@ -54,18 +56,18 @@ class Aur {
   // Asynchronously issue an RPC request using the REST API. The callback will
   // be invoked when the call completes.
   virtual void QueueRpcRequest(const RpcRequest& request,
-                               const RpcResponseCallback& callback) = 0;
+                               RpcResponseCallback callback) = 0;
 
   // Asynchronously issue a raw request. The callback will be invoked when the
   // call completes.
   virtual void QueueRawRequest(const HttpRequest& request,
-                               const RawResponseCallback& callback) = 0;
+                               RawResponseCallback callback) = 0;
   virtual void QueueRawRequest(const RpcRequest& request,
-                               const RawResponseCallback& callback) = 0;
+                               RawResponseCallback callback) = 0;
 
   // Clone a git repository.
   virtual void QueueCloneRequest(const CloneRequest& request,
-                                 const CloneResponseCallback& callback) = 0;
+                                 CloneResponseCallback callback) = 0;
 
   // Wait for all pending requests to complete. Returns non-zero if any request
   // failed or was cancelled by a callback.
