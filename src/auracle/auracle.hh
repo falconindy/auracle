@@ -10,6 +10,7 @@
 #include "auracle/dependency_kind.hh"
 #include "auracle/package_cache.hh"
 #include "auracle/pacman.hh"
+#include "auracle/parsed_dependency.hh"
 #include "auracle/sort.hh"
 
 namespace auracle {
@@ -99,6 +100,8 @@ class Auracle {
     const PackageCallback callback;
     PackageCache package_cache;
   };
+
+  void ResolveOne(ParsedDependency dep, aur::Aur::RpcResponseCallback callback);
 
   int GetOutdatedPackages(const std::vector<std::string>& args,
                           std::vector<aur::Package>* packages);

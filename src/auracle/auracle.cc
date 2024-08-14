@@ -121,6 +121,34 @@ Auracle::Auracle(Options options)
                            .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 
+void Auracle::ResolveOne(ParsedDependency dep,
+                         aur::Aur::RpcResponseCallback callback) {
+  aur_->QueueRpcRequest(
+      aur::SearchRequest(aur::SearchRequest::SearchBy::PROVIDES, dep.name()),
+      [this, callback = std::move(callback),
+       dep](absl::StatusOr<aur::RpcResponse> search_response) mutable {
+        if (!search_response.ok() || search_response->results.empty()) {
+          return callback(std::move(search_response));
+        }
+
+        aur_->QueueRpcRequest(
+            aur::InfoRequest(search_response->results),
+            [callback = std::move(callback), dep = std::move(dep)](
+                absl::StatusOr<aur::RpcResponse> info_response) mutable {
+              if (info_response.ok()) {
+                std::erase_if(info_response->results,
+                              [dep](const aur::Package& p) {
+                                return !dep.SatisfiedBy(p);
+                              });
+              }
+
+              return callback(std::move(info_response));
+            });
+
+        return 0;
+      });
+}
+
 void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
   aur::InfoRequest info_request;
@@ -232,46 +260,21 @@ int Auracle::Resolve(const std::vector<std::string>& args,
   if (args.empty()) {
     return ErrorNotEnoughArgs();
   }
-  const ParsedDependency dep(args.front());
 
   std::vector<aur::Package> providers;
-  aur_->QueueRpcRequest(
-      aur::SearchRequest(aur::SearchRequest::SearchBy::PROVIDES, dep.name()),
-      [&](absl::StatusOr<aur::RpcResponse> response) {
-        if (RpcResponseIsFailure(response)) {
-          return -EIO;
-        }
 
-        std::vector<std::string> candidates;
-        for (const auto& result : response->results) {
-          candidates.push_back(result.name);
-        }
+  for (const auto& arg : args) {
+    ResolveOne(ParsedDependency(arg),
+               [&](absl::StatusOr<aur::RpcResponse> response) {
+                 if (RpcResponseIsFailure(response)) {
+                   return -EIO;
+                 }
 
-        if (candidates.empty()) {
-          return -ENOENT;
-        }
-
-        aur_->QueueRpcRequest(aur::InfoRequest(candidates),
-                              [&](absl::StatusOr<aur::RpcResponse> response) {
-                                if (RpcResponseIsFailure(response)) {
-                                  return -EIO;
-                                }
-
-                                for (auto& result : response->results) {
-                                  if (dep.SatisfiedBy(result)) {
-                                    providers.push_back(std::move(result));
-                                  }
-                                }
-
-                                if (providers.empty()) {
-                                  return -ENOENT;
-                                }
-
-                                return 0;
-                              });
-
-        return 0;
-      });
+                 absl::c_move(std::move(response)->results,
+                              std::back_inserter(providers));
+                 return 0;
+               });
+  }
 
   int r = aur_->Wait();
   if (r < 0) {

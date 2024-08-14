@@ -158,11 +158,11 @@ the POSIX extended regex specification.
 B<NOTE>: the AUR does not actually support searching by regular expressions
 and support in auracle is implemented on a best-effort basis.
 
-=item B<resolve> I<TERM>
+=item B<resolve> I<TERMS>...
 
-Pass a single dependency string argument to perform a search query for packages
-that can satisfy the input dependency. Dependency syntax follows that of pacman
-and makepkg, i.e. I<auracle> or I<auracleE<gt>=21>.
+Pass one to many dependency string arguments to perform a search query for
+packages that can satisfy the input dependencies. Dependency syntax follows
+that of pacman and makepkg, for example: I<auracle> or I<auracleE<gt>=21>.
 
 =item B<show> I<PACKAGES>...
 

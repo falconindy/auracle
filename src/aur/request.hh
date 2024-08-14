@@ -104,6 +104,12 @@ class InfoRequest : public RpcRequest {
     }
   }
 
+  explicit InfoRequest(const std::vector<Package>& packages) : InfoRequest() {
+    for (const auto& package : packages) {
+      AddArg(package.name);
+    }
+  }
+
   InfoRequest(const InfoRequest&) = delete;
   InfoRequest& operator=(const InfoRequest&) = delete;
 
@@ -188,6 +194,9 @@ class SearchRequest : public RpcRequest {
 
   SearchRequest(const SearchRequest&) = delete;
   SearchRequest& operator=(const SearchRequest&) = delete;
+
+  SearchRequest(SearchRequest&&) = default;
+  SearchRequest& operator=(SearchRequest&&) = default;
 
  private:
   std::string SearchByToString(SearchBy by) {

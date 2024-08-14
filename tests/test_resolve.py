@@ -31,9 +31,23 @@ class TestResolve(auracle_test.TestCase):
         self.assertCountEqual(['curl-git'],
                               r.process.stdout.decode().splitlines())
 
+    def testMultipleDependencies(self):
+        r = self.Auracle(['resolve', '-q', 'pacman=6.1.0', 'curl>8.7.1'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertCountEqual(['pacman-git', 'curl-git'],
+                              r.process.stdout.decode().splitlines())
+
+    def testMultipleOverlappingDependencies(self):
+        r = self.Auracle(['resolve', '-q', 'curl', 'curl>8'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertCountEqual([
+            'curl-c-ares', 'curl-git', 'curl-http3-ngtcp2', 'curl-quiche-git'
+        ],
+                              r.process.stdout.decode().splitlines())
+
     def testNoProvidersFound(self):
         r = self.Auracle(['resolve', 'curl=42'])
-        self.assertEqual(1, r.process.returncode)
+        self.assertEqual(0, r.process.returncode)
 
 
 if __name__ == '__main__':

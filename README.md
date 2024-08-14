@@ -12,6 +12,7 @@ Auracle has a number of actions it can perform:
 * `search`: find packages in the AUR by regular expression.
 * `info`: return detailed information about packages.
 * `show`: show the contents of a source file for a package (e.g. the PKGBUILD)
+* `resolve`: find packages which provide dependencies.
 * `raw{info,search}`: similar to info and search, but output raw json responses
   rather than formatting them.
 * `clone`: clone the git repository for packages.
