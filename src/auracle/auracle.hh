@@ -6,7 +6,8 @@
 #include <vector>
 
 #include "absl/container/btree_set.h"
-#include "aur/aur.hh"
+#include "aur/client.hh"
+#include "aur/request.hh"
 #include "auracle/dependency_kind.hh"
 #include "auracle/package_cache.hh"
 #include "auracle/pacman.hh"
@@ -101,14 +102,15 @@ class Auracle {
     PackageCache package_cache;
   };
 
-  void ResolveOne(ParsedDependency dep, aur::Aur::RpcResponseCallback callback);
+  void ResolveOne(ParsedDependency dep,
+                  aur::Client::RpcResponseCallback callback);
 
   int GetOutdatedPackages(const std::vector<std::string>& args,
                           std::vector<aur::Package>* packages);
 
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
 
-  std::unique_ptr<aur::Aur> aur_;
+  std::unique_ptr<aur::Client> client_;
   Pacman* pacman_;
 };
 

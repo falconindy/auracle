@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-#include "aur/aur.hh"
+#include "aur/client.hh"
 
 #include <curl/curl.h>
 #include <fcntl.h>
@@ -20,16 +20,16 @@ namespace fs = std::filesystem;
 
 namespace aur {
 
-class AurImpl : public Aur {
+class ClientImpl : public Client {
  public:
-  explicit AurImpl(Options options = Options());
-  ~AurImpl() override;
+  explicit ClientImpl(Client::Options options = Options());
+  ~ClientImpl() override;
 
-  AurImpl(const AurImpl&) = delete;
-  AurImpl& operator=(const AurImpl&) = delete;
+  ClientImpl(const ClientImpl&) = delete;
+  ClientImpl& operator=(const ClientImpl&) = delete;
 
-  AurImpl(AurImpl&&) = default;
-  AurImpl& operator=(AurImpl&&) = default;
+  ClientImpl(ClientImpl&&) = default;
+  ClientImpl& operator=(ClientImpl&&) = default;
 
   void QueueRpcRequest(const RpcRequest& request,
                        RpcResponseCallback callback) override;
@@ -134,7 +134,7 @@ absl::Status StatusFromCurlHandle(CURL* curl) {
 
 class ResponseHandler {
  public:
-  explicit ResponseHandler(AurImpl* aur) : aur_(aur) {}
+  explicit ResponseHandler(ClientImpl* client) : client_(client) {}
   virtual ~ResponseHandler() = default;
 
   ResponseHandler(const ResponseHandler&) = delete;
@@ -169,7 +169,7 @@ class ResponseHandler {
     return r;
   }
 
-  AurImpl* aur() const { return aur_; }
+  ClientImpl* client() const { return client_; }
 
   std::string body;
   std::array<char, CURL_ERROR_SIZE> error_buffer = {};
@@ -177,15 +177,15 @@ class ResponseHandler {
  private:
   virtual int Run(absl::Status status) = 0;
 
-  AurImpl* aur_;
+  ClientImpl* client_;
 };
 
 template <typename ResponseT>
 class TypedResponseHandler : public ResponseHandler {
  public:
-  using CallbackType = Aur::ResponseCallback<ResponseT>;
+  using CallbackType = Client::ResponseCallback<ResponseT>;
 
-  constexpr TypedResponseHandler(AurImpl* aur, CallbackType callback)
+  constexpr TypedResponseHandler(ClientImpl* aur, CallbackType callback)
       : ResponseHandler(aur), callback_(std::move(callback)) {}
 
  protected:
@@ -224,7 +224,7 @@ using RawResponseHandler = TypedResponseHandler<RawResponse>;
 
 class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
  public:
-  CloneResponseHandler(AurImpl* aur, Aur::CloneResponseCallback callback,
+  CloneResponseHandler(ClientImpl* aur, Client::CloneResponseCallback callback,
                        std::string operation)
       : TypedResponseHandler(aur, std::move(callback)),
         operation_(std::move(operation)) {}
@@ -240,7 +240,7 @@ class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
 
 }  // namespace
 
-AurImpl::AurImpl(Options options) : options_(std::move(options)) {
+ClientImpl::ClientImpl(Options options) : options_(std::move(options)) {
   curl_global_init(CURL_GLOBAL_SSL);
   curl_multi_ = curl_multi_init();
 
@@ -248,11 +248,11 @@ AurImpl::AurImpl(Options options) : options_(std::move(options)) {
   curl_multi_setopt(curl_multi_, CURLMOPT_MAX_TOTAL_CONNECTIONS, 5L);
 
   curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETFUNCTION,
-                    &AurImpl::SocketCallback);
+                    &ClientImpl::SocketCallback);
   curl_multi_setopt(curl_multi_, CURLMOPT_SOCKETDATA, this);
 
   curl_multi_setopt(curl_multi_, CURLMOPT_TIMERFUNCTION,
-                    &AurImpl::TimerCallback);
+                    &ClientImpl::TimerCallback);
   curl_multi_setopt(curl_multi_, CURLMOPT_TIMERDATA, this);
 
   sigset_t ss{};
@@ -270,7 +270,7 @@ AurImpl::AurImpl(Options options) : options_(std::move(options)) {
   }
 }
 
-AurImpl::~AurImpl() {
+ClientImpl::~ClientImpl() {
   curl_multi_cleanup(curl_multi_);
   curl_global_cleanup();
 
@@ -284,9 +284,9 @@ AurImpl::~AurImpl() {
   }
 }
 
-void AurImpl::Cancel(const ActiveRequests::value_type& request) {
+void ClientImpl::Cancel(const ActiveRequests::value_type& request) {
   struct Visitor {
-    constexpr explicit Visitor(AurImpl* aur) : aur(aur) {}
+    constexpr explicit Visitor(ClientImpl* aur) : aur(aur) {}
 
     void operator()(CURL* curl) {
       aur->FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
@@ -295,14 +295,14 @@ void AurImpl::Cancel(const ActiveRequests::value_type& request) {
 
     void operator()(sd_event_source* source) { aur->FinishRequest(source); }
 
-    AurImpl* aur;
+    ClientImpl* aur;
   };
 
   std::visit(Visitor(this), request);
 }
 
-int AurImpl::OnCancel(sd_event_source*, void* userdata) {
-  auto* aur = static_cast<AurImpl*>(userdata);
+int ClientImpl::OnCancel(sd_event_source*, void* userdata) {
+  auto* aur = static_cast<ClientImpl*>(userdata);
 
   while (!aur->active_requests_.empty()) {
     aur->Cancel(*aur->active_requests_.begin());
@@ -313,22 +313,22 @@ int AurImpl::OnCancel(sd_event_source*, void* userdata) {
   return 0;
 }
 
-void AurImpl::CancelAll() {
+void ClientImpl::CancelAll() {
   sd_event_source* cancel;
-  sd_event_add_defer(event_, &cancel, &AurImpl::OnCancel, this);
+  sd_event_add_defer(event_, &cancel, &ClientImpl::OnCancel, this);
   active_requests_.insert(cancel);
 }
 
 // static
-int AurImpl::SocketCallback(CURLM*, curl_socket_t s, int action, void* userdata,
-                            void* sockptr) {
-  auto* aur = static_cast<AurImpl*>(userdata);
+int ClientImpl::SocketCallback(CURLM*, curl_socket_t s, int action,
+                               void* userdata, void* sockptr) {
+  auto* aur = static_cast<ClientImpl*>(userdata);
   auto* io = static_cast<sd_event_source*>(sockptr);
   return aur->DispatchSocketCallback(s, action, io);
 }
 
-int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
-                                    sd_event_source* io) {
+int ClientImpl::DispatchSocketCallback(curl_socket_t s, int action,
+                                       sd_event_source* io) {
   if (action == CURL_POLL_REMOVE) {
     sd_event_source_unref(io);
     return CheckFinished();
@@ -356,7 +356,8 @@ int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
       return -1;
     }
   } else {
-    if (sd_event_add_io(event_, &io, s, events, &AurImpl::OnCurlIO, this) < 0) {
+    if (sd_event_add_io(event_, &io, s, events, &ClientImpl::OnCurlIO, this) <
+        0) {
       return -1;
     }
 
@@ -369,9 +370,9 @@ int AurImpl::DispatchSocketCallback(curl_socket_t s, int action,
 }
 
 // static
-int AurImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
-                      void* userdata) {
-  auto* aur = static_cast<AurImpl*>(userdata);
+int ClientImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
+                         void* userdata) {
+  auto* aur = static_cast<ClientImpl*>(userdata);
 
   int action;
   if ((revents & (EPOLLIN | EPOLLOUT)) == (EPOLLIN | EPOLLOUT)) {
@@ -394,8 +395,8 @@ int AurImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
 }
 
 // static
-int AurImpl::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
-  auto* aur = static_cast<AurImpl*>(userdata);
+int ClientImpl::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
+  auto* aur = static_cast<ClientImpl*>(userdata);
 
   int unused;
   if (curl_multi_socket_action(aur->curl_multi_, CURL_SOCKET_TIMEOUT, 0,
@@ -407,12 +408,12 @@ int AurImpl::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
 }
 
 // static
-int AurImpl::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
-  auto* aur = static_cast<AurImpl*>(userdata);
+int ClientImpl::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
+  auto* aur = static_cast<ClientImpl*>(userdata);
   return aur->DispatchTimerCallback(timeout_ms);
 }
 
-int AurImpl::DispatchTimerCallback(long timeout_ms) {
+int ClientImpl::DispatchTimerCallback(long timeout_ms) {
   if (timeout_ms < 0) {
     if (sd_event_source_set_enabled(timer_, SD_EVENT_OFF) < 0) {
       return -1;
@@ -434,7 +435,7 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
     }
   } else {
     if (sd_event_add_time(event_, &timer_, CLOCK_REALTIME, usec, 0,
-                          &AurImpl::OnCurlTimer, this) < 0) {
+                          &ClientImpl::OnCurlTimer, this) < 0) {
       return -1;
     }
   }
@@ -442,8 +443,8 @@ int AurImpl::DispatchTimerCallback(long timeout_ms) {
   return 0;
 }
 
-int AurImpl::FinishRequest(CURL* curl, CURLcode result,
-                           bool dispatch_callback) {
+int ClientImpl::FinishRequest(CURL* curl, CURLcode result,
+                              bool dispatch_callback) {
   ResponseHandler* handler;
   curl_easy_getinfo(curl, CURLINFO_PRIVATE, &handler);
 
@@ -465,13 +466,13 @@ int AurImpl::FinishRequest(CURL* curl, CURLcode result,
   return r;
 }
 
-int AurImpl::FinishRequest(sd_event_source* source) {
+int ClientImpl::FinishRequest(sd_event_source* source) {
   active_requests_.erase(source);
   sd_event_source_unref(source);
   return 0;
 }
 
-int AurImpl::CheckFinished() {
+int ClientImpl::CheckFinished() {
   int unused;
 
   auto* msg = curl_multi_info_read(curl_multi_, &unused);
@@ -488,7 +489,7 @@ int AurImpl::CheckFinished() {
   return r;
 }
 
-int AurImpl::Wait() {
+int ClientImpl::Wait() {
   cancelled_ = false;
 
   while (!active_requests_.empty()) {
@@ -501,8 +502,8 @@ int AurImpl::Wait() {
 }
 
 template <typename ResponseHandlerType>
-void AurImpl::QueueHttpRequest(const HttpRequest& request,
-                               ResponseHandlerType::CallbackType callback) {
+void ClientImpl::QueueHttpRequest(const HttpRequest& request,
+                                  ResponseHandlerType::CallbackType callback) {
   auto* curl = curl_easy_init();
   auto* handler = new ResponseHandlerType(this, std::move(callback));
 
@@ -539,11 +540,11 @@ void AurImpl::QueueHttpRequest(const HttpRequest& request,
 }
 
 // static
-int AurImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
-                         void* userdata) {
+int ClientImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
+                            void* userdata) {
   auto* handler = static_cast<CloneResponseHandler*>(userdata);
 
-  handler->aur()->FinishRequest(source);
+  handler->client()->FinishRequest(source);
 
   absl::Status status;
   if (si->si_status != 0) {
@@ -554,8 +555,8 @@ int AurImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
   return handler->RunCallback(std::move(status));
 }
 
-void AurImpl::QueueCloneRequest(const CloneRequest& request,
-                                CloneResponseCallback callback) {
+void ClientImpl::QueueCloneRequest(const CloneRequest& request,
+                                   CloneResponseCallback callback) {
   const bool update = fs::exists(fs::path(request.reponame()) / ".git");
 
   auto* handler = new CloneResponseHandler(this, std::move(callback),
@@ -602,29 +603,29 @@ void AurImpl::QueueCloneRequest(const CloneRequest& request,
   }
 
   sd_event_source* child;
-  sd_event_add_child(event_, &child, pid, WEXITED, &AurImpl::OnCloneExit,
+  sd_event_add_child(event_, &child, pid, WEXITED, &ClientImpl::OnCloneExit,
                      handler);
 
   active_requests_.emplace(child);
 }
 
-void AurImpl::QueueRawRequest(const HttpRequest& request,
-                              RawResponseCallback callback) {
+void ClientImpl::QueueRawRequest(const HttpRequest& request,
+                                 RawResponseCallback callback) {
   QueueHttpRequest<RawResponseHandler>(request, std::move(callback));
 }
 
-void AurImpl::QueueRawRequest(const RpcRequest& request,
-                              RawResponseCallback callback) {
+void ClientImpl::QueueRawRequest(const RpcRequest& request,
+                                 RawResponseCallback callback) {
   QueueHttpRequest<RawResponseHandler>(request, std::move(callback));
 }
 
-void AurImpl::QueueRpcRequest(const RpcRequest& request,
-                              RpcResponseCallback callback) {
+void ClientImpl::QueueRpcRequest(const RpcRequest& request,
+                                 RpcResponseCallback callback) {
   QueueHttpRequest<RpcResponseHandler>(request, std::move(callback));
 }
 
-std::unique_ptr<Aur> NewAur(Aur::Options options) {
-  return std::make_unique<AurImpl>(std::move(options));
+std::unique_ptr<Client> NewClient(Client::Options options) {
+  return std::make_unique<ClientImpl>(std::move(options));
 }
 
 }  // namespace aur

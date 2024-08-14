@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-#ifndef AUR_AUR_HH_
-#define AUR_AUR_HH_
+#ifndef AUR_CLIENT_HH_
+#define AUR_CLIENT_HH_
 
 #include <functional>
 #include <memory>
@@ -12,7 +12,7 @@
 
 namespace aur {
 
-class Aur {
+class Client {
  public:
   template <typename ResponseType>
   using ResponseCallback =
@@ -44,14 +44,14 @@ class Aur {
     std::string useragent;
   };
 
-  Aur() = default;
-  virtual ~Aur() = default;
+  Client() = default;
+  virtual ~Client() = default;
 
-  Aur(const Aur&) = delete;
-  Aur& operator=(const Aur&) = delete;
+  Client(const Client&) = delete;
+  Client& operator=(const Client&) = delete;
 
-  Aur(Aur&&) = default;
-  Aur& operator=(Aur&&) = default;
+  Client(Client&&) = default;
+  Client& operator=(Client&&) = default;
 
   // Asynchronously issue an RPC request using the REST API. The callback will
   // be invoked when the call completes.
@@ -74,7 +74,7 @@ class Aur {
   virtual int Wait() = 0;
 };
 
-std::unique_ptr<Aur> NewAur(Aur::Options options = Aur::Options());
+std::unique_ptr<Client> NewClient(Client::Options options = {});
 
 }  // namespace aur
 

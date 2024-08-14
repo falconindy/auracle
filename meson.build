@@ -80,7 +80,7 @@ libaur = declare_dependency(
             'aur',
             files(
                 '''
-        src/aur/aur.cc src/aur/aur.hh
+        src/aur/client.cc src/aur/client.hh
         src/aur/package.cc src/aur/package.hh
         src/aur/request.cc src/aur/request.hh
         src/aur/response.cc src/aur/response.hh
