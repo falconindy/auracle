@@ -36,8 +36,6 @@ class ClientImpl : public Client {
 
   void QueueRawRequest(const HttpRequest& request,
                        RawResponseCallback callback) override;
-  void QueueRawRequest(const RpcRequest& request,
-                       RawResponseCallback callback) override;
 
   void QueueCloneRequest(const CloneRequest& request,
                          CloneResponseCallback callback) override;
@@ -610,11 +608,6 @@ void ClientImpl::QueueCloneRequest(const CloneRequest& request,
 }
 
 void ClientImpl::QueueRawRequest(const HttpRequest& request,
-                                 RawResponseCallback callback) {
-  QueueHttpRequest<RawResponseHandler>(request, std::move(callback));
-}
-
-void ClientImpl::QueueRawRequest(const RpcRequest& request,
                                  RawResponseCallback callback) {
   QueueHttpRequest<RawResponseHandler>(request, std::move(callback));
 }

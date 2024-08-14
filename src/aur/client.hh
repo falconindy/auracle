@@ -62,8 +62,6 @@ class Client {
   // call completes.
   virtual void QueueRawRequest(const HttpRequest& request,
                                RawResponseCallback callback) = 0;
-  virtual void QueueRawRequest(const RpcRequest& request,
-                               RawResponseCallback callback) = 0;
 
   // Clone a git repository.
   virtual void QueueCloneRequest(const CloneRequest& request,
