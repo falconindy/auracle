@@ -3,21 +3,20 @@
 
 #include "aur/json_internal.hh"
 
-namespace aur {
+namespace aur::internal {
 
-void from_json(const nlohmann::json& j, RpcResponse& r) {
+void from_json(const nlohmann::json& j, RawRpcResponse& r) {
   // clang-format off
-  static const auto& callbacks = *new CallbackMap<RpcResponse>{
-    { "error",        MakeValueCallback(&RpcResponse::error) },
-    { "results",      MakeValueCallback(&RpcResponse::results) },
+  static const auto& callbacks = *new CallbackMap<RawRpcResponse>{
+    { "error",        MakeValueCallback(&RawRpcResponse::error) },
+    { "results",      MakeValueCallback(&RawRpcResponse::results) },
   };
   // clang-format on
 
   DeserializeJsonObject(j, callbacks, r);
 }
 
-// static
-RpcResponse::RpcResponse(const std::string& json_bytes) {
+RawRpcResponse::RawRpcResponse(const std::string& json_bytes) {
   if (json_bytes.empty()) {
     return;
   }
@@ -29,4 +28,4 @@ RpcResponse::RpcResponse(const std::string& json_bytes) {
   }
 }
 
-}  // namespace aur
+}  // namespace aur::internal

@@ -4,11 +4,12 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+using aur::internal::RawRpcResponse;
 using testing::Field;
 using testing::UnorderedElementsAre;
 
 TEST(ResponseTest, ParsesSuccessResponse) {
-  const aur::RpcResponse response(R"({
+  const RawRpcResponse response(R"({
     "version": 5,
     "type": "multiinfo",
     "resultcount": 1,
@@ -105,7 +106,7 @@ TEST(ResponseTest, ParsesSuccessResponse) {
 }
 
 TEST(ResponseTest, ParsesErrorResponse) {
-  const aur::RpcResponse response(R"({
+  const RawRpcResponse response(R"({
     "version": 5,
     "type": "error",
     "resultcount": 0,
@@ -118,7 +119,7 @@ TEST(ResponseTest, ParsesErrorResponse) {
 }
 
 TEST(ResponseTest, GracefullyHandlesInvalidJson) {
-  const aur::RpcResponse response(R"({
+  const RawRpcResponse response(R"({
     "version": 5,
     "type": "multiinfo,
     "resultcount": 0,

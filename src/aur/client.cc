@@ -187,7 +187,7 @@ class TypedResponseHandler : public ResponseHandler {
       : ResponseHandler(aur), callback_(std::move(callback)) {}
 
  protected:
-  virtual ResponseT MakeResponse() { return ResponseT(std::move(body)); }
+  virtual absl::StatusOr<ResponseT> MakeResponse() = 0;
 
   int Run(absl::Status status) override {
     if (status.ok()) {
@@ -205,6 +205,15 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
  public:
   using TypedResponseHandler<RpcResponse>::TypedResponseHandler;
 
+  absl::StatusOr<RpcResponse> MakeResponse() override {
+    internal::RawRpcResponse raw(std::move(body));
+    if (!raw.error.empty()) {
+      return absl::InvalidArgumentError(raw.error);
+    }
+
+    return RpcResponse(std::move(raw.results));
+  }
+
  protected:
   int Run(absl::Status status) override {
     if (!status.ok()) {
@@ -218,7 +227,14 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
   }
 };
 
-using RawResponseHandler = TypedResponseHandler<RawResponse>;
+class RawResponseHandler : public TypedResponseHandler<RawResponse> {
+ public:
+  using TypedResponseHandler<RawResponse>::TypedResponseHandler;
+
+  absl::StatusOr<RawResponse> MakeResponse() override {
+    return RawResponse(std::move(body));
+  }
+};
 
 class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
  public:
@@ -228,7 +244,7 @@ class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
         operation_(std::move(operation)) {}
 
  protected:
-  CloneResponse MakeResponse() override {
+  absl::StatusOr<CloneResponse> MakeResponse() override {
     return CloneResponse(std::move(operation_));
   }
 

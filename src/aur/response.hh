@@ -8,6 +8,24 @@
 
 namespace aur {
 
+namespace internal {
+
+struct RawRpcResponse {
+  RawRpcResponse() = default;
+  explicit RawRpcResponse(const std::string& json_bytes);
+
+  RawRpcResponse(const RawRpcResponse&) = delete;
+  RawRpcResponse& operator=(const RawRpcResponse&) = delete;
+
+  RawRpcResponse(RawRpcResponse&&) = default;
+  RawRpcResponse& operator=(RawRpcResponse&&) = default;
+
+  std::string error;
+  std::vector<Package> results;
+};
+
+}  // namespace internal
+
 struct CloneResponse {
   explicit CloneResponse(std::string operation)
       : operation(std::move(operation)) {}
@@ -22,8 +40,7 @@ struct CloneResponse {
 };
 
 struct RpcResponse {
-  RpcResponse() = default;
-  explicit RpcResponse(const std::string& json_bytes);
+  RpcResponse(std::vector<Package> packages) : packages(std::move(packages)) {}
 
   RpcResponse(const RpcResponse&) = delete;
   RpcResponse& operator=(const RpcResponse&) = delete;
@@ -31,8 +48,7 @@ struct RpcResponse {
   RpcResponse(RpcResponse&&) = default;
   RpcResponse& operator=(RpcResponse&&) = default;
 
-  std::string error;
-  std::vector<Package> results;
+  std::vector<Package> packages;
 };
 
 struct RawResponse {
