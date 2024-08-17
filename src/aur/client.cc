@@ -388,15 +388,12 @@ int ClientImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
                          void* userdata) {
   auto* aur = static_cast<ClientImpl*>(userdata);
 
-  int action;
-  if ((revents & (EPOLLIN | EPOLLOUT)) == (EPOLLIN | EPOLLOUT)) {
-    action = CURL_POLL_INOUT;
-  } else if (revents & EPOLLIN) {
-    action = CURL_POLL_IN;
-  } else if (revents & EPOLLOUT) {
-    action = CURL_POLL_OUT;
-  } else {
-    action = 0;
+  int action = 0;
+  if (revents & EPOLLIN) {
+    action |= CURL_CSELECT_IN;
+  }
+  if (revents & EPOLLOUT) {
+    action |= CURL_CSELECT_OUT;
   }
 
   int unused;
