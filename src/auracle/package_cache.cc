@@ -5,6 +5,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "auracle/dependency.hh"
 
 namespace auracle {
 
@@ -16,8 +17,13 @@ std::pair<const aur::Package*, bool> PackageCache::AddPackage(
   }
 
   const auto& p = packages_.emplace_back(std::move(package));
-  index_by_pkgbase_.emplace(p.pkgbase, packages_.size() - 1);
-  index_by_pkgname_.emplace(p.name, packages_.size() - 1);
+  int idx = packages_.size() - 1;
+  index_by_pkgbase_.emplace(p.pkgbase, idx);
+  index_by_pkgname_.emplace(p.name, idx);
+
+  for (const auto& provide : p.provides) {
+    index_by_provide_[Dependency(provide).name()].push_back(idx);
+  }
 
   return {&p, true};
 }
@@ -36,6 +42,22 @@ const aur::Package* PackageCache::LookupByPkgname(
 const aur::Package* PackageCache::LookupByPkgbase(
     const std::string& pkgbase) const {
   return LookupByIndex(index_by_pkgbase_, pkgbase);
+}
+
+std::vector<const aur::Package*> PackageCache::FindDependencySatisfiers(
+    const Dependency& dep) const {
+  std::vector<const aur::Package*> satisfiers;
+  if (auto iter = index_by_provide_.find(dep.name());
+      iter != index_by_provide_.end()) {
+    for (const int idx : iter->second) {
+      const auto& package = packages_[idx];
+      if (dep.SatisfiedBy(package)) {
+        satisfiers.push_back(&package);
+      }
+    }
+  }
+
+  return satisfiers;
 }
 
 class DependencyPath : public std::vector<std::string> {
@@ -88,28 +110,28 @@ void PackageCache::WalkDependencies(
   absl::flat_hash_set<std::string> visited;
   DependencyPath dependency_path;
 
-  std::function<void(std::string)> walk;
-  walk = [&](const std::string& pkgname) {
-    DependencyPath::Step step(dependency_path, pkgname);
+  std::function<void(const Dependency&)> walk;
+  walk = [&](const Dependency& dep) {
+    DependencyPath::Step step(dependency_path, dep.name());
 
-    if (!visited.insert(pkgname).second) {
+    if (!visited.insert(dep.name()).second) {
       return;
     }
 
-    const auto* pkg = LookupByPkgname(pkgname);
+    const auto* pkg = LookupByPkgname(dep.name());
     if (pkg != nullptr) {
       for (auto kind : dependency_kinds) {
         const auto& deplist = GetDependenciesByKind(pkg, kind);
-        for (const auto& dep : deplist) {
-          walk(dep.name);
+        for (const auto& d : deplist) {
+          walk(Dependency(d));
         }
       }
     }
 
-    cb(pkgname, pkg, dependency_path);
+    cb(dep, pkg, dependency_path);
   };
 
-  walk(name);
+  walk(Dependency(name));
 }
 
 }  // namespace auracle

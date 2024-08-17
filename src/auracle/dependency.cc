@@ -1,4 +1,4 @@
-#include "auracle/parsed_dependency.hh"
+#include "auracle/dependency.hh"
 
 #include <alpm.h>
 
@@ -14,8 +14,7 @@ int Vercmp(const std::string& a, const std::string& b) {
 
 }  // namespace
 
-ParsedDependency::ParsedDependency(std::string_view depstring)
-    : depstring_(depstring) {
+Dependency::Dependency(std::string_view depstring) : depstring_(depstring) {
   name_ = depstring;
   if (auto pos = depstring.find("<="); pos != depstring.npos) {
     mod_ = Mod::LE;
@@ -45,7 +44,7 @@ ParsedDependency::ParsedDependency(std::string_view depstring)
   }
 }
 
-bool ParsedDependency::SatisfiedByVersion(const std::string& version) const {
+bool Dependency::SatisfiedByVersion(const std::string& version) const {
   const int vercmp = Vercmp(version, version_);
   switch (mod_) {
     case Mod::EQ:
@@ -65,7 +64,7 @@ bool ParsedDependency::SatisfiedByVersion(const std::string& version) const {
   return false;
 }
 
-bool ParsedDependency::SatisfiedBy(const aur::Package& candidate) const {
+bool Dependency::SatisfiedBy(const aur::Package& candidate) const {
   if (version_.empty()) {
     // exact match on package name
     if (name_ == candidate.name) {
@@ -74,7 +73,7 @@ bool ParsedDependency::SatisfiedBy(const aur::Package& candidate) const {
 
     // Satisfied via provides without version comparison.
     for (const auto& depstring : candidate.provides) {
-      if (name_ == ParsedDependency(depstring).name_) {
+      if (name_ == Dependency(depstring).name_) {
         return true;
       }
     }
@@ -86,7 +85,7 @@ bool ParsedDependency::SatisfiedBy(const aur::Package& candidate) const {
 
     // Satisfied via provides with version comparison.
     for (const auto& depstring : candidate.provides) {
-      ParsedDependency provide(depstring);
+      Dependency provide(depstring);
 
       // An unversioned or malformed provide can't satisfy a versioned
       // dependency.

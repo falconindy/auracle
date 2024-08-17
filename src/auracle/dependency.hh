@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-#ifndef AURACLE_PARSED_DEPENDENCY_HH_
-#define AURACLE_PARSED_DEPENDENCY_HH_
+#ifndef AURACLE_DEPENDENCY_HH_
+#define AURACLE_DEPENDENCY_HH_
 
 #include <string>
 #include <string_view>
@@ -9,20 +9,22 @@
 
 namespace auracle {
 
-// ParsedDependency provides a simple interface around dependency resolution.
-class ParsedDependency final {
+// Dependency provides a simple interface around dependency resolution.
+class Dependency final {
  public:
-  // Constructs a ParsedDependency described by the given |depstring|. A
+  // Constructs a Dependency described by the given |depstring|. A
   // depstring follows the same format as that described by libalpm.
-  explicit ParsedDependency(std::string_view depstring);
+  explicit Dependency(std::string_view depstring);
 
-  ParsedDependency(ParsedDependency&&) = default;
-  ParsedDependency& operator=(ParsedDependency&&) = default;
+  Dependency(Dependency&&) = default;
+  Dependency& operator=(Dependency&&) = default;
 
-  ParsedDependency(const ParsedDependency&) = default;
-  ParsedDependency& operator=(const ParsedDependency&) = default;
+  Dependency(const Dependency&) = default;
+  Dependency& operator=(const Dependency&) = default;
 
   const std::string& name() const { return name_; }
+
+  bool is_versioned() const { return !version_.empty(); }
 
   // Returns true if the given candidate package satisifes the dependency
   // requirement. A dependency is satisfied if:

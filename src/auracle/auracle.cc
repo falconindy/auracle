@@ -13,9 +13,9 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/status/statusor.h"
 #include "aur/response.hh"
+#include "auracle/dependency.hh"
 #include "auracle/format.hh"
 #include "auracle/pacman.hh"
-#include "auracle/parsed_dependency.hh"
 #include "auracle/search_fragment.hh"
 #include "auracle/sort.hh"
 
@@ -119,7 +119,7 @@ Auracle::Auracle(Options options)
                                  .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 
-void Auracle::ResolveOne(ParsedDependency dep,
+void Auracle::ResolveOne(Dependency dep,
                          aur::Client::RpcResponseCallback callback) {
   client_->QueueRpcRequest(
       aur::SearchRequest(aur::SearchRequest::SearchBy::PROVIDES, dep.name()),
@@ -199,7 +199,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
 
             for (auto kind : state->resolve_depends) {
               for (const auto& dep : GetDependenciesByKind(p, kind)) {
-                alldeps.push_back(dep.name);
+                alldeps.push_back(Dependency(dep).name());
               }
             }
 
@@ -259,15 +259,14 @@ int Auracle::Resolve(const std::vector<std::string>& args,
   std::vector<aur::Package> providers;
 
   for (const auto& arg : args) {
-    ResolveOne(
-        ParsedDependency(arg), [&](absl::StatusOr<aur::RpcResponse> response) {
-          if (RpcResponseIsFailure(response)) {
-            return -EIO;
-          }
+    ResolveOne(Dependency(arg), [&](absl::StatusOr<aur::RpcResponse> response) {
+      if (RpcResponseIsFailure(response)) {
+        return -EIO;
+      }
 
-          absl::c_move(response->packages, std::back_inserter(providers));
-          return 0;
-        });
+      absl::c_move(response->packages, std::back_inserter(providers));
+      return 0;
+    });
   }
 
   int r = client_->Wait();
@@ -496,10 +495,10 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
   for (const auto& arg : args) {
     iter.package_cache.WalkDependencies(
         arg,
-        [&](const std::string& pkgname, const aur::Package* package,
+        [&](const Dependency& dep, const aur::Package* package,
             const std::vector<std::string>& dependency_path) {
-          if (seen.emplace(pkgname).second) {
-            total_ordering.emplace_back(pkgname, package, dependency_path);
+          if (seen.emplace(dep.name()).second) {
+            total_ordering.emplace_back(dep.name(), package, dependency_path);
           }
         },
         options.resolve_depends);

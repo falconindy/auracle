@@ -84,18 +84,11 @@ TEST(ResponseTest, ParsesSuccessResponse) {
   EXPECT_EQ(result.modified, absl::FromUnixSeconds(1534000474));
   EXPECT_EQ(result.maintainer, "falconindy");
   EXPECT_EQ(result.aur_urlpath, "/cgit/aur.git/snapshot/auracle-git.tar.gz");
-  EXPECT_THAT(
-      result.depends,
-      UnorderedElementsAre(Field(&aur::Dependency::depstring, "pacman"),
-                           Field(&aur::Dependency::depstring, "libarchive.so"),
-                           Field(&aur::Dependency::depstring, "libcurl.so")));
+  EXPECT_THAT(result.depends,
+              UnorderedElementsAre("pacman", "libarchive.so", "libcurl.so"));
   EXPECT_THAT(result.makedepends,
-              UnorderedElementsAre(
-                  Field(&aur::Dependency::depstring, "meson"),
-                  Field(&aur::Dependency::depstring, "git"),
-                  Field(&aur::Dependency::depstring, "nlohmann-json")));
-  EXPECT_THAT(result.checkdepends, UnorderedElementsAre(Field(
-                                       &aur::Dependency::depstring, "python")));
+              UnorderedElementsAre("meson", "git", "nlohmann-json"));
+  EXPECT_THAT(result.checkdepends, UnorderedElementsAre("python"));
   EXPECT_THAT(result.optdepends, UnorderedElementsAre("awesomeness"));
   EXPECT_THAT(result.conflicts, UnorderedElementsAre("auracle"));
   EXPECT_THAT(result.replaces, UnorderedElementsAre("cower", "cower-git"));

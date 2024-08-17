@@ -19,7 +19,7 @@ enum class DependencyKind : int {
 bool ParseDependencyKinds(std::string_view input,
                           absl::btree_set<DependencyKind>* dependency_kinds);
 
-const std::vector<aur::Dependency>& GetDependenciesByKind(
+const std::vector<std::string>& GetDependenciesByKind(
     const aur::Package* package, DependencyKind kind);
 
 }  // namespace auracle

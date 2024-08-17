@@ -6,38 +6,6 @@
 
 namespace aur {
 
-void from_json(const nlohmann::json& j, Dependency& d) {
-  d.depstring = j;
-
-  if (auto pos = d.depstring.find("<="); pos != std::string::npos) {
-    d.mod = Dependency::Mod::LE;
-    d.name = d.depstring.substr(0, pos);
-    d.version = d.depstring.substr(pos + 2);
-  } else if (auto pos = d.depstring.find(">="); pos != std::string::npos) {
-    d.mod = Dependency::Mod::GE;
-    d.name = d.depstring.substr(0, pos);
-    d.version = d.depstring.substr(pos + 2);
-  } else if (auto pos = d.depstring.find_first_of("<=>");
-             pos != std::string::npos) {
-    switch (d.depstring[pos]) {
-      case '<':
-        d.mod = Dependency::Mod::LT;
-        break;
-      case '>':
-        d.mod = Dependency::Mod::GT;
-        break;
-      case '=':
-        d.mod = Dependency::Mod::EQ;
-        break;
-    }
-
-    d.name = d.depstring.substr(0, pos);
-    d.version = d.depstring.substr(pos + 1);
-  } else {
-    d.name = d.depstring;
-  }
-}
-
 void from_json(const nlohmann::json& j, absl::Time& t) {
   if (j.is_null()) {
     return;

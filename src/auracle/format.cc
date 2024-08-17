@@ -87,14 +87,6 @@ struct formatter<std::vector<T>> {
   std::string delimiter_;
 };
 
-// Specialization to format Dependency objects
-template <>
-struct formatter<aur::Dependency> : formatter<std::string_view> {
-  auto format(const aur::Dependency& dep, fmt::format_context& ctx) {
-    return formatter<std::string_view>::format(dep.depstring, ctx);
-  }
-};
-
 template <typename T>
 struct formatter<Field<T>> : formatter<std::string_view> {
   auto format(const Field<T>& f, fmt::format_context& ctx) {

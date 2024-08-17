@@ -61,7 +61,7 @@ bool ParseDependencyKinds(std::string_view input,
   return true;
 }
 
-const std::vector<aur::Dependency>& GetDependenciesByKind(
+const std::vector<std::string>& GetDependenciesByKind(
     const aur::Package* package, DependencyKind kind) {
   switch (kind) {
     case DependencyKind::Depend:

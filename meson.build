@@ -101,11 +101,11 @@ libauracle = declare_dependency(
             files(
                 '''
         src/auracle/auracle.cc src/auracle/auracle.hh
+        src/auracle/dependency.cc src/auracle/dependency.hh
         src/auracle/dependency_kind.cc src/auracle/dependency_kind.hh
         src/auracle/format.cc src/auracle/format.hh
         src/auracle/package_cache.cc src/auracle/package_cache.hh
         src/auracle/pacman.cc src/auracle/pacman.hh
-        src/auracle/parsed_dependency.cc src/auracle/parsed_dependency.hh
         src/auracle/search_fragment.cc src/auracle/search_fragment.hh
         src/auracle/sort.cc src/auracle/sort.hh
         src/auracle/terminal.cc src/auracle/terminal.hh
@@ -188,7 +188,7 @@ test(
       src/test/gtest_main.cc
       src/auracle/dependency_kind_test.cc
       src/auracle/package_cache_test.cc
-      src/auracle/parsed_dependency_test.cc
+      src/auracle/dependency_test.cc
       src/auracle/format_test.cc
       src/auracle/search_fragment_test.cc
       src/auracle/sort_test.cc
