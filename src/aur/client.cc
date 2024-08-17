@@ -322,12 +322,16 @@ int ClientImpl::OnCancel(sd_event_source*, void* userdata) {
     aur->Cancel(*aur->active_requests_.begin());
   }
 
-  aur->cancelled_ = true;
-
   return 0;
 }
 
 void ClientImpl::CancelAll() {
+  if (cancelled_) {
+    return;
+  }
+
+  cancelled_ = true;
+
   sd_event_source* cancel;
   sd_event_add_defer(event_, &cancel, &ClientImpl::OnCancel, this);
   active_requests_.insert(cancel);
@@ -348,18 +352,13 @@ int ClientImpl::DispatchSocketCallback(curl_socket_t s, int action,
     return CheckFinished();
   }
 
-  auto events = [action]() -> std::uint32_t {
-    switch (action) {
-      case CURL_POLL_IN:
-        return EPOLLIN;
-      case CURL_POLL_OUT:
-        return EPOLLOUT;
-      case CURL_POLL_INOUT:
-        return EPOLLIN | EPOLLOUT;
-      default:
-        return 0;
-    }
-  }();
+  uint32_t events = 0;
+  if (action & CURL_CSELECT_IN) {
+    events |= EPOLLIN;
+  }
+  if (action & CURL_CSELECT_OUT) {
+    events |= EPOLLOUT;
+  }
 
   if (io != nullptr) {
     if (sd_event_source_set_io_events(io, events) < 0) {
