@@ -489,15 +489,19 @@ int ClientImpl::FinishRequest(sd_event_source* source) {
 int ClientImpl::CheckFinished() {
   int unused;
 
-  auto* msg = curl_multi_info_read(curl_multi_, &unused);
-  if (msg == nullptr || msg->msg != CURLMSG_DONE) {
-    return 0;
-  }
+  int r = 0;
+  while (true) {
+    auto* msg = curl_multi_info_read(curl_multi_, &unused);
+    if (msg == nullptr || msg->msg != CURLMSG_DONE) {
+      break;
+    }
 
-  auto r = FinishRequest(msg->easy_handle, msg->data.result,
-                         /* dispatch_callback = */ true);
-  if (r < 0) {
-    CancelAll();
+    r = FinishRequest(msg->easy_handle, msg->data.result,
+                      /* dispatch_callback = */ true);
+    if (r < 0) {
+      CancelAll();
+      break;
+    }
   }
 
   return r;
