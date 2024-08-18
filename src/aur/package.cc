@@ -49,6 +49,7 @@ void from_json(const nlohmann::json& j, Package& p) {
   // clang-format off
   static const auto& callbacks = *new CallbackMap<Package>{
     { "CheckDepends",     MakeValueCallback(&Package::checkdepends) },
+    { "CoMaintainers",    MakeValueCallback(&Package::comaintainers) },
     { "Conflicts",        MakeValueCallback(&Package::conflicts) },
     { "Depends",          MakeValueCallback(&Package::depends) },
     { "Description",      MakeValueCallback(&Package::description) },

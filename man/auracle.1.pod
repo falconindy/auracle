@@ -205,9 +205,9 @@ day in dotted form.
 
 String array fields: B<{depends}>, B<{makedepends}>, B<{checkdepends}>,
 B<{optdepends}>, B<{conflicts}>, B<{provides}>, B<{replaces}>, B<{groups}>,
-B<{keywords}>, B<{licenses}>. These fields default to using a delimiter of two
-whitespace, but can be customized, e.g.  B<{depends:,}> to comma delimit the
-values of the depends field.
+B<{keywords}>, B<{licenses}>, B<{comaintainers}>. These fields default to using
+a delimiter of two whitespace, but can be customized, e.g.  B<{depends:,}> to
+comma delimit the values of the depends field.
 
 Example: recreating auracle's search output:
 

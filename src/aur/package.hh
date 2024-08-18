@@ -52,6 +52,7 @@ struct Package {
   std::vector<std::string> optdepends;
   std::vector<std::string> provides;
   std::vector<std::string> replaces;
+  std::vector<std::string> comaintainers;
 
   std::vector<Dependency> depends;
   std::vector<Dependency> makedepends;

@@ -188,6 +188,7 @@ void Long(const aur::Package& package,
   fmt::print("{}", Field("Popularity", p.popularity));
   fmt::print("{}", Field("Maintainer",
                          p.maintainer.empty() ? "(orphan)" : p.maintainer));
+  fmt::print("{}", Field("Co-maintainers", p.comaintainers));
   fmt::print("{}", Field("Submitted", p.submitted));
   fmt::print("{}", Field("Last Modified", p.modified));
   if (p.out_of_date > absl::UnixEpoch()) {
@@ -214,6 +215,7 @@ void FormatCustomTo(std::string& out, std::string_view format,
       fmt::arg("name", package.name),
       fmt::arg("description", package.description),
       fmt::arg("maintainer", package.maintainer),
+      fmt::arg("comaintainers", package.comaintainers),
       fmt::arg("version", package.version),
       fmt::arg("pkgbase", package.pkgbase),
       fmt::arg("url", package.upstream_url),
