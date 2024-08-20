@@ -321,12 +321,20 @@ int Auracle::Search(const std::vector<std::string>& args,
     });
   };
 
+  // 'name' and 'name-desc' are the only dimensions where the AUR allows
+  // substring matching, so that's the only case where we're able to provide
+  // something resembling regex support.
+  const bool allow_regex =
+      options.allow_regex &&
+      (options.search_by == aur::SearchRequest::SearchBy::NAME ||
+       options.search_by == aur::SearchRequest::SearchBy::NAME_DESC);
+
   std::vector<aur::Package> packages;
   for (const auto& arg : args) {
     std::string_view frag = arg;
-    if (options.allow_regex) {
+    if (allow_regex) {
       frag = GetSearchFragment(arg);
-      if (frag.empty() && options.allow_regex) {
+      if (frag.empty()) {
         std::cerr << "error: search string '" << arg
                   << "' insufficient for searching by regular expression.\n";
         return -EINVAL;

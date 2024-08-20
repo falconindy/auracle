@@ -21,10 +21,14 @@ class TestSearch(auracle_test.TestCase):
             'name',
             'name-desc',
             'maintainer',
+            'comaintainers',
             'depends',
             'makedepends',
             'optdepends',
             'checkdepends',
+            'provides',
+            'replaces',
+            'conflicts',
         ]
 
         for dim in dimensions:
@@ -32,6 +36,14 @@ class TestSearch(auracle_test.TestCase):
             self.assertEqual(0, r.process.returncode)
 
             self.assertEqual(1, len(r.requests_sent))
+            self.assertIn(f'by={dim}', r.requests_sent[0].path)
+
+        for dim in dimensions[2:]:
+            r = self.Auracle(['search', '--searchby', dim, 'libfoo.so'])
+            self.assertEqual(0, r.process.returncode)
+
+            self.assertEqual(1, len(r.requests_sent))
+            self.assertIn('/libfoo.so', r.requests_sent[0].path)
             self.assertIn(f'by={dim}', r.requests_sent[0].path)
 
     def testSearchByInvalidDimension(self):
