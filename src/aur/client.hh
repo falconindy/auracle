@@ -16,7 +16,7 @@ class Client {
  public:
   template <typename ResponseType>
   using ResponseCallback =
-      absl::AnyInvocable<int(absl::StatusOr<ResponseType>)>;
+      absl::AnyInvocable<int(absl::StatusOr<ResponseType>) &&>;
 
   using RpcResponseCallback = ResponseCallback<RpcResponse>;
   using RawResponseCallback = ResponseCallback<RawResponse>;

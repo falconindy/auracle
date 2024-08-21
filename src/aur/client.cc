@@ -193,9 +193,9 @@ class TypedResponseHandler : public ResponseHandler {
 
   int Run(absl::Status status) override {
     if (status.ok()) {
-      return callback_(MakeResponse());
+      return std::move(callback_)(MakeResponse());
     } else {
-      return callback_(std::move(status));
+      return std::move(callback_)(std::move(status));
     }
   }
 
