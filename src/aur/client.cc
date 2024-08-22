@@ -13,7 +13,9 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "absl/functional/overload.h"
 #include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/strip.h"
 
 namespace fs = std::filesystem;
@@ -299,20 +301,13 @@ ClientImpl::~ClientImpl() {
 }
 
 void ClientImpl::Cancel(const ActiveRequests::value_type& request) {
-  struct Visitor {
-    constexpr explicit Visitor(ClientImpl* aur) : aur(aur) {}
-
-    void operator()(CURL* curl) {
-      aur->FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
-                         /*dispatch_callback=*/false);
-    }
-
-    void operator()(sd_event_source* source) { aur->FinishRequest(source); }
-
-    ClientImpl* aur;
-  };
-
-  std::visit(Visitor(this), request);
+  std::visit(absl::Overload{
+                 [this](CURL* curl) {
+                   FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
+                                 /*dispatch_callback=*/false);
+                 },
+                 [this](sd_event_source* source) { FinishRequest(source); }},
+             request);
 }
 
 int ClientImpl::OnCancel(sd_event_source*, void* userdata) {

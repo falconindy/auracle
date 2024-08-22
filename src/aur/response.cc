@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 #include "aur/response.hh"
 
+#include "absl/base/no_destructor.h"
 #include "aur/json_internal.hh"
 
 namespace aur::internal {
 
 void from_json(const nlohmann::json& j, RawRpcResponse& r) {
   // clang-format off
-  static const auto& callbacks = *new CallbackMap<RawRpcResponse>{
+  static const absl::NoDestructor<CallbackMap<RawRpcResponse>> kCallbacks({
     { "error",        MakeValueCallback(&RawRpcResponse::error) },
     { "results",      MakeValueCallback(&RawRpcResponse::results) },
-  };
+  });
   // clang-format on
 
-  DeserializeJsonObject(j, callbacks, r);
+  DeserializeJsonObject(j, *kCallbacks, r);
 }
 
 RawRpcResponse::RawRpcResponse(const std::string& json_bytes) {

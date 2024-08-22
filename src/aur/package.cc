@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "aur/package.hh"
 
+#include "absl/base/no_destructor.h"
 #include "aur/json_internal.hh"
 
 namespace aur {
@@ -47,7 +48,7 @@ void from_json(const nlohmann::json& j, absl::Time& t) {
 
 void from_json(const nlohmann::json& j, Package& p) {
   // clang-format off
-  static const auto& callbacks = *new CallbackMap<Package>{
+  static const absl::NoDestructor<CallbackMap<Package>> kCallbacks({
     { "CheckDepends",     MakeValueCallback(&Package::checkdepends) },
     { "CoMaintainers",    MakeValueCallback(&Package::comaintainers) },
     { "Conflicts",        MakeValueCallback(&Package::conflicts) },
@@ -73,10 +74,10 @@ void from_json(const nlohmann::json& j, Package& p) {
     { "URL",              MakeValueCallback(&Package::upstream_url) },
     { "URLPath",          MakeValueCallback(&Package::aur_urlpath) },
     { "Version",          MakeValueCallback(&Package::version) },
-  };
+  });
   // clang-format on
 
-  DeserializeJsonObject(j, callbacks, p);
+  DeserializeJsonObject(j, *kCallbacks, p);
 }
 
 }  // namespace aur
