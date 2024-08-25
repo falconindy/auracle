@@ -126,7 +126,7 @@ absl::Status StatusFromCurlHandle(CURL* curl) {
       return absl::NotFoundError("Not Found");
     case 429:
       return absl::ResourceExhaustedError(
-          "Too many requests: the AUR has throttled your IP for today");
+          "Too many requests: the AUR has throttled your IP.");
   }
 
   return absl::InternalError(absl::StrCat("HTTP ", http_status));
@@ -185,8 +185,8 @@ class TypedResponseHandler : public ResponseHandler {
  public:
   using CallbackType = Client::ResponseCallback<ResponseT>;
 
-  constexpr TypedResponseHandler(ClientImpl* aur, CallbackType callback)
-      : ResponseHandler(aur), callback_(std::move(callback)) {}
+  constexpr TypedResponseHandler(ClientImpl* client, CallbackType callback)
+      : ResponseHandler(client), callback_(std::move(callback)) {}
 
  protected:
   virtual absl::StatusOr<ResponseT> MakeResponse() = 0;
@@ -240,9 +240,10 @@ class RawResponseHandler : public TypedResponseHandler<RawResponse> {
 
 class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
  public:
-  CloneResponseHandler(ClientImpl* aur, Client::CloneResponseCallback callback,
+  CloneResponseHandler(ClientImpl* client,
+                       Client::CloneResponseCallback callback,
                        std::string operation)
-      : TypedResponseHandler(aur, std::move(callback)),
+      : TypedResponseHandler(client, std::move(callback)),
         operation_(std::move(operation)) {}
 
  protected:
@@ -311,10 +312,10 @@ void ClientImpl::Cancel(const ActiveRequests::value_type& request) {
 }
 
 int ClientImpl::OnCancel(sd_event_source*, void* userdata) {
-  auto* aur = static_cast<ClientImpl*>(userdata);
+  auto* client = static_cast<ClientImpl*>(userdata);
 
-  while (!aur->active_requests_.empty()) {
-    aur->Cancel(*aur->active_requests_.begin());
+  while (!client->active_requests_.empty()) {
+    client->Cancel(*client->active_requests_.begin());
   }
 
   return 0;
@@ -335,9 +336,9 @@ void ClientImpl::CancelAll() {
 // static
 int ClientImpl::SocketCallback(CURLM*, curl_socket_t s, int action,
                                void* userdata, void* sockptr) {
-  auto* aur = static_cast<ClientImpl*>(userdata);
+  auto* client = static_cast<ClientImpl*>(userdata);
   auto* io = static_cast<sd_event_source*>(sockptr);
-  return aur->DispatchSocketCallback(s, action, io);
+  return client->DispatchSocketCallback(s, action, io);
 }
 
 int ClientImpl::DispatchSocketCallback(curl_socket_t s, int action,
@@ -380,7 +381,7 @@ int ClientImpl::DispatchSocketCallback(curl_socket_t s, int action,
 // static
 int ClientImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
                          void* userdata) {
-  auto* aur = static_cast<ClientImpl*>(userdata);
+  auto* client = static_cast<ClientImpl*>(userdata);
 
   int action = 0;
   if (revents & EPOLLIN) {
@@ -391,31 +392,31 @@ int ClientImpl::OnCurlIO(sd_event_source*, int fd, uint32_t revents,
   }
 
   int unused;
-  if (curl_multi_socket_action(aur->curl_multi_, fd, action, &unused) !=
+  if (curl_multi_socket_action(client->curl_multi_, fd, action, &unused) !=
       CURLM_OK) {
     return -EINVAL;
   }
 
-  return aur->CheckFinished();
+  return client->CheckFinished();
 }
 
 // static
 int ClientImpl::OnCurlTimer(sd_event_source*, uint64_t, void* userdata) {
-  auto* aur = static_cast<ClientImpl*>(userdata);
+  auto* client = static_cast<ClientImpl*>(userdata);
 
   int unused;
-  if (curl_multi_socket_action(aur->curl_multi_, CURL_SOCKET_TIMEOUT, 0,
+  if (curl_multi_socket_action(client->curl_multi_, CURL_SOCKET_TIMEOUT, 0,
                                &unused) != CURLM_OK) {
     return -EINVAL;
   }
 
-  return aur->CheckFinished();
+  return client->CheckFinished();
 }
 
 // static
 int ClientImpl::TimerCallback(CURLM*, long timeout_ms, void* userdata) {
-  auto* aur = static_cast<ClientImpl*>(userdata);
-  return aur->DispatchTimerCallback(timeout_ms);
+  auto* client = static_cast<ClientImpl*>(userdata);
+  return client->DispatchTimerCallback(timeout_ms);
 }
 
 int ClientImpl::DispatchTimerCallback(long timeout_ms) {
@@ -628,7 +629,7 @@ void ClientImpl::QueueRpcRequest(const RpcRequest& request,
   QueueHttpRequest<RpcResponseHandler>(request, std::move(callback));
 }
 
-std::unique_ptr<Client> NewClient(Client::Options options) {
+std::unique_ptr<Client> Client::New(Client::Options options) {
   return std::make_unique<ClientImpl>(std::move(options));
 }
 

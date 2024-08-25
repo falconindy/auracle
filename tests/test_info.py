@@ -28,7 +28,7 @@ class TestInfo(auracle_test.TestCase):
         r = self.Auracle(['info', '429'])
         self.assertNotEqual(0, r.process.returncode)
         self.assertEqual(('error: RESOURCE_EXHAUSTED: Too many requests: '
-                          'the AUR has throttled your IP for today\n'),
+                          'the AUR has throttled your IP.\n'),
                          r.process.stderr.decode())
 
 

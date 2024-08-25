@@ -163,9 +163,9 @@ bool RpcResponseIsFailure(const absl::StatusOr<aur::RpcResponse>& response) {
 }  // namespace
 
 Auracle::Auracle(Options options)
-    : client_(aur::NewClient(aur::Client::Options()
-                                 .set_baseurl(options.aur_baseurl)
-                                 .set_useragent("Auracle/" PROJECT_VERSION))),
+    : client_(aur::Client::New(aur::Client::Options()
+                                   .set_baseurl(options.aur_baseurl)
+                                   .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 
 void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
@@ -290,15 +290,17 @@ int Auracle::Info(const std::vector<std::string>& args,
   }
 
   std::vector<aur::Package> packages;
-  client_->QueueRpcRequest(
-      aur::InfoRequest(args), [&](absl::StatusOr<aur::RpcResponse> response) {
-        if (RpcResponseIsFailure(response)) {
-          return -EIO;
-        }
+  client_->QueueRpcRequest(aur::InfoRequest(args),
+                           [&](absl::StatusOr<aur::RpcResponse> response) {
+                             if (RpcResponseIsFailure(response)) {
+                               return -EIO;
+                             }
 
-        absl::c_move(response.value().packages, std::back_inserter(packages));
-        return 0;
-      });
+                             using std::swap;
+                             swap(packages, response.value().packages);
+
+                             return 0;
+                           });
 
   auto r = client_->Wait();
   if (r < 0) {
@@ -724,7 +726,7 @@ int Auracle::Outdated(const std::vector<std::string>& args,
 
 namespace {
 
-int RawSearchDone(absl::StatusOr<aur::RawResponse> response) {
+int RawRequestDone(absl::StatusOr<aur::RawResponse> response) {
   if (!response.ok()) {
     std::cerr << "error: request failed: " << response.status() << "\n";
     return -EIO;
@@ -740,7 +742,7 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
                        const CommandOptions& options) {
   for (const auto& arg : args) {
     client_->QueueRawRequest(aur::SearchRequest(options.search_by, arg),
-                             &RawSearchDone);
+                             &RawRequestDone);
   }
 
   return client_->Wait();
@@ -748,7 +750,7 @@ int Auracle::RawSearch(const std::vector<std::string>& args,
 
 int Auracle::RawInfo(const std::vector<std::string>& args,
                      const CommandOptions&) {
-  client_->QueueRawRequest(aur::InfoRequest(args), &RawSearchDone);
+  client_->QueueRawRequest(aur::InfoRequest(args), &RawRequestDone);
 
   return client_->Wait();
 }

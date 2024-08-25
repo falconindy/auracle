@@ -44,6 +44,8 @@ class Client {
     std::string useragent;
   };
 
+  static std::unique_ptr<Client> New(Client::Options options = {});
+
   Client() = default;
   virtual ~Client() = default;
 
@@ -71,8 +73,6 @@ class Client {
   // failed or was cancelled by a callback.
   virtual int Wait() = 0;
 };
-
-std::unique_ptr<Client> NewClient(Client::Options options = {});
 
 }  // namespace aur
 
