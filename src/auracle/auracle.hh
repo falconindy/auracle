@@ -102,7 +102,8 @@ class Auracle {
     PackageCache package_cache;
   };
 
-  void ResolveOne(Dependency dep, aur::Client::RpcResponseCallback callback);
+  void ResolveMany(const std::vector<std::string>& depstrings,
+                   aur::Client::RpcResponseCallback callback);
 
   int GetOutdatedPackages(const std::vector<std::string>& args,
                           std::vector<aur::Package>* packages);

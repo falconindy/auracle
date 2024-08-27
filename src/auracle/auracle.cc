@@ -21,9 +21,58 @@
 
 namespace fs = std::filesystem;
 
+using SearchBy = aur::SearchRequest::SearchBy;
+
 namespace auracle {
 
 namespace {
+
+// ResponseMerger allows us to associate multiple RPC requests and issue
+// a callback only after they all succeed.
+class ResponseMerger {
+ public:
+  using MergedResultCallback =
+      absl::AnyInvocable<void(absl::StatusOr<std::vector<aur::Package>>) &&>;
+
+  static ResponseMerger* New(MergedResultCallback&& callback) {
+    return new ResponseMerger(std::move(callback));
+  }
+
+  ~ResponseMerger() {
+    if (status_.ok()) {
+      std::move(callback_)(std::move(packages_));
+    } else {
+      std::move(callback_)(status_);
+    }
+  }
+
+  aur::Client::RpcResponseCallback callback() {
+    ++inflight_calls_;
+
+    return [this](absl::StatusOr<aur::RpcResponse> response) {
+      status_.Update(response.status());
+      if (status_.ok()) {
+        absl::c_move(response->packages, std::back_inserter(packages_));
+      }
+
+      if (--inflight_calls_ == 0) {
+        delete this;
+      }
+
+      return 0;
+    };
+  }
+
+ private:
+  ResponseMerger(MergedResultCallback callback)
+      : callback_(std::move(callback)) {}
+
+  MergedResultCallback callback_;
+  int inflight_calls_ = 0;
+
+  absl::Status status_;
+  std::vector<aur::Package> packages_;
+};
 
 int ErrorNotEnoughArgs() {
   std::cerr << "error: not enough arguments.\n";
@@ -119,32 +168,55 @@ Auracle::Auracle(Options options)
                                  .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 
-void Auracle::ResolveOne(Dependency dep,
-                         aur::Client::RpcResponseCallback callback) {
-  client_->QueueRpcRequest(
-      aur::SearchRequest(aur::SearchRequest::SearchBy::PROVIDES, dep.name()),
-      [this, callback = std::move(callback),
-       dep](absl::StatusOr<aur::RpcResponse> search_response) mutable {
-        if (!search_response.ok() || search_response->packages.empty()) {
-          return callback(std::move(search_response));
+void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
+                          aur::Client::RpcResponseCallback callback) {
+  // A naive implementation of ResolveMany could be just calling search+info in
+  // a loop, but we make this more complicated such that for N arguments, we can
+  // issue N search requests and a single info request, rather than as many as
+  // N*2 requests.
+
+  auto deps = std::make_shared<std::vector<Dependency>>();
+
+  auto* merger = ResponseMerger::New(
+      [this, deps, callback = std::move(callback)](
+          absl::StatusOr<std::vector<aur::Package>> packages) mutable {
+        if (!packages.ok() || packages->empty()) {
+          return std::move(callback)(packages);
+        }
+
+        aur::InfoRequest info_request;
+        for (const auto& pkg : *packages) {
+          info_request.AddArg(pkg.name);
         }
 
         client_->QueueRpcRequest(
-            aur::InfoRequest(search_response->packages),
-            [callback = std::move(callback), dep = std::move(dep)](
-                absl::StatusOr<aur::RpcResponse> info_response) mutable {
+            info_request,
+            [&, callback = std::move(callback),
+             deps](absl::StatusOr<aur::RpcResponse> info_response) mutable {
               if (info_response.ok()) {
                 std::erase_if(info_response->packages,
-                              [dep](const aur::Package& p) {
-                                return !dep.SatisfiedBy(p);
+                              [&](const aur::Package& package) {
+                                for (const auto& dep : *deps) {
+                                  if (dep.SatisfiedBy(package)) {
+                                    return false;
+                                  }
+                                }
+                                return true;
                               });
               }
 
-              return callback(std::move(info_response));
+              return std::move(callback)(std::move(info_response));
             });
 
         return 0;
       });
+
+  for (const auto& depstring : depstrings) {
+    client_->QueueRpcRequest(
+        aur::SearchRequest(SearchBy::PROVIDES,
+                           deps->emplace_back(depstring).name()),
+        merger->callback());
+  }
 }
 
 void Auracle::IteratePackages(std::vector<std::string> args,
@@ -258,16 +330,14 @@ int Auracle::Resolve(const std::vector<std::string>& args,
 
   std::vector<aur::Package> providers;
 
-  for (const auto& arg : args) {
-    ResolveOne(Dependency(arg), [&](absl::StatusOr<aur::RpcResponse> response) {
-      if (RpcResponseIsFailure(response)) {
-        return -EIO;
-      }
+  ResolveMany(args, [&](absl::StatusOr<aur::RpcResponse> response) {
+    if (RpcResponseIsFailure(response)) {
+      return -EIO;
+    }
 
-      absl::c_move(response->packages, std::back_inserter(providers));
-      return 0;
-    });
-  }
+    absl::c_move(response->packages, std::back_inserter(providers));
+    return 0;
+  });
 
   int r = client_->Wait();
   if (r < 0) {
@@ -306,9 +376,9 @@ int Auracle::Search(const std::vector<std::string>& args,
   const auto matches = [&](const aur::Package& p) {
     return absl::c_all_of(patterns, [&](const std::regex& re) {
       switch (options.search_by) {
-        case aur::SearchRequest::SearchBy::NAME:
+        case SearchBy::NAME:
           return std::regex_search(p.name, re);
-        case aur::SearchRequest::SearchBy::NAME_DESC:
+        case SearchBy::NAME_DESC:
           return std::regex_search(p.name, re) ||
                  std::regex_search(p.description, re);
         default:
@@ -324,9 +394,8 @@ int Auracle::Search(const std::vector<std::string>& args,
   // substring matching, so that's the only case where we're able to provide
   // something resembling regex support.
   const bool allow_regex =
-      options.allow_regex &&
-      (options.search_by == aur::SearchRequest::SearchBy::NAME ||
-       options.search_by == aur::SearchRequest::SearchBy::NAME_DESC);
+      options.allow_regex && (options.search_by == SearchBy::NAME ||
+                              options.search_by == SearchBy::NAME_DESC);
 
   std::vector<aur::Package> packages;
   for (const auto& arg : args) {
