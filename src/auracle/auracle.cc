@@ -275,6 +275,10 @@ void Auracle::IteratePackages(std::vector<std::string> args,
               }
             }
 
+            if (alldeps.empty()) {
+              return 0;
+            }
+
             IteratePackages(std::move(alldeps), state);
           }
         }

@@ -122,6 +122,12 @@ class TestBuildOrder(auracle_test.TestCase):
             'warning: found dependency cycle: [ python-fontpens -> python-fontparts -> python-fontpens ]',
             r.process.stderr.decode().strip().splitlines())
 
+    def testNoDependencies(self):
+        r = self.Auracle(['buildorder', 'mingw-w64-environment'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertIn('TARGETAUR mingw-w64-environment mingw-w64-environment',
+                      r.process.stdout.decode().strip().splitlines())
+
 
 if __name__ == '__main__':
     auracle_test.main()
