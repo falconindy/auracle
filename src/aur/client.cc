@@ -107,8 +107,8 @@ class ClientImpl : public Client {
 namespace {
 
 std::string_view GetEnv(const char* name) {
-  auto* value = getenv(name);
-  return std::string_view(value ? value : "");
+  const auto* value = getenv(name);
+  return value ? std::string_view(value) : std::string_view();
 }
 
 absl::Status StatusFromCurlHandle(CURL* curl) {
@@ -189,7 +189,9 @@ class TypedResponseHandler : public ResponseHandler {
       : ResponseHandler(client), callback_(std::move(callback)) {}
 
  protected:
-  virtual absl::StatusOr<ResponseT> MakeResponse() = 0;
+  absl::StatusOr<ResponseT> MakeResponse() {
+    return ResponseT::Parse(std::move(body));
+  }
 
   int Run(absl::Status status) override {
     if (status.ok()) {
@@ -207,15 +209,6 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
  public:
   using TypedResponseHandler<RpcResponse>::TypedResponseHandler;
 
-  absl::StatusOr<RpcResponse> MakeResponse() override {
-    internal::RawRpcResponse raw(std::move(body));
-    if (!raw.error.empty()) {
-      return absl::InvalidArgumentError(raw.error);
-    }
-
-    return RpcResponse(std::move(raw.results));
-  }
-
  protected:
   int Run(absl::Status status) override {
     if (!status.ok()) {
@@ -229,30 +222,16 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
   }
 };
 
-class RawResponseHandler : public TypedResponseHandler<RawResponse> {
- public:
-  using TypedResponseHandler<RawResponse>::TypedResponseHandler;
-
-  absl::StatusOr<RawResponse> MakeResponse() override {
-    return RawResponse(std::move(body));
-  }
-};
+using RawResponseHandler = TypedResponseHandler<RawResponse>;
 
 class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {
  public:
   CloneResponseHandler(ClientImpl* client,
                        Client::CloneResponseCallback callback,
-                       std::string operation)
-      : TypedResponseHandler(client, std::move(callback)),
-        operation_(std::move(operation)) {}
-
- protected:
-  absl::StatusOr<CloneResponse> MakeResponse() override {
-    return CloneResponse(std::move(operation_));
+                       std::string_view operation)
+      : TypedResponseHandler(client, std::move(callback)) {
+    body = operation;
   }
-
- private:
-  std::string operation_;
 };
 
 }  // namespace

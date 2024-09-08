@@ -4,29 +4,21 @@
 #include "absl/base/no_destructor.h"
 #include "aur/json_internal.hh"
 
-namespace aur::internal {
+using nlohmann::json;
 
-void from_json(const nlohmann::json& j, RawRpcResponse& r) {
-  // clang-format off
-  static const absl::NoDestructor<CallbackMap<RawRpcResponse>> kCallbacks({
-    { "error",        MakeValueCallback(&RawRpcResponse::error) },
-    { "results",      MakeValueCallback(&RawRpcResponse::results) },
-  });
-  // clang-format on
+namespace aur {
 
-  DeserializeJsonObject(j, *kCallbacks, r);
-}
-
-RawRpcResponse::RawRpcResponse(const std::string& json_bytes) {
-  if (json_bytes.empty()) {
-    return;
-  }
-
+absl::StatusOr<RpcResponse> RpcResponse::Parse(std::string_view bytes) {
   try {
-    *this = nlohmann::json::parse(json_bytes);
+    json j = json::parse(bytes);
+    if (auto iter = j.find("error"); iter != j.end()) {
+      return absl::InvalidArgumentError(iter->get<std::string>());
+    }
+
+    return RpcResponse(j["results"].get<std::vector<Package>>());
   } catch (const std::exception& e) {
-    error = e.what();
+    return absl::UnknownError(e.what());
   }
 }
 
-}  // namespace aur::internal
+}  // namespace aur

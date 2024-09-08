@@ -50,13 +50,17 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         return l[-1] if l else None
 
     def make_json_reply(self, querytype, results=[], error=None):
-        return json.dumps({
+        response = {
             'version': AUR_SERVER_VERSION,
             'type': querytype,
             'resultcount': len(results),
             'results': results,
-            'error': error,
-        }).encode()
+        }
+
+        if error:
+            response['error'] = error
+
+        return json.dumps(response).encode()
 
     def make_package_reply(self, querytype, results):
         return self.make_json_reply(querytype, results)

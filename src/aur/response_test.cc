@@ -4,12 +4,12 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-using aur::internal::RawRpcResponse;
+using aur::RpcResponse;
 using testing::Field;
 using testing::UnorderedElementsAre;
 
 TEST(ResponseTest, ParsesSuccessResponse) {
-  const RawRpcResponse response(R"({
+  const auto response = RpcResponse::Parse(R"({
     "version": 5,
     "type": "multiinfo",
     "resultcount": 1,
@@ -68,9 +68,10 @@ TEST(ResponseTest, ParsesSuccessResponse) {
     ]
   })");
 
-  ASSERT_EQ(response.results.size(), 1);
+  ASSERT_TRUE(response.ok()) << response.status();
+  ASSERT_EQ(response->packages.size(), 1);
 
-  const auto& result = response.results[0];
+  const auto& result = response->packages[0];
   EXPECT_EQ(result.package_id, 534056);
   EXPECT_EQ(result.name, "auracle-git");
   EXPECT_EQ(result.pkgbase_id, 123768);
@@ -99,7 +100,7 @@ TEST(ResponseTest, ParsesSuccessResponse) {
 }
 
 TEST(ResponseTest, ParsesErrorResponse) {
-  const RawRpcResponse response(R"({
+  const auto response = RpcResponse::Parse(R"({
     "version": 5,
     "type": "error",
     "resultcount": 0,
@@ -107,12 +108,12 @@ TEST(ResponseTest, ParsesErrorResponse) {
     "error": "something"
   })");
 
-  EXPECT_THAT(response.results, testing::IsEmpty());
-  EXPECT_EQ(response.error, "something");
+  EXPECT_FALSE(response.ok());
+  EXPECT_EQ(response.status().message(), "something");
 }
 
 TEST(ResponseTest, GracefullyHandlesInvalidJson) {
-  const RawRpcResponse response(R"({
+  const auto response = RpcResponse::Parse(R"({
     "version": 5,
     "type": "multiinfo,
     "resultcount": 0,
@@ -120,5 +121,5 @@ TEST(ResponseTest, GracefullyHandlesInvalidJson) {
     "error": "something"
   })");
 
-  ASSERT_THAT(response.error, testing::HasSubstr("parse error"));
+  ASSERT_THAT(response.status().message(), testing::HasSubstr("parse error"));
 }

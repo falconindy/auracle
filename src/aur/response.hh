@@ -8,27 +8,12 @@
 
 namespace aur {
 
-namespace internal {
-
-struct RawRpcResponse {
-  RawRpcResponse() = default;
-  explicit RawRpcResponse(const std::string& json_bytes);
-
-  RawRpcResponse(const RawRpcResponse&) = delete;
-  RawRpcResponse& operator=(const RawRpcResponse&) = delete;
-
-  RawRpcResponse(RawRpcResponse&&) = default;
-  RawRpcResponse& operator=(RawRpcResponse&&) = default;
-
-  std::string error;
-  std::vector<Package> results;
-};
-
-}  // namespace internal
-
 struct CloneResponse {
-  explicit CloneResponse(std::string operation)
-      : operation(std::move(operation)) {}
+  static absl::StatusOr<CloneResponse> Parse(std::string_view operation) {
+    return CloneResponse(operation);
+  }
+
+  explicit CloneResponse(std::string_view operation) : operation(operation) {}
 
   CloneResponse(const CloneResponse&) = delete;
   CloneResponse& operator=(const CloneResponse&) = delete;
@@ -36,10 +21,12 @@ struct CloneResponse {
   CloneResponse(CloneResponse&&) = default;
   CloneResponse& operator=(CloneResponse&&) = default;
 
-  std::string operation;
+  std::string_view operation;
 };
 
 struct RpcResponse {
+  static absl::StatusOr<RpcResponse> Parse(std::string_view bytes);
+
   RpcResponse(std::vector<Package> packages) : packages(std::move(packages)) {}
 
   RpcResponse(const RpcResponse&) = delete;
@@ -52,6 +39,10 @@ struct RpcResponse {
 };
 
 struct RawResponse {
+  static absl::StatusOr<RawResponse> Parse(std::string bytes) {
+    return RawResponse(std::move(bytes));
+  }
+
   RawResponse(std::string bytes) : bytes(std::move(bytes)) {}
 
   RawResponse(const RawResponse&) = delete;
