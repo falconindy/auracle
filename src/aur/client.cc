@@ -163,8 +163,8 @@ class ResponseHandler {
     return 0;
   }
 
-  int RunCallback(absl::Status status) {
-    int r = Run(std::move(status));
+  int Finalize(absl::Status status) {
+    int r = RunCallback(std::move(status));
     delete this;
     return r;
   }
@@ -175,7 +175,7 @@ class ResponseHandler {
   std::array<char, CURL_ERROR_SIZE> error_buffer = {};
 
  private:
-  virtual int Run(absl::Status status) = 0;
+  virtual int RunCallback(absl::Status status) = 0;
 
   ClientImpl* client_;
 };
@@ -193,7 +193,7 @@ class TypedResponseHandler : public ResponseHandler {
     return ResponseT::Parse(std::move(body));
   }
 
-  int Run(absl::Status status) override {
+  int RunCallback(absl::Status status) override {
     if (status.ok()) {
       return std::move(callback_)(MakeResponse());
     } else {
@@ -210,7 +210,7 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
   using TypedResponseHandler<RpcResponse>::TypedResponseHandler;
 
  protected:
-  int Run(absl::Status status) override {
+  int RunCallback(absl::Status status) override {
     if (!status.ok()) {
       // The AUR might supply HTML on non-200 replies. We must avoid parsing
       // this as JSON, so drop the response body and trust the callback to do
@@ -218,7 +218,7 @@ class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
       body.clear();
     }
 
-    return TypedResponseHandler<RpcResponse>::Run(std::move(status));
+    return TypedResponseHandler<RpcResponse>::RunCallback(std::move(status));
   }
 };
 
@@ -439,7 +439,7 @@ int ClientImpl::FinishRequest(CURL* curl, CURLcode result,
         result == CURLE_OK ? StatusFromCurlHandle(curl)
                            : absl::UnknownError(handler->error_buffer.data());
 
-    r = handler->RunCallback(std::move(status));
+    r = handler->Finalize(std::move(status));
   } else {
     delete handler;
   }
@@ -541,7 +541,7 @@ int ClientImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
         absl::StrCat("git exited with unexpected exit status ", si->si_status));
   }
 
-  return handler->RunCallback(std::move(status));
+  return handler->Finalize(std::move(status));
 }
 
 void ClientImpl::QueueCloneRequest(const CloneRequest& request,
@@ -553,7 +553,7 @@ void ClientImpl::QueueCloneRequest(const CloneRequest& request,
 
   int pid = fork();
   if (pid < 0) {
-    handler->RunCallback(absl::InternalError(
+    handler->Finalize(absl::InternalError(
         absl::StrCat("failed to fork new process for git: ", strerror(errno))));
     return;
   }
