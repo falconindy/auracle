@@ -9,33 +9,15 @@
 namespace aur {
 
 void from_json(const nlohmann::json& j, Package& p);
-void from_json(const nlohmann::json& j, absl::Time& t);
-
-template <typename T>
-void from_json(const nlohmann::json& j, T& v) {
-  if (j.is_null()) {
-    return;
-  }
-
-  v = T(j);
-}
-
-template <typename T>
-void from_json(const nlohmann::json& j, std::vector<T>& v) {
-  if (j.is_null()) {
-    return;
-  }
-
-  v = std::vector<T>(j.cbegin(), j.cend());
-}
 
 template <typename OutputType>
 using ValueCallback = std::function<void(const nlohmann::json&, OutputType&)>;
 
 template <typename OutputType, typename FieldType>
 ValueCallback<OutputType> MakeValueCallback(FieldType OutputType::*field) {
-  return
-      [=](const nlohmann::json& j, OutputType& o) { from_json(j, o.*field); };
+  return [=](const nlohmann::json& j, OutputType& o) {
+    j.get_to<FieldType>(o.*field);
+  };
 }
 
 template <typename OutputType>
@@ -47,8 +29,12 @@ void DeserializeJsonObject(const nlohmann::json& j,
                            const CallbackMap<OutputType>& callbacks,
                            OutputType& o) {
   for (const auto& [key, value] : j.items()) {
-    const auto iter = callbacks.find(key);
-    if (iter != callbacks.end()) {
+    // Skip all null-valued entries.
+    if (value.is_null()) {
+      continue;
+    }
+
+    if (const auto iter = callbacks.find(key); iter != callbacks.end()) {
       iter->second(value, o);
     }
   }

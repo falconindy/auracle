@@ -4,15 +4,15 @@
 #include "absl/base/no_destructor.h"
 #include "aur/json_internal.hh"
 
-namespace aur {
+namespace absl {
 
-void from_json(const nlohmann::json& j, absl::Time& t) {
-  if (j.is_null()) {
-    return;
-  }
-
+void from_json(const nlohmann::json& j, Time& t) {
   t = absl::FromUnixSeconds(j);
 }
+
+}  // namespace absl
+
+namespace aur {
 
 void from_json(const nlohmann::json& j, Package& p) {
   // clang-format off
