@@ -2,7 +2,10 @@
 #ifndef AUR_RESPONSE_HH_
 #define AUR_RESPONSE_HH_
 
-#include "absl/status/status.h"
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include "absl/status/statusor.h"
 #include "aur/package.hh"
 

@@ -2,7 +2,6 @@
 #include "aur/client.hh"
 
 #include <curl/curl.h>
-#include <fcntl.h>
 #include <systemd/sd-event.h>
 #include <unistd.h>
 
@@ -189,16 +188,12 @@ class TypedResponseHandler : public ResponseHandler {
       : ResponseHandler(client), callback_(std::move(callback)) {}
 
  protected:
-  absl::StatusOr<ResponseT> MakeResponse() {
-    return ResponseT::Parse(std::move(body));
-  }
-
   int RunCallback(absl::Status status) override {
-    if (status.ok()) {
-      return std::move(callback_)(MakeResponse());
-    } else {
+    if (!status.ok()) {
       return std::move(callback_)(std::move(status));
     }
+
+    return std::move(callback_)(ResponseT::Parse(std::move(body)));
   }
 
  private:
