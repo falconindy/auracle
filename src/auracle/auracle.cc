@@ -221,16 +221,14 @@ void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
 
 void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
-  aur::InfoRequest info_request;
-
-  for (const auto& arg : args) {
-    if (state->package_cache.LookupByPkgname(arg) != nullptr) {
-      continue;
-    }
-
-    info_request.AddArg(arg);
+  std::erase_if(args, [&](const std::string& arg) {
+    return state->package_cache.LookupByPkgname(arg) != nullptr;
+  });
+  if (args.empty()) {
+    return;
   }
 
+  aur::InfoRequest info_request(args);
   client_->QueueRpcRequest(
       info_request, [this, state, want = std::move(args)](
                         absl::StatusOr<aur::RpcResponse> response) {
