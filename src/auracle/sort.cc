@@ -4,7 +4,7 @@
 namespace sort {
 
 template <typename T>
-Sorter MakePackageSorter(T aur::Package::*field, OrderBy order_by) {
+Sorter MakePackageSorter(T aur::Package::* field, OrderBy order_by) {
   switch (order_by) {
     case OrderBy::ORDER_ASC:
       return [=](const aur::Package& a, const aur::Package& b) {

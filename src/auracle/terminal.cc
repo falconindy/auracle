@@ -41,7 +41,7 @@ void Init(WantColor want) {
 
 int Columns() {
   int c;
-  struct winsize ws {};
+  struct winsize ws{};
 
   if (g_cached_columns >= 0) {
     return g_cached_columns;

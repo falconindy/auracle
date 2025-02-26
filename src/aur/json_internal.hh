@@ -14,7 +14,7 @@ template <typename OutputType>
 using ValueCallback = std::function<void(const nlohmann::json&, OutputType&)>;
 
 template <typename OutputType, typename FieldType>
-ValueCallback<OutputType> MakeValueCallback(FieldType OutputType::*field) {
+ValueCallback<OutputType> MakeValueCallback(FieldType OutputType::* field) {
   return [=](const nlohmann::json& j, OutputType& o) {
     j.get_to<FieldType>(o.*field);
   };
