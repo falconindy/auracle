@@ -57,7 +57,7 @@ struct formatter<absl::Time> {
     return parse_format_or_default(ctx, absl::RFC3339_sec, &tm_format);
   }
 
-  auto format(const absl::Time t, fmt::format_context& ctx) {
+  auto format(const absl::Time t, fmt::format_context& ctx) const {
     return fmt::format_to(
         ctx.out(), "{}", absl::FormatTime(tm_format, t, absl::LocalTimeZone()));
   }
@@ -73,7 +73,7 @@ struct formatter<std::vector<T>> {
     return parse_format_or_default(ctx, "  ", &delimiter_);
   }
 
-  auto format(const std::vector<T>& vec, fmt::format_context& ctx) {
+  auto format(const std::vector<T>& vec, fmt::format_context& ctx) const {
     std::string_view sep;
     for (const auto& v : vec) {
       fmt::format_to(ctx.out(), "{}{}", sep, v);
@@ -89,7 +89,7 @@ struct formatter<std::vector<T>> {
 
 template <typename T>
 struct formatter<Field<T>> : formatter<std::string_view> {
-  auto format(const Field<T>& f, fmt::format_context& ctx) {
+  auto format(const Field<T>& f, fmt::format_context& ctx) const {
     if constexpr (is_containerlike<T>::value) {
       if (f.value.empty()) {
         return ctx.out();
