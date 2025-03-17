@@ -175,7 +175,7 @@ class SearchRequest : public RpcRequest {
     if (searchby == "replaces") {
       return SearchBy::REPLACES;
     }
-    if (searchby == "keywords,") {
+    if (searchby == "keywords") {
       return SearchBy::KEYWORDS;
     }
     if (searchby == "groups") {
