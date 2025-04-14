@@ -178,6 +178,7 @@ void Long(const aur::Package& package,
   fmt::print("{}", Field("Licenses", p.licenses));
   fmt::print("{}", Field("Votes", p.votes));
   fmt::print("{}", Field("Popularity", p.popularity));
+  fmt::print("{}", Field("Submitter", p.submitter));
   fmt::print("{}", Field("Maintainer",
                          p.maintainer.empty() ? "(orphan)" : p.maintainer));
   fmt::print("{}", Field("Co-maintainers", p.comaintainers));
@@ -206,6 +207,7 @@ void FormatCustomTo(std::string& out, std::string_view format,
       std::back_inserter(out), fmt::runtime(format),
       fmt::arg("name", package.name),
       fmt::arg("description", package.description),
+      fmt::arg("submitter", package.submitter),
       fmt::arg("maintainer", package.maintainer),
       fmt::arg("comaintainers", package.comaintainers),
       fmt::arg("version", package.version),

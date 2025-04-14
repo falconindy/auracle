@@ -30,10 +30,11 @@ struct CloneResponse {
 struct RpcResponse {
   static absl::StatusOr<RpcResponse> Parse(std::string_view bytes);
 
+  RpcResponse() = default;
   RpcResponse(std::vector<Package> packages) : packages(std::move(packages)) {}
 
-  RpcResponse(const RpcResponse&) = delete;
-  RpcResponse& operator=(const RpcResponse&) = delete;
+  RpcResponse(const RpcResponse&) = default;
+  RpcResponse& operator=(const RpcResponse&) = default;
 
   RpcResponse(RpcResponse&&) = default;
   RpcResponse& operator=(RpcResponse&&) = default;
@@ -58,5 +59,19 @@ struct RawResponse {
 };
 
 }  // namespace aur
+
+#if 0
+template <>
+struct glz::meta<aur::RpcResponse> {
+  using T = aur::RpcResponse;
+  static constexpr std::string_view name = "RpcResponse";
+
+  static constexpr auto value = object(  //
+      "results", &T::packages,           //
+      "resultcount", glz::skip{},        //
+      "version", glz::skip{},            //
+      "type", glz::skip{});
+};
+#endif
 
 #endif  // AUR_RESPONSE_HH_

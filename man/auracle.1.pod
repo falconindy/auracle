@@ -192,8 +192,8 @@ and additional formatting directives.
 
 B<NOTE:> not all fields are available for B<search> queries.
 
-String fields: B<{name}>, B<{version}>, B<{description}>, B<{maintainer}>,
-B<{pkgbase}>, B<{url}>.
+String fields: B<{name}>, B<{version}>, B<{description}>, B<{submitter}>,
+B<{maintainer}>, B<{pkgbase}>, B<{url}>.
 
 Floating point fields: B<{votes}>, B<{popularity}>.
 

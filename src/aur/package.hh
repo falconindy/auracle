@@ -14,6 +14,7 @@ struct Package {
 
   std::string name;
   std::string description;
+  std::string submitter;
   std::string maintainer;
   std::string pkgbase;
   std::string upstream_url;
@@ -41,6 +42,23 @@ struct Package {
   std::vector<std::string> depends;
   std::vector<std::string> makedepends;
   std::vector<std::string> checkdepends;
+
+  // glaze serialization helpers
+
+  template <typename T, T aur::Package::* F>
+  void read_optional(const std::optional<T>& v) {
+    if (v) (*this).*F = *v;
+  }
+
+  template <absl::Time aur::Package::* F>
+  void read_time(std::optional<int64_t> seconds) {
+    (*this).*F = absl::FromUnixSeconds(seconds.value_or(0));
+  }
+
+  template <absl::Time aur::Package::* F>
+  int64_t write_time() {
+    return absl::ToUnixSeconds((*this).*F);
+  }
 };
 
 inline bool operator==(const Package& a, const Package& b) {

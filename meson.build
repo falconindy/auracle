@@ -24,11 +24,10 @@ add_project_link_arguments(
     language: 'cpp',
 )
 
-json = dependency(
-    'nlohmann_json',
-    version: '>=3.7.1',
-    fallback: ['nlohmann_json', 'nlohmann_json_dep'],
-)
+if not cpp.has_header('glaze/glaze.hpp')
+  error('glaze library not found in standard include paths')
+endif
+
 libalpm = dependency('libalpm')
 libcurl = dependency('libcurl')
 libfmt = dependency(
@@ -81,13 +80,12 @@ libaur = declare_dependency(
             files(
                 '''
         src/aur/client.cc src/aur/client.hh
-        src/aur/package.cc src/aur/package.hh
+        src/aur/package.hh
         src/aur/request.cc src/aur/request.hh
         src/aur/response.cc src/aur/response.hh
-        src/aur/json_internal.hh
       '''.split(),
             ),
-            dependencies: [abseil, json, libcurl, libsystemd],
+            dependencies: [abseil, libcurl, libsystemd],
             include_directories: ['src'],
         ),
     ],
