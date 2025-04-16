@@ -7,6 +7,7 @@
 
 #include "absl/time/time.h"
 #include "auracle/terminal.hh"
+#include "fmt/args.h"
 #include "fmt/printf.h"
 
 namespace {
@@ -202,47 +203,65 @@ namespace {
 
 void FormatCustomTo(std::string& out, std::string_view format,
                     const aur::Package& package) {
-  // clang-format off
-  fmt::format_to(
-      std::back_inserter(out), fmt::runtime(format),
-      fmt::arg("name", package.name),
-      fmt::arg("description", package.description),
-      fmt::arg("submitter", package.submitter),
-      fmt::arg("maintainer", package.maintainer),
-      fmt::arg("comaintainers", package.comaintainers),
-      fmt::arg("version", package.version),
-      fmt::arg("pkgbase", package.pkgbase),
-      fmt::arg("url", package.upstream_url),
+  fmt::dynamic_format_arg_store<fmt::format_context> store;
 
-      fmt::arg("votes", package.votes),
-      fmt::arg("popularity", package.popularity),
+  store.push_back(fmt::arg("name", package.name));
+  store.push_back(fmt::arg("description", package.description));
+  store.push_back(fmt::arg("submitter", package.submitter));
+  store.push_back(fmt::arg("maintainer", package.maintainer));
+  store.push_back(fmt::arg("comaintainers", package.comaintainers));
+  store.push_back(fmt::arg("version", package.version));
+  store.push_back(fmt::arg("pkgbase", package.pkgbase));
+  store.push_back(fmt::arg("url", package.upstream_url));
+  store.push_back(fmt::arg("votes", package.votes));
+  store.push_back(fmt::arg("popularity", package.popularity));
+  store.push_back(fmt::arg("submitted", package.submitted));
+  store.push_back(fmt::arg("modified", package.modified));
+  store.push_back(fmt::arg("outofdate", package.out_of_date));
+  store.push_back(fmt::arg("depends", package.depends));
+  store.push_back(fmt::arg("makedepends", package.makedepends));
+  store.push_back(fmt::arg("checkdepends", package.checkdepends));
+  store.push_back(fmt::arg("conflicts", package.conflicts));
+  store.push_back(fmt::arg("groups", package.groups));
+  store.push_back(fmt::arg("keywords", package.keywords));
+  store.push_back(fmt::arg("licenses", package.licenses));
+  store.push_back(fmt::arg("optdepends", package.optdepends));
+  store.push_back(fmt::arg("provides", package.provides));
+  store.push_back(fmt::arg("replaces", package.replaces));
 
-      fmt::arg("submitted", package.submitted),
-      fmt::arg("modified", package.modified),
-      fmt::arg("outofdate", package.out_of_date),
-
-      fmt::arg("depends", package.depends),
-      fmt::arg("makedepends", package.makedepends),
-      fmt::arg("checkdepends", package.checkdepends),
-
-      fmt::arg("conflicts", package.conflicts),
-      fmt::arg("groups", package.groups),
-      fmt::arg("keywords", package.keywords),
-      fmt::arg("licenses", package.licenses),
-      fmt::arg("optdepends", package.optdepends),
-      fmt::arg("provides", package.provides),
-      fmt::arg("replaces", package.replaces));
-  // clang-format on
+  fmt::vformat_to(std::back_inserter(out), format, store);
 }
 
 }  // namespace
 
 void Custom(const std::string_view format, const aur::Package& package) {
-  std::string out;
+  fmt::dynamic_format_arg_store<fmt::format_context> store;
 
-  FormatCustomTo(out, format, package);
+  store.push_back(fmt::arg("name", package.name));
+  store.push_back(fmt::arg("description", package.description));
+  store.push_back(fmt::arg("submitter", package.submitter));
+  store.push_back(fmt::arg("maintainer", package.maintainer));
+  store.push_back(fmt::arg("comaintainers", package.comaintainers));
+  store.push_back(fmt::arg("version", package.version));
+  store.push_back(fmt::arg("pkgbase", package.pkgbase));
+  store.push_back(fmt::arg("url", package.upstream_url));
+  store.push_back(fmt::arg("votes", package.votes));
+  store.push_back(fmt::arg("popularity", package.popularity));
+  store.push_back(fmt::arg("submitted", package.submitted));
+  store.push_back(fmt::arg("modified", package.modified));
+  store.push_back(fmt::arg("outofdate", package.out_of_date));
+  store.push_back(fmt::arg("depends", package.depends));
+  store.push_back(fmt::arg("makedepends", package.makedepends));
+  store.push_back(fmt::arg("checkdepends", package.checkdepends));
+  store.push_back(fmt::arg("conflicts", package.conflicts));
+  store.push_back(fmt::arg("groups", package.groups));
+  store.push_back(fmt::arg("keywords", package.keywords));
+  store.push_back(fmt::arg("licenses", package.licenses));
+  store.push_back(fmt::arg("optdepends", package.optdepends));
+  store.push_back(fmt::arg("provides", package.provides));
+  store.push_back(fmt::arg("replaces", package.replaces));
 
-  std::cout << out << "\n";
+  std::cout << fmt::vformat(format, store) << '\n';
 }
 
 bool FormatIsValid(const std::string& format, std::string* error) {
