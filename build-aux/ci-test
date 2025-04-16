@@ -42,7 +42,7 @@ case $buildmode in
     ;;
 esac
 
-pacman -Syu --noconfirm base-devel git glaze gmock gtest meson perl python
+pacman -Syu --noconfirm abseil-cpp base-devel git glaze gmock gtest meson perl python
 
 # Needed to ensure PATH is properly set for perl, etc.
 source /etc/profile
