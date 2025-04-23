@@ -235,45 +235,9 @@ void FormatCustomTo(std::string& out, std::string_view format,
 }  // namespace
 
 void Custom(const std::string_view format, const aur::Package& package) {
-  fmt::dynamic_format_arg_store<fmt::format_context> store;
-
-  store.push_back(fmt::arg("name", package.name));
-  store.push_back(fmt::arg("description", package.description));
-  store.push_back(fmt::arg("submitter", package.submitter));
-  store.push_back(fmt::arg("maintainer", package.maintainer));
-  store.push_back(fmt::arg("comaintainers", package.comaintainers));
-  store.push_back(fmt::arg("version", package.version));
-  store.push_back(fmt::arg("pkgbase", package.pkgbase));
-  store.push_back(fmt::arg("url", package.upstream_url));
-  store.push_back(fmt::arg("votes", package.votes));
-  store.push_back(fmt::arg("popularity", package.popularity));
-  store.push_back(fmt::arg("submitted", package.submitted));
-  store.push_back(fmt::arg("modified", package.modified));
-  store.push_back(fmt::arg("outofdate", package.out_of_date));
-  store.push_back(fmt::arg("depends", package.depends));
-  store.push_back(fmt::arg("makedepends", package.makedepends));
-  store.push_back(fmt::arg("checkdepends", package.checkdepends));
-  store.push_back(fmt::arg("conflicts", package.conflicts));
-  store.push_back(fmt::arg("groups", package.groups));
-  store.push_back(fmt::arg("keywords", package.keywords));
-  store.push_back(fmt::arg("licenses", package.licenses));
-  store.push_back(fmt::arg("optdepends", package.optdepends));
-  store.push_back(fmt::arg("provides", package.provides));
-  store.push_back(fmt::arg("replaces", package.replaces));
-
-  std::cout << fmt::vformat(format, store) << '\n';
-}
-
-bool FormatIsValid(const std::string& format, std::string* error) {
-  try {
-    std::string out;
-    FormatCustomTo(out, format, aur::Package());
-  } catch (const fmt::format_error& e) {
-    error->assign(e.what());
-    return false;
-  }
-
-  return true;
+  std::string out;
+  FormatCustomTo(out, format, package);
+  std::cout << out << '\n';
 }
 
 absl::Status Validate(std::string_view format) {
