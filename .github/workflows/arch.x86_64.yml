@@ -12,12 +12,13 @@ jobs:
       - uses: actions/checkout@v4
       - run: build-aux/ci-test plain
 
-  test_asan:
-    runs-on: ubuntu-latest
+  # ASAN tests don't work with abseil when it's linked as a shared lib.
+  # test_asan:
+  #   runs-on: ubuntu-latest
 
-    container:
-      image: archlinux
+  #   container:
+  #     image: archlinux
 
-    steps:
-      - uses: actions/checkout@v4
-      - run: build-aux/ci-test asan
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: build-aux/ci-test asan
