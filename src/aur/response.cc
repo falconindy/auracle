@@ -38,7 +38,7 @@ struct glz::meta<aur::Package> {
       "Popularity", &T::popularity,                     //
       "Provides", &T::provides,                         //
       "Replaces", &T::replaces,                         //
-      "Submitter", &T::submitter,                       //
+      "Submitter", optional_string<&T::submitter>,      //
       "URL", optional_string<&T::upstream_url>,         //
       "URLPath", &T::aur_urlpath,                       //
       "Version", &T::version);
