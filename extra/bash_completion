@@ -28,7 +28,7 @@ _auracle() {
       '--searchby')
         comps='name name-desc maintainer depends makedepends optdepends
                checkdepends submitter provides conflicts replaces
-               keywords groups maintainers'
+               keywords groups comaintainers'
         ;;
       '--sort'|'--rsort')
         comps="name votes popularity firstsubmitted lastmodified"
