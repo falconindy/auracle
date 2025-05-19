@@ -2,6 +2,7 @@
 #include "aur/client.hh"
 
 #include <curl/curl.h>
+#include <stdio.h>
 #include <systemd/sd-event.h>
 #include <unistd.h>
 
@@ -492,7 +493,9 @@ void ClientImpl::QueueHttpRequest(const HttpRequest& request,
   auto* handler = new ResponseHandlerType(this, std::move(callback));
 
   using RH = ResponseHandler;
-  curl_easy_setopt(curl, CURLOPT_URL, request.Url(options_.baseurl).c_str());
+  curl_easy_setopt(
+      curl, CURLOPT_URL,
+      request.Url(options_.proxy.value_or(options_.baseurl)).c_str());
   curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
   curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
   curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);

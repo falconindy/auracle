@@ -164,7 +164,8 @@ bool RpcResponseIsFailure(const absl::StatusOr<aur::RpcResponse>& response) {
 
 Auracle::Auracle(Options options)
     : client_(aur::Client::New(aur::Client::Options()
-                                   .set_baseurl(options.aur_baseurl)
+                                   .set_baseurl(options.baseurl)
+                                   .set_proxy(options.proxy)
                                    .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 

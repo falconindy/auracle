@@ -19,8 +19,13 @@ namespace auracle {
 class Auracle {
  public:
   struct Options {
-    Options& set_aur_baseurl(std::string aur_baseurl) {
-      this->aur_baseurl = std::move(aur_baseurl);
+    Options& set_baseurl(std::string baseurl) {
+      this->baseurl = std::move(baseurl);
+      return *this;
+    }
+
+    Options& set_proxy(std::optional<std::string> proxy) {
+      this->proxy = std::move(proxy);
       return *this;
     }
 
@@ -34,7 +39,8 @@ class Auracle {
       return *this;
     }
 
-    std::string aur_baseurl;
+    std::string baseurl;
+    std::optional<std::string> proxy;
     Pacman* pacman = nullptr;
     bool quiet = false;
   };

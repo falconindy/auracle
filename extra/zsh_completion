@@ -16,6 +16,7 @@ _arguments -S \
   '(--sort)--rsort=[Sort results in descending order]: :(name popularity votes firstsubmitted lastmodified)' \
   '--resolve-deps=[Control depends resolution]: :(depends checkdepends makedepends)' \
   "--show-file=[File to dump with 'show' command]" \
+  '--proxy=[Specifies the URL to a proxy server]" \
   '(-): :->command' \
   '*:: :->option-or-argument'
 

@@ -37,6 +37,12 @@ class Client {
     }
     std::string baseurl;
 
+    Options& set_proxy(std::optional<std::string> proxy) {
+      this->proxy = std::move(proxy);
+      return *this;
+    }
+    std::optional<std::string> proxy;
+
     Options& set_useragent(std::string useragent) {
       this->useragent = std::move(useragent);
       return *this;

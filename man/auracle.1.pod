@@ -91,6 +91,12 @@ This option defaults to B<PKGBUILD>.
 Change directory to I<DIR> before performing any actions. Only useful with the
 B<clone> command.
 
+=item B<--proxy>I<URL>
+
+Specifies the URL to a proxy server that can handle the /rpc/v5/info and
+/rpc/v5/search endpoints of the AUR. This could be a local implementation
+which performs caching or serves from the packages json file.
+
 =back
 
 =head1 COMMANDS

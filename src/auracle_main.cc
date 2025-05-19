@@ -19,6 +19,7 @@ struct Flags {
   bool ParseFromArgv(int* argc, char*** argv);
 
   std::string baseurl = std::string(kAurBaseurl);
+  std::optional<std::string> proxy = std::nullopt;
   std::string pacman_config = std::string(kPacmanConf);
   terminal::WantColor color = terminal::WantColor::AUTO;
 
@@ -74,6 +75,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
     ARG_SEARCHBY,
     ARG_VERSION,
     ARG_BASEURL,
+    ARG_PROXY,
     ARG_SORT,
     ARG_RSORT,
     ARG_PACMAN_CONFIG,
@@ -96,6 +98,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
       { "sort",            required_argument, nullptr, ARG_SORT },
       { "version",         no_argument,       nullptr, ARG_VERSION },
       { "format",          required_argument, nullptr, 'F' },
+      { "proxy",           required_argument, nullptr, ARG_PROXY },
 
       // These are "private", and intentionally not documented in the manual or
       // usage.
@@ -188,6 +191,9 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
       case ARG_BASEURL:
         baseurl = optarg;
         break;
+      case ARG_PROXY:
+        proxy = optarg;
+        break;
       case ARG_PACMAN_CONFIG:
         pacman_config = optarg;
         break;
@@ -231,7 +237,8 @@ int main(int argc, char** argv) {
   }
 
   auracle::Auracle auracle(auracle::Auracle::Options()
-                               .set_aur_baseurl(flags.baseurl)
+                               .set_baseurl(flags.baseurl)
+                               .set_proxy(flags.proxy)
                                .set_pacman(pacman.get()));
 
   const std::string_view action(argv[1]);
