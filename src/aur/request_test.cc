@@ -25,12 +25,16 @@ TEST(RequestTest, BuildsInfoRequests) {
 }
 
 TEST(RequestTest, UrlEncodesParameterValues) {
-  aur::InfoRequest request;
+  aur::InfoRequest irequest;
 
-  request.AddArg("c++");
+  irequest.AddArg("c++");
 
-  const auto payload = request.Payload();
+  const auto payload = irequest.Payload();
   EXPECT_EQ(payload, "arg[]=c%2B%2B");
+
+  aur::SearchRequest srequest(aur::SearchRequest::SearchBy::NAME_DESC, "A B");
+  const auto url = srequest.Url("http://a.b");
+  EXPECT_THAT(url, StartsWith("http://a.b/rpc/v5/search/A%20B?"));
 }
 
 TEST(RequestTest, BuildsSearchRequests) {

@@ -60,18 +60,4 @@ struct RawResponse {
 
 }  // namespace aur
 
-#if 0
-template <>
-struct glz::meta<aur::RpcResponse> {
-  using T = aur::RpcResponse;
-  static constexpr std::string_view name = "RpcResponse";
-
-  static constexpr auto value = object(  //
-      "results", &T::packages,           //
-      "resultcount", glz::skip{},        //
-      "version", glz::skip{},            //
-      "type", glz::skip{});
-};
-#endif
-
 #endif  // AUR_RESPONSE_HH_

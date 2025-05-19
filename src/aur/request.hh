@@ -187,10 +187,7 @@ class SearchRequest : public RpcRequest {
     return SearchBy::INVALID;
   }
 
-  SearchRequest(SearchBy by, std::string_view arg)
-      : RpcRequest(HttpRequest::Command::GET,
-                   absl::StrFormat("/rpc/v5/search/%s?by=%s", arg,
-                                   SearchByToString(by))) {}
+  SearchRequest(SearchBy by, std::string_view arg);
 
   SearchRequest(const SearchRequest&) = delete;
   SearchRequest& operator=(const SearchRequest&) = delete;

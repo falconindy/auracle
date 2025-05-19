@@ -40,6 +40,11 @@ std::string RpcRequest::Payload() const {
   return absl::StrJoin(params_, "&", QueryParamFormatter);
 }
 
+SearchRequest::SearchRequest(SearchBy by, std::string_view arg)
+    : RpcRequest(HttpRequest::Command::GET,
+                 absl::StrFormat("/rpc/v5/search/%s?by=%s", UrlEscape(arg),
+                                 SearchByToString(by))) {}
+
 // static
 RawRequest RawRequest::ForSourceFile(const Package& package,
                                      std::string_view filename) {

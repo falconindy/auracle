@@ -65,7 +65,7 @@ class TestRawQuery(auracle_test.TestCase):
         self.assertEqual(0, r.process.returncode)
 
         self.assertListEqual([
-            '/rpc/v5/search/^aurac.+?by=name-desc',
+            '/rpc/v5/search/%5Eaurac.%2B?by=name-desc',
         ], r.request_uris)
 
 
