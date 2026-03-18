@@ -185,39 +185,23 @@ class TypedResponseHandler : public ResponseHandler {
  public:
   using CallbackType = Client::ResponseCallback<ResponseT>;
 
-  constexpr TypedResponseHandler(ClientImpl* client, CallbackType callback)
+  TypedResponseHandler(ClientImpl* client, CallbackType callback)
       : ResponseHandler(client), callback_(std::move(callback)) {}
 
  protected:
   int RunCallback(absl::Status status) override {
-    if (!status.ok()) {
-      return std::move(callback_)(std::move(status));
+    if (status.ok()) {
+      return std::move(callback_)(ResponseT::Parse(std::move(body)));
     }
 
-    return std::move(callback_)(ResponseT::Parse(std::move(body)));
+    return std::move(callback_)(std::move(status));
   }
 
  private:
   CallbackType callback_;
 };
 
-class RpcResponseHandler : public TypedResponseHandler<RpcResponse> {
- public:
-  using TypedResponseHandler<RpcResponse>::TypedResponseHandler;
-
- protected:
-  int RunCallback(absl::Status status) override {
-    if (!status.ok()) {
-      // The AUR might supply HTML on non-200 replies. We must avoid parsing
-      // this as JSON, so drop the response body and trust the callback to do
-      // the right thing with the error.
-      body.clear();
-    }
-
-    return TypedResponseHandler<RpcResponse>::RunCallback(std::move(status));
-  }
-};
-
+using RpcResponseHandler = TypedResponseHandler<RpcResponse>;
 using RawResponseHandler = TypedResponseHandler<RawResponse>;
 
 class CloneResponseHandler : public TypedResponseHandler<CloneResponse> {

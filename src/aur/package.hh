@@ -45,17 +45,17 @@ struct Package {
 
   // glaze serialization helpers
 
-  template <typename T, T aur::Package::* F>
+  template <typename T, T Package::* F>
   void read_optional(const std::optional<T>& v) {
     if (v) (*this).*F = *v;
   }
 
-  template <absl::Time aur::Package::* F>
+  template <absl::Time Package::* F>
   void read_time(std::optional<int64_t> seconds) {
     (*this).*F = absl::FromUnixSeconds(seconds.value_or(0));
   }
 
-  template <absl::Time aur::Package::* F>
+  template <absl::Time Package::* F>
   int64_t write_time() {
     return absl::ToUnixSeconds((*this).*F);
   }
