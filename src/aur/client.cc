@@ -497,8 +497,7 @@ void ClientImpl::QueueHttpRequest(const HttpRequest& request,
     case DebugLevel::NONE:
       break;
     case DebugLevel::REQUESTS:
-      curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION,
-                       &ResponseHandler::DebugCallback);
+      curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, &RH::DebugCallback);
       curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &debug_stream_);
       [[fallthrough]];
     case DebugLevel::VERBOSE_STDERR:
