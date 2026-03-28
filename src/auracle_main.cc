@@ -70,7 +70,8 @@ struct Flags {
 
 bool Flags::ParseFromArgv(int* argc, char*** argv) {
   enum {
-    ARG_COLOR = 1000,
+    SENTINEL_START = CHAR_MAX,
+    ARG_COLOR,
     ARG_LITERAL,
     ARG_SEARCHBY,
     ARG_VERSION,
