@@ -22,17 +22,14 @@ def FindMesonBuildDir():
     # When run manually, we're probably in the repo root.
     paths = glob.glob('*/.ninja_log')
     if len(paths) > 1:
-        raise ValueError(
-            'Multiple build directories found. Unable to proceed.')
+        raise ValueError('Multiple build directories found. Unable to proceed.')
     if len(paths) == 0:
-        raise ValueError(
-            'No build directory found. Have you run "meson build" yet?')
+        raise ValueError('No build directory found. Have you run "meson build" yet?')
 
     return os.path.dirname(paths[0])
 
 
 class HTTPRequest:
-
     def __init__(self, request):
         requestline = request.pop(0)
         self.command, self.path, self.request_version = requestline.split()
@@ -44,7 +41,6 @@ class HTTPRequest:
 
 
 class TimeLoggingTestResult(unittest.runner.TextTestResult):
-
     def startTest(self, test):
         self._started_at = time.time()
         super().startTest(test)
@@ -63,7 +59,6 @@ unittest.runner.TextTestRunner.resultclass = TimeLoggingTestResult
 
 
 class AuracleRunResult:
-
     def _ProcessDebugOutput(self, requests_file):
         requests_sent = []
 
@@ -85,15 +80,13 @@ class AuracleRunResult:
 
 
 class TestCase(unittest.TestCase):
-
     def setUp(self):
         self.build_dir = FindMesonBuildDir()
         self._tempdir = tempfile.TemporaryDirectory()
         self.tempdir = self._tempdir.name
 
         q = multiprocessing.Queue()
-        self.server = multiprocessing.Process(target=fakeaur.server.Serve,
-                                              args=(q, ))
+        self.server = multiprocessing.Process(target=fakeaur.server.Serve, args=(q,))
         self.server.start()
         self.baseurl = q.get()
 
@@ -103,13 +96,12 @@ class TestCase(unittest.TestCase):
         self.server.terminate()
         self.server.join()
         self._tempdir.cleanup()
-        self.assertEqual(0, self.server.exitcode,
-                         'Server did not exit cleanly')
+        self.assertEqual(0, self.server.exitcode, 'Server did not exit cleanly')
 
     def _WritePacmanConf(self):
         with open(os.path.join(self.tempdir, 'pacman.conf'), 'w') as f:
             f.write(
-                textwrap.dedent(f'''\
+                textwrap.dedent(f"""\
                 [options]
                 DBPath = {__scriptdir__}/fakepacman
 
@@ -118,12 +110,13 @@ class TestCase(unittest.TestCase):
 
                 [community]
                 Server = file:///dev/null
-            '''))
+            """)
+            )
 
     def Auracle(self, args):
-        requests_file = tempfile.NamedTemporaryFile(dir=self.tempdir,
-                                                    prefix='requests-',
-                                                    delete=False).name
+        requests_file = tempfile.NamedTemporaryFile(
+            dir=self.tempdir, prefix='requests-', delete=False
+        ).name
 
         env = {
             'PATH': f'{__scriptdir__}/fakeaur:{os.getenv("PATH")}',
@@ -142,20 +135,18 @@ class TestCase(unittest.TestCase):
         ] + args
 
         return AuracleRunResult(
-            subprocess.run(cmdline, env=env, capture_output=True),
-            requests_file)
+            subprocess.run(cmdline, env=env, capture_output=True), requests_file
+        )
 
     def assertPkgbuildExists(self, pkgname):
-        self.assertTrue(
-            os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
-        self.assertTrue(
-            os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+        self.assertTrue(os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
+        self.assertTrue(os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
     def assertPkgbuildNotExists(self, pkgname):
         self.assertFalse(
-            os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD')))
-        self.assertFalse(
-            os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
+            os.path.exists(os.path.join(self.tempdir, pkgname, 'PKGBUILD'))
+        )
+        self.assertFalse(os.path.exists(os.path.join(self.tempdir, pkgname, '.git')))
 
 
 def main():

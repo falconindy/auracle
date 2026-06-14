@@ -5,12 +5,10 @@ import auracle_test
 
 
 class TestInfo(auracle_test.TestCase):
-
     def testStringFormat(self):
         r = self.Auracle(['info', '-F', '{name} {version}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual('auracle-git r74.82e863f-1\n',
-                         r.process.stdout.decode())
+        self.assertEqual('auracle-git r74.82e863f-1\n', r.process.stdout.decode())
 
     def testFloatingPointFormat(self):
         r = self.Auracle(['info', '-F', '{popularity}', 'auracle-git'])
@@ -24,8 +22,7 @@ class TestInfo(auracle_test.TestCase):
     def testDateTimeFormat(self):
         r = self.Auracle(['info', '-F', '{submitted}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual('2017-07-02T16:40:08+00:00',
-                         r.process.stdout.decode().strip())
+        self.assertEqual('2017-07-02T16:40:08+00:00', r.process.stdout.decode().strip())
 
         r = self.Auracle(['info', '-F', '{submitted::%s}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
@@ -34,14 +31,17 @@ class TestInfo(auracle_test.TestCase):
     def testListFormat(self):
         r = self.Auracle(['info', '-F', '{depends}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
-        self.assertEqual('pacman  libarchive.so  libcurl.so  libsystemd.so\n',
-                         r.process.stdout.decode())
+        self.assertEqual(
+            'pacman  libarchive.so  libcurl.so  libsystemd.so\n',
+            r.process.stdout.decode(),
+        )
 
         r = self.Auracle(['info', '-F', '{depends::,,}', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
         self.assertEqual(
             'pacman:,,libarchive.so:,,libcurl.so:,,libsystemd.so\n',
-            r.process.stdout.decode())
+            r.process.stdout.decode(),
+        )
 
     def testInvalidFormat(self):
         r = self.Auracle(['info', '-F', '{invalid}'])

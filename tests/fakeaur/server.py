@@ -17,7 +17,6 @@ AUR_SERVER_VERSION = 5
 
 
 class FakeAurHandler(http.server.BaseHTTPRequestHandler):
-
     def do_GET(self):
         handlers = {
             '/rpc': self.handle_rpc,
@@ -87,7 +86,8 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
                 status_code = int(next(iter(args)))
                 return self.respond(
                     status_code=status_code,
-                    response=f'{status_code}: fridge too loud\n'.encode())
+                    response=f'{status_code}: fridge too loud\n'.encode(),
+                )
             except ValueError:
                 pass
 
@@ -96,13 +96,11 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             # extract the results from each DB file
             results.extend(json.loads(reply)['results'])
 
-        return self.respond(
-            response=self.make_package_reply('multiinfo', results))
+        return self.respond(response=self.make_package_reply('multiinfo', results))
 
     def handle_rpc_search(self, arg, by):
         if len(arg) < 2:
-            return self.respond(
-                response=self.make_error_reply('Query arg too small.'))
+            return self.respond(response=self.make_error_reply('Query arg too small.'))
 
         reply = self.lookup_response('search', f'{by}|{arg}' if by else arg)
 
@@ -113,17 +111,18 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             queryparams = urllib.parse.parse_qs(url.query)
         else:
             content_len = int(self.headers.get('Content-Length'))
-            queryparams = urllib.parse.parse_qs(
-                self.rfile.read(content_len).decode())
+            queryparams = urllib.parse.parse_qs(self.rfile.read(content_len).decode())
 
         if url.path.startswith('/rpc/v5/search'):
             return self.handle_rpc_search(
-                url.path.rsplit('/')[-1], self.last_of(queryparams.get('by')))
+                url.path.rsplit('/')[-1], self.last_of(queryparams.get('by'))
+            )
         elif url.path.startswith('/rpc/v5/info'):
             return self.handle_rpc_info(set(queryparams.get('arg[]', [])))
         else:
-            return self.respond(response=self.make_error_reply(
-                'Incorrect request type specified.'))
+            return self.respond(
+                response=self.make_error_reply('Incorrect request type specified.')
+            )
 
     def handle_download(self, command, url):
         pkgname = os.path.basename(url.path).split('.')[0]
@@ -140,9 +139,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
                 t.size = len(b)
                 tar.addfile(t, io.BytesIO(b))
 
-            headers = {
-                'content-disposition': f'inline, filename={pkgname}.tar.gz'
-            }
+            headers = {'content-disposition': f'inline, filename={pkgname}.tar.gz'}
 
             response = gzip.compress(f.read())
 
@@ -178,7 +175,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
 def Serve(queue=None, port=0):
 
     class FakeAurServer(http.server.HTTPServer):
-
         def handle_error(self, request, client_address):
             raise
 

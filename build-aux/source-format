@@ -7,4 +7,4 @@ if [[ $MESON_SOURCE_ROOT ]]; then
 fi
 
 git ls-files -z -- '*.cc' '*.hh' | xargs -0 clang-format -i
-git ls-files -z -- 'tests/*.py' | xargs -0 yapf -i
+git ls-files -z -- 'tests/*.py' | xargs -0 ruff format

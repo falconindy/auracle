@@ -6,7 +6,6 @@ import os
 
 
 class TestClone(auracle_test.TestCase):
-
     def testCloneSingle(self):
         r = self.Auracle(['clone', 'auracle-git'])
         self.assertEqual(r.process.returncode, 0)
@@ -37,8 +36,7 @@ class TestClone(auracle_test.TestCase):
         self.assertIn('/rpc/v5/info', r.request_uris)
 
     def testCloneRecursiveWithRestrictedDeps(self):
-        r = self.Auracle(
-            ['clone', '-r', 'auracle-git', '--resolve-deps=^makedepends'])
+        r = self.Auracle(['clone', '-r', 'auracle-git', '--resolve-deps=^makedepends'])
         self.assertEqual(r.process.returncode, 0)
         self.assertPkgbuildExists('auracle-git')
         self.assertPkgbuildNotExists('nlohmann-json')
@@ -51,21 +49,26 @@ class TestClone(auracle_test.TestCase):
         r = self.Auracle(['clone', 'auracle-git'])
         self.assertTrue(r.process.stdout.decode().startswith('clone'))
         self.assertTrue(
-            os.path.exists(os.path.join(self.tempdir, 'auracle-git', 'clone')))
+            os.path.exists(os.path.join(self.tempdir, 'auracle-git', 'clone'))
+        )
 
         # Package now exists, expect a pull
         r = self.Auracle(['clone', 'auracle-git'])
         self.assertTrue(r.process.stdout.decode().startswith('update'))
         self.assertTrue(
-            os.path.exists(os.path.join(self.tempdir, 'auracle-git', 'pull')))
+            os.path.exists(os.path.join(self.tempdir, 'auracle-git', 'pull'))
+        )
 
     def testCloneFailureReportsError(self):
         r = self.Auracle(['clone', 'yaourt'])
         self.assertNotEqual(r.process.returncode, 0)
         self.assertEqual(
             r.process.stderr.decode().strip(),
-            ('error: clone failed for yaourt: '
-             'INTERNAL: git exited with unexpected exit status 1'))
+            (
+                'error: clone failed for yaourt: '
+                'INTERNAL: git exited with unexpected exit status 1'
+            ),
+        )
 
 
 if __name__ == '__main__':

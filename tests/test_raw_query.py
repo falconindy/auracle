@@ -6,7 +6,6 @@ import json
 
 
 class TestRawQuery(auracle_test.TestCase):
-
     def testRawInfo(self):
         r = self.Auracle(['rawinfo', 'auracle-git'])
         self.assertEqual(0, r.process.returncode)
@@ -29,9 +28,12 @@ class TestRawQuery(auracle_test.TestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
-        self.assertCountEqual([
-            '/rpc/v5/search/aura?by=name-desc',
-        ], r.request_uris)
+        self.assertCountEqual(
+            [
+                '/rpc/v5/search/aura?by=name-desc',
+            ],
+            r.request_uris,
+        )
 
     def testMultipleRawSearch(self):
         r = self.Auracle(['rawsearch', 'aura', 'systemd'])
@@ -41,10 +43,13 @@ class TestRawQuery(auracle_test.TestCase):
             parsed = json.loads(line)
             self.assertGreater(parsed['resultcount'], 1)
 
-        self.assertCountEqual([
-            '/rpc/v5/search/aura?by=name-desc',
-            '/rpc/v5/search/systemd?by=name-desc',
-        ], r.request_uris)
+        self.assertCountEqual(
+            [
+                '/rpc/v5/search/aura?by=name-desc',
+                '/rpc/v5/search/systemd?by=name-desc',
+            ],
+            r.request_uris,
+        )
 
     def testRawSearchBy(self):
         r = self.Auracle(['rawsearch', '--searchby=maintainer', 'falconindy'])
@@ -56,17 +61,23 @@ class TestRawQuery(auracle_test.TestCase):
         names = (r['Name'] for r in parsed['results'])
         self.assertIn('auracle-git', names)
 
-        self.assertCountEqual([
-            '/rpc/v5/search/falconindy?by=maintainer',
-        ], r.request_uris)
+        self.assertCountEqual(
+            [
+                '/rpc/v5/search/falconindy?by=maintainer',
+            ],
+            r.request_uris,
+        )
 
     def testLiteralSearch(self):
         r = self.Auracle(['rawsearch', '--literal', '^aurac.+'])
         self.assertEqual(0, r.process.returncode)
 
-        self.assertListEqual([
-            '/rpc/v5/search/%5Eaurac.%2B?by=name-desc',
-        ], r.request_uris)
+        self.assertListEqual(
+            [
+                '/rpc/v5/search/%5Eaurac.%2B?by=name-desc',
+            ],
+            r.request_uris,
+        )
 
 
 if __name__ == '__main__':

@@ -6,7 +6,6 @@ import json
 
 
 class TestSearch(auracle_test.TestCase):
-
     def testExitSuccessOnNoResults(self):
         r = self.Auracle(['search', 'wontfindanypackages'])
         self.assertEqual(0, r.process.returncode)
@@ -59,28 +58,36 @@ class TestSearch(auracle_test.TestCase):
         # search again with the term duplicated. two requests are made, but the
         # resultcount is the same as the results are deduped.
         r2 = self.Auracle(['search', '--quiet', 'aura', 'aura'])
-        self.assertCountEqual([
-            '/rpc/v5/search/aura?by=name-desc',
-            '/rpc/v5/search/aura?by=name-desc',
-        ], r2.request_uris)
-        self.assertEqual(packagecount,
-                         len(r2.process.stdout.decode().splitlines()))
+        self.assertCountEqual(
+            [
+                '/rpc/v5/search/aura?by=name-desc',
+                '/rpc/v5/search/aura?by=name-desc',
+            ],
+            r2.request_uris,
+        )
+        self.assertEqual(packagecount, len(r2.process.stdout.decode().splitlines()))
 
     def testLiteralSearch(self):
         r = self.Auracle(['search', '--literal', '^aurac.+'])
         self.assertEqual(0, r.process.returncode)
 
-        self.assertListEqual([
-            '/rpc/v5/search/%5Eaurac.%2B?by=name-desc',
-        ], r.request_uris)
+        self.assertListEqual(
+            [
+                '/rpc/v5/search/%5Eaurac.%2B?by=name-desc',
+            ],
+            r.request_uris,
+        )
 
     def testLiteralSearchWithShortTerm(self):
         r = self.Auracle(['search', '--literal', 'a'])
         self.assertEqual(1, r.process.returncode)
 
-        self.assertListEqual([
-            '/rpc/v5/search/a?by=name-desc',
-        ], r.request_uris)
+        self.assertListEqual(
+            [
+                '/rpc/v5/search/a?by=name-desc',
+            ],
+            r.request_uris,
+        )
 
 
 if __name__ == '__main__':

@@ -5,12 +5,13 @@ import auracle_test
 
 
 class TestDownload(auracle_test.TestCase):
-
     def testOutdatedFindsPackagesNeedingUpgrade(self):
         r = self.Auracle(['outdated', '--quiet'])
         self.assertEqual(0, r.process.returncode)
-        self.assertListEqual(r.process.stdout.decode().strip().splitlines(),
-                             ['auracle-git', 'pkgfile-git'])
+        self.assertListEqual(
+            r.process.stdout.decode().strip().splitlines(),
+            ['auracle-git', 'pkgfile-git'],
+        )
 
         self.assertCountEqual(r.request_uris, ['/rpc/v5/info'])
 
