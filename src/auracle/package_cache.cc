@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "auracle/package_cache.hh"
 
-#include <iostream>
+#include <print>
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
@@ -80,24 +80,24 @@ class DependencyPath : public std::vector<std::string> {
         return;
       }
 
-      std::cerr << "warning: found dependency cycle:";
+      std::print(stderr, "warning: found dependency cycle:");
 
       // Print the path leading up to the start of the cycle
       auto iter = dependency_path_.cbegin();
       while (iter != cycle_start) {
-        std::cerr << " " << *iter << " ->";
+        std::print(stderr, " {} ->", *iter);
         ++iter;
       }
 
       // Print the cycle itself, wrapped in brackets
-      std::cerr << " [ " << *iter;
+      std::print(stderr, " [ {}", *iter);
       ++iter;
       while (iter != dependency_path_.cend()) {
-        std::cerr << " -> " << *iter;
+        std::print(stderr, " -> {}", *iter);
         ++iter;
       }
 
-      std::cerr << " -> " << *cycle_start << " ]\n";
+      std::println(stderr, " -> {} ]", *cycle_start);
     }
 
     DependencyPath& dependency_path_;

@@ -4,7 +4,7 @@
 #include <cerrno>
 #include <filesystem>
 #include <functional>
-#include <iostream>
+#include <print>
 #include <regex>
 #include <string_view>
 #include <tuple>
@@ -75,7 +75,7 @@ class ResponseMerger {
 };
 
 int ErrorNotEnoughArgs() {
-  std::cerr << "error: not enough arguments.\n";
+  std::println(stderr, "error: not enough arguments.");
   return -EINVAL;
 }
 
@@ -143,8 +143,8 @@ bool ChdirIfNeeded(const fs::path& target) {
   std::error_code ec;
   fs::current_path(target, ec);
   if (ec.value() != 0) {
-    std::cerr << "error: failed to change directory to " << target << ": "
-              << ec.message() << "\n";
+    std::println(stderr, "error: failed to change directory to {}: {}",
+                 target.string(), ec.message());
     return false;
   }
 
@@ -156,7 +156,7 @@ bool RpcResponseIsFailure(const absl::StatusOr<aur::RpcResponse>& response) {
     return false;
   }
 
-  std::cerr << "error: " << response.status() << '\n';
+  std::println(stderr, "error: {}", response.status().ToString());
   return true;
 }
 
@@ -242,7 +242,7 @@ void Auracle::IteratePackages(std::vector<std::string> args,
         for (const auto& p :
              NotFoundPackages(want, results, state->package_cache)) {
           if (!pacman_->HasPackage(p)) {
-            std::cerr << "no results found for " << p << "\n";
+            std::println(stderr, "no results found for {}", p);
           }
         }
 
@@ -373,7 +373,7 @@ int Auracle::Search(const std::vector<std::string>& args,
     try {
       patterns.emplace_back(arg, std::regex::icase | std::regex::optimize);
     } catch (const std::regex_error& e) {
-      std::cerr << "error: invalid regex: " << arg << "\n";
+      std::println(stderr, "error: invalid regex: {}", arg);
       return -EINVAL;
     }
   }
@@ -408,8 +408,10 @@ int Auracle::Search(const std::vector<std::string>& args,
     if (allow_regex) {
       frag = GetSearchFragment(arg);
       if (frag.empty()) {
-        std::cerr << "error: search string '" << arg
-                  << "' insufficient for searching by regular expression.\n";
+        std::println(stderr,
+                     "error: search string '{}' insufficient for searching by "
+                     "regular expression.",
+                     arg);
         return -EINVAL;
       }
     }
@@ -466,11 +468,11 @@ int Auracle::Clone(const std::vector<std::string>& args,
             [&ret,
              pkgbase = p.pkgbase](absl::StatusOr<aur::CloneResponse> response) {
               if (response.ok()) {
-                std::cout << response.value().operation << " complete: "
-                          << (fs::current_path() / pkgbase).string() << "\n";
+                std::println("{} complete: {}", response.value().operation,
+                             (fs::current_path() / pkgbase).string());
               } else {
-                std::cerr << "error: clone failed for " << pkgbase << ": "
-                          << response.status() << "\n";
+                std::println(stderr, "error: clone failed for {}: {}", pkgbase,
+                             response.status().ToString());
                 ret = -EIO;
               }
               return 0;
@@ -512,20 +514,20 @@ int Auracle::Show(const std::vector<std::string>& args,
               [&options, print_header = resultcount > 1, pkgbase = pkg.pkgbase](
                   absl::StatusOr<aur::RawResponse> response) {
                 if (absl::IsNotFound(response.status())) {
-                  std::cerr << "error: file '" << options.show_file
-                            << "' not found for package '" << pkgbase << "'\n";
+                  std::println(stderr,
+                               "error: file '{}' not found for package '{}'",
+                               options.show_file, pkgbase);
                   return -ENOENT;
                 } else if (!response.ok()) {
-                  std::cerr << "error: request failed: " << response.status()
-                            << "\n";
+                  std::println(stderr, "error: request failed: {}",
+                               response.status().ToString());
                   return -EIO;
                 }
 
                 if (print_header) {
-                  std::cout << "### BEGIN " << pkgbase << "/"
-                            << options.show_file << "\n";
+                  std::println("### BEGIN {}/{}", pkgbase, options.show_file);
                 }
-                std::cout << response.value().bytes << "\n";
+                std::println("{}", response.value().bytes);
                 return 0;
               });
         }
@@ -585,35 +587,35 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     const bool is_target = absl::c_find(args, name) != args.end();
 
     if (unknown) {
-      std::cout << "UNKNOWN";
+      std::print("UNKNOWN");
       r = -ENXIO;
     } else {
       if (is_target) {
-        std::cout << "TARGET";
+        std::print("TARGET");
       } else if (satisfied) {
-        std::cout << "SATISFIED";
+        std::print("SATISFIED");
       }
 
       if (from_aur) {
-        std::cout << "AUR";
+        std::print("AUR");
       } else {
-        std::cout << "REPOS";
+        std::print("REPOS");
       }
     }
 
     if (unknown) {
       for (auto iter = dependency_path.crbegin();
            iter != dependency_path.crend(); ++iter) {
-        std::cout << " " << *iter;
+        std::print(" {}", *iter);
       }
     } else {
-      std::cout << " " << name;
+      std::print(" {}", name);
       if (from_aur) {
-        std::cout << " " << pkg->pkgbase;
+        std::print(" {}", pkg->pkgbase);
       }
     }
 
-    std::cout << "\n";
+    std::println("");
   }
 
   return r;
@@ -643,11 +645,11 @@ int Auracle::Update(const std::vector<std::string>& args,
             [&ret,
              pkgbase = p.pkgbase](absl::StatusOr<aur::CloneResponse> response) {
               if (response.ok()) {
-                std::cout << response.value().operation << " complete: "
-                          << (fs::current_path() / pkgbase).string() << "\n";
+                std::println("{} complete: {}", response.value().operation,
+                             (fs::current_path() / pkgbase).string());
               } else {
-                std::cerr << "error: clone failed for " << pkgbase << ": "
-                          << response.status() << "\n";
+                std::println(stderr, "error: clone failed for {}: {}", pkgbase,
+                             response.status().ToString());
                 ret = -EIO;
               }
               return 0;
@@ -731,11 +733,12 @@ namespace {
 
 int RawRequestDone(absl::StatusOr<aur::RawResponse> response) {
   if (!response.ok()) {
-    std::cerr << "error: request failed: " << response.status() << "\n";
+    std::println(stderr, "error: request failed: {}",
+                 response.status().ToString());
     return -EIO;
   }
 
-  std::cout << response.value().bytes << "\n";
+  std::println("{}", response.value().bytes);
   return 0;
 }
 

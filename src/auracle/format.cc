@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "auracle/format.hh"
 
-#include <iomanip>
-#include <iostream>
+#include <print>
 #include <string_view>
 
 #include "absl/time/time.h"
@@ -237,7 +236,7 @@ void FormatCustomTo(std::string& out, std::string_view format,
 void Custom(const std::string_view format, const aur::Package& package) {
   std::string out;
   FormatCustomTo(out, format, package);
-  std::cout << out << '\n';
+  std::println("{}", out);
 }
 
 absl::Status Validate(std::string_view format) {

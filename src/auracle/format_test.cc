@@ -7,24 +7,13 @@
 #include "aur/package.hh"
 #include "gtest/gtest.h"
 
-class ScopedCapturer {
+class ScopedStdoutCapturer {
  public:
-  ScopedCapturer(std::ostream& stream) : stream_(stream) {
-    stream_.rdbuf(buffer_.rdbuf());
-  }
-
-  ~ScopedCapturer() { stream_.rdbuf(original_sbuf_); }
+  ScopedStdoutCapturer() { testing::internal::CaptureStdout(); }
 
   std::string GetCapturedOutput() {
-    auto str = buffer_.str();
-    buffer_.str(std::string());
-    return str;
+    return testing::internal::GetCapturedStdout();
   }
-
- private:
-  std::stringstream buffer_;
-  std::streambuf* original_sbuf_ = std::cout.rdbuf();
-  std::ostream& stream_;
 };
 
 aur::Package MakePackage() {
@@ -55,7 +44,7 @@ TEST(FormatTest, DetectsInvalidFormats) {
 }
 
 TEST(FormatTest, CustomStringFormat) {
-  ScopedCapturer capture(std::cout);
+  ScopedStdoutCapturer capture;
 
   format::Custom("{name} -> {version}", MakePackage());
 
@@ -63,37 +52,49 @@ TEST(FormatTest, CustomStringFormat) {
 }
 
 TEST(FormatTest, CustomFloatFormat) {
-  ScopedCapturer capture(std::cout);
-
   auto p = MakePackage();
 
-  format::Custom("{popularity}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "5.20238\n");
+  {
+    ScopedStdoutCapturer capture;
+    format::Custom("{popularity}", p);
+    EXPECT_EQ(capture.GetCapturedOutput(), "5.20238\n");
+  }
 
-  format::Custom("{popularity:.2f}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "5.20\n");
+  {
+    ScopedStdoutCapturer capture;
+    format::Custom("{popularity:.2f}", p);
+    EXPECT_EQ(capture.GetCapturedOutput(), "5.20\n");
+  }
 }
 
 TEST(FormatTest, CustomDateTimeFormat) {
-  ScopedCapturer capture(std::cout);
-
   auto p = MakePackage();
 
-  format::Custom("{submitted}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "2017-07-02T16:40:08+00:00\n");
+  {
+    ScopedStdoutCapturer capture;
+    format::Custom("{submitted}", p);
+    EXPECT_EQ(capture.GetCapturedOutput(), "2017-07-02T16:40:08+00:00\n");
+  }
 
-  format::Custom("{submitted:%s}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "1499013608\n");
+  {
+    ScopedStdoutCapturer capture;
+    format::Custom("{submitted:%s}", p);
+    EXPECT_EQ(capture.GetCapturedOutput(), "1499013608\n");
+  }
 }
 
 TEST(FormatTest, ListFormat) {
-  ScopedCapturer capture(std::cout);
-
   auto p = MakePackage();
 
-  format::Custom("{conflicts}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "auracle  cower  cower-git\n");
+  {
+    ScopedStdoutCapturer capture;
+    format::Custom("{conflicts}", p);
+    EXPECT_EQ(capture.GetCapturedOutput(), "auracle  cower  cower-git\n");
+  }
 
-  format::Custom("{conflicts::,,}", p);
-  EXPECT_EQ(capture.GetCapturedOutput(), "auracle:,,cower:,,cower-git\n");
+  {
+    ScopedStdoutCapturer capture;
+    format::Custom("{conflicts::,,}", p);
+    EXPECT_EQ(capture.GetCapturedOutput(), "auracle:,,cower:,,cower-git\n");
+  }
 }

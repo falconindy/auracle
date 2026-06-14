@@ -2,7 +2,7 @@
 #include <getopt.h>
 
 #include <clocale>
-#include <iostream>
+#include <print>
 
 #include "absl/container/flat_hash_map.h"
 #include "auracle/auracle.hh"
@@ -64,7 +64,7 @@ struct Flags {
 }
 
 [[noreturn]] void version() {
-  std::cout << "auracle " << PROJECT_VERSION << "\n";
+  std::println("auracle " PROJECT_VERSION);
   exit(0);
 }
 
@@ -124,7 +124,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         break;
       case 'C':
         if (sv_optarg.empty()) {
-          std::cerr << "error: meaningless option: -C ''\n";
+          std::println(stderr, "error: meaningless option: -C ''");
           return false;
         }
         command_options.directory = optarg;
@@ -132,8 +132,8 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
       case 'F': {
         auto status = format::Validate(sv_optarg);
         if (!status.ok()) {
-          std::cerr << "error: invalid arg to --format (" << status.message()
-                    << "): " << sv_optarg << "\n";
+          std::println(stderr, "error: invalid arg to --format ({}): {}",
+                       status.message(), sv_optarg);
           return false;
         }
         command_options.format = optarg;
@@ -148,8 +148,8 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         command_options.search_by =
             aur::SearchRequest::ParseSearchBy(sv_optarg);
         if (command_options.search_by == SearchBy::INVALID) {
-          std::cerr << "error: invalid arg to --searchby: " << sv_optarg
-                    << "\n";
+          std::println(stderr, "error: invalid arg to --searchby: {}",
+                       sv_optarg);
           return false;
         }
         break;
@@ -161,7 +161,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         } else if (sv_optarg == "always") {
           color = terminal::WantColor::YES;
         } else {
-          std::cerr << "error: invalid arg to --color: " << sv_optarg << "\n";
+          std::println(stderr, "error: invalid arg to --color: {}", sv_optarg);
           return false;
         }
         break;
@@ -169,7 +169,7 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         command_options.sorter =
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_ASC);
         if (command_options.sorter == nullptr) {
-          std::cerr << "error: invalid arg to --sort: " << sv_optarg << "\n";
+          std::println(stderr, "error: invalid arg to --sort: {}", sv_optarg);
           return false;
         }
         break;
@@ -177,15 +177,15 @@ bool Flags::ParseFromArgv(int* argc, char*** argv) {
         command_options.sorter =
             sort::MakePackageSorter(sv_optarg, sort::OrderBy::ORDER_DESC);
         if (command_options.sorter == nullptr) {
-          std::cerr << "error: invalid arg to --rsort: " << sv_optarg << "\n";
+          std::println(stderr, "error: invalid arg to --rsort: {}", sv_optarg);
           return false;
         }
         break;
       case ARG_RESOLVE_DEPS:
         if (!ParseDependencyKinds(sv_optarg,
                                   &command_options.resolve_depends)) {
-          std::cerr << "error: invalid argument to --resolve-deps: "
-                    << sv_optarg << "\n";
+          std::println(stderr, "error: invalid argument to --resolve-deps: {}",
+                       sv_optarg);
           return false;
         }
         break;
@@ -224,7 +224,7 @@ int main(int argc, char** argv) {
   }
 
   if (argc < 2) {
-    std::cerr << "error: no operation specified (use -h for help)\n";
+    std::println(stderr, "error: no operation specified (use -h for help)");
     return 1;
   }
 
@@ -233,7 +233,7 @@ int main(int argc, char** argv) {
 
   const auto pacman = auracle::Pacman::NewFromConfig(flags.pacman_config);
   if (pacman == nullptr) {
-    std::cerr << "error: failed to parse " << flags.pacman_config << "\n";
+    std::println(stderr, "error: failed to parse {}", flags.pacman_config);
     return 1;
   }
 
@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
 
   const auto iter = cmds.find(action);
   if (iter == cmds.end()) {
-    std::cerr << "Unknown action " << action << "\n";
+    std::println(stderr, "Unknown action {}", action);
     return 1;
   }
 
