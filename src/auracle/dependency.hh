@@ -50,7 +50,7 @@ class Dependency final {
   std::string depstring_;
   std::string name_;
   std::string version_;
-  Mod mod_;
+  Mod mod_ = Mod::ANY;
 };
 
 }  // namespace auracle
