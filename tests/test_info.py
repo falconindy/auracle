@@ -14,6 +14,22 @@ class TestInfo(auracle_test.TestCase):
         r = self.Auracle(['info', 'auracle-git', 'packagenotfoundbro'])
         self.assertEqual(0, r.process.returncode)
 
+    def testFormatsFields(self):
+        r = self.Auracle(['info', 'auracle-git'])
+        self.assertEqual(0, r.process.returncode)
+
+        out = r.process.stdout.decode()
+
+        # Vector-valued fields are joined with the default delimiter.
+        self.assertIn(
+            'Depends On     : pacman  libarchive.so  libcurl.so  libsystemd.so',
+            out,
+        )
+        # absl::Time fields render using the default RFC3339 format. The test
+        # harness pins LC_TIME=C and TZ=UTC.
+        self.assertIn('Submitted      : 2017-07-02T16:40:08+00:00', out)
+        self.assertIn('Last Modified  : 2018-10-10T18:21:49+00:00', out)
+
     def testExitFailureOnNotFound(self):
         r = self.Auracle(['info', 'packagenotfoundbro'])
         self.assertNotEqual(0, r.process.returncode)

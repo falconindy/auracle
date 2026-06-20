@@ -7,7 +7,6 @@
 #include "absl/time/time.h"
 #include "auracle/terminal.hh"
 #include "fmt/args.h"
-#include "fmt/printf.h"
 
 namespace {
 
@@ -88,7 +87,10 @@ struct formatter<std::vector<T>> {
 };
 
 template <typename T>
-struct formatter<Field<T>> : formatter<std::string_view> {
+struct formatter<Field<T>> {
+  // Field names are always formatted with the default ("{}") spec.
+  constexpr auto parse(fmt::format_parse_context& ctx) { return ctx.begin(); }
+
   auto format(const Field<T>& f, fmt::format_context& ctx) const {
     if constexpr (is_containerlike<T>::value) {
       if (f.value.empty()) {
@@ -96,11 +98,19 @@ struct formatter<Field<T>> : formatter<std::string_view> {
       }
     }
 
-    // The value is not guaranteed to be consteval in this context, so the
-    // format string has to be runtime evaluated. Icky, but at least this
-    // is fully under our control.
-    return fmt::format_to(ctx.out(), fmt::runtime("{:14s} : {}\n"), f.name,
-                          f.value);
+    ctx.advance_to(fmt::format_to(ctx.out(), "{:14s} : ", f.name));
+
+    // Dispatch to T's formatter directly instead of formatting the value
+    // through a format string. This keeps the layout above compile-time
+    // checked while sidestepping fmt's consteval check, which can't run the
+    // parse() of value types like absl::Time (whose default spec copies the
+    // non-constexpr absl::RFC3339_sec) or std::vector.
+    fmt::formatter<T> value_formatter;
+    fmt::format_parse_context empty_spec("");
+    value_formatter.parse(empty_spec);
+    ctx.advance_to(value_formatter.format(f.value, ctx));
+
+    return fmt::format_to(ctx.out(), "\n");
   }
 };
 
