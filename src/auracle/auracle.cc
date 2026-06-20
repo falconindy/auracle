@@ -664,7 +664,8 @@ int Auracle::Update(const std::vector<std::string>& args,
 
   IteratePackages(outdated, &iter);
 
-  return client_->Wait();
+  r = client_->Wait();
+  return r < 0 ? r : ret;
 }
 
 int Auracle::GetOutdatedPackages(const std::vector<std::string>& args,
