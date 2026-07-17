@@ -24,7 +24,7 @@ struct Package {
   int package_id = 0;
   int pkgbase_id = 0;
   int votes = 0;
-  double popularity = 0.f;
+  double popularity = 0.0;
 
   absl::Time out_of_date;
   absl::Time submitted;
