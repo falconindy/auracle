@@ -9,6 +9,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 
 namespace aur {
 
@@ -20,6 +21,17 @@ std::string UrlEscape(const std::string_view sv) {
   curl_free(ptr);
 
   return escaped;
+}
+
+// Escapes a URL path, preserving '/' as a segment separator. This allows
+// e.g. paths to files in subdirectories of a repo while still escaping
+// characters that would otherwise be misinterpreted by curl or the server
+// (spaces, '#', '?', etc).
+std::string UrlEscapePath(std::string_view path) {
+  return absl::StrJoin(absl::StrSplit(path, '/'), "/",
+                       [](std::string* out, std::string_view segment) {
+                         absl::StrAppend(out, UrlEscape(segment));
+                       });
 }
 
 void QueryParamFormatter(std::string* out, const HttpRequest::QueryParam& kv) {
@@ -48,7 +60,8 @@ SearchRequest::SearchRequest(SearchBy by, std::string_view arg)
 // static
 RawRequest RawRequest::ForSourceFile(const Package& package,
                                      std::string_view filename) {
-  return RawRequest(absl::StrCat("/cgit/aur.git/plain/", filename,
+  return RawRequest(absl::StrCat("/cgit/aur.git/plain/",
+                                 UrlEscapePath(filename),
                                  "?h=", UrlEscape(package.pkgbase)));
 }
 

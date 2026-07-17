@@ -64,6 +64,30 @@ TEST(RequestTest, UrlForSourceFileEscapesReponame) {
   EXPECT_THAT(url, EndsWith("/PKGBUILD?h=libc%2B%2B"));
 }
 
+TEST(RequestTest, UrlForSourceFileEscapesFilename) {
+  aur::Package p;
+  p.pkgbase = "auracle-git";
+
+  EXPECT_THAT(
+      aur::RawRequest::ForSourceFile(p, "foo bar.install").Url(kBaseUrl),
+      EndsWith("/foo%20bar.install?h=auracle-git"));
+
+  EXPECT_THAT(aur::RawRequest::ForSourceFile(p, "foo#bar").Url(kBaseUrl),
+              EndsWith("/foo%23bar?h=auracle-git"));
+
+  EXPECT_THAT(aur::RawRequest::ForSourceFile(p, "foo?h=evil").Url(kBaseUrl),
+              EndsWith("/foo%3Fh%3Devil?h=auracle-git"));
+}
+
+TEST(RequestTest, UrlForSourceFilePreservesPathSeparators) {
+  aur::Package p;
+  p.pkgbase = "auracle-git";
+
+  EXPECT_THAT(
+      aur::RawRequest::ForSourceFile(p, "keys/pgp/foo.asc").Url(kBaseUrl),
+      EndsWith("/keys/pgp/foo.asc?h=auracle-git"));
+}
+
 TEST(RequestTest, BuildsCloneRequests) {
   const std::string kReponame = "auracle-git";
 
