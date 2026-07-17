@@ -147,7 +147,8 @@ std::unique_ptr<Pacman> Pacman::NewFromConfig(const std::string& config_file) {
   }
 
   alpm_errno_t err;
-  alpm_handle_t* alpm = alpm_initialize("/", state.dbpath.c_str(), &err);
+  alpm_handle_t* alpm =
+      alpm_initialize(state.rootdir.c_str(), state.dbpath.c_str(), &err);
   if (alpm == nullptr) {
     return nullptr;
   }
