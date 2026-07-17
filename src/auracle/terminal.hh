@@ -14,8 +14,6 @@ enum class WantColor : short {
 
 void Init(WantColor);
 
-int Columns();
-
 std::string Bold(const std::string& s);
 std::string BoldCyan(const std::string& s);
 std::string BoldGreen(const std::string& s);

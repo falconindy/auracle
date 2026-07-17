@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "terminal.hh"
 
-#include <sys/ioctl.h>
 #include <unistd.h>
 
 #include <string>
@@ -11,8 +10,6 @@
 namespace terminal {
 
 namespace {
-constexpr int kDefaultColumns = 80;
-int g_cached_columns = -1;
 WantColor g_want_color = WantColor::AUTO;
 
 std::string Color(const std::string& s, const char* color) {
@@ -37,24 +34,6 @@ void Init(WantColor want) {
   } else {
     g_want_color = want;
   }
-}
-
-int Columns() {
-  int c;
-  struct winsize ws{};
-
-  if (g_cached_columns >= 0) {
-    return g_cached_columns;
-  }
-
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0) {
-    c = ws.ws_col;
-  } else {
-    c = isatty(STDOUT_FILENO) == 1 ? kDefaultColumns : 0;
-  }
-
-  g_cached_columns = c;
-  return g_cached_columns;
 }
 
 }  // namespace terminal
