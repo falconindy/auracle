@@ -3,7 +3,6 @@
 
 #include <cerrno>
 #include <filesystem>
-#include <functional>
 #include <print>
 #include <regex>
 #include <string_view>
@@ -192,7 +191,7 @@ void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
 
         client_->QueueRpcRequest(
             info_request,
-            [&, callback = std::move(callback),
+            [callback = std::move(callback),
              deps](absl::StatusOr<aur::RpcResponse> info_response) mutable {
               if (info_response.ok()) {
                 std::erase_if(info_response->packages,
