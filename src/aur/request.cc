@@ -57,6 +57,88 @@ SearchRequest::SearchRequest(SearchBy by, std::string_view arg)
                  absl::StrFormat("/rpc/v5/search/%s?by=%s", UrlEscape(arg),
                                  SearchByToString(by))) {}
 
+SearchRequest::SearchBy SearchRequest::ParseSearchBy(
+    std::string_view searchby) {
+  if (searchby == "name") {
+    return SearchBy::NAME;
+  }
+  if (searchby == "name-desc") {
+    return SearchBy::NAME_DESC;
+  }
+  if (searchby == "maintainer") {
+    return SearchBy::MAINTAINER;
+  }
+  if (searchby == "depends") {
+    return SearchBy::DEPENDS;
+  }
+  if (searchby == "makedepends") {
+    return SearchBy::MAKEDEPENDS;
+  }
+  if (searchby == "optdepends") {
+    return SearchBy::OPTDEPENDS;
+  }
+  if (searchby == "checkdepends") {
+    return SearchBy::CHECKDEPENDS;
+  }
+  if (searchby == "submitter") {
+    return SearchBy::SUBMITTER;
+  }
+  if (searchby == "provides") {
+    return SearchBy::PROVIDES;
+  }
+  if (searchby == "conflicts") {
+    return SearchBy::CONFLICTS;
+  }
+  if (searchby == "replaces") {
+    return SearchBy::REPLACES;
+  }
+  if (searchby == "keywords") {
+    return SearchBy::KEYWORDS;
+  }
+  if (searchby == "groups") {
+    return SearchBy::GROUPS;
+  }
+  if (searchby == "comaintainers") {
+    return SearchBy::COMAINTAINERS;
+  }
+  return SearchBy::INVALID;
+}
+
+std::string SearchRequest::SearchByToString(SearchBy by) {
+  switch (by) {
+    case SearchBy::NAME:
+      return "name";
+    case SearchBy::NAME_DESC:
+      return "name-desc";
+    case SearchBy::MAINTAINER:
+      return "maintainer";
+    case SearchBy::DEPENDS:
+      return "depends";
+    case SearchBy::MAKEDEPENDS:
+      return "makedepends";
+    case SearchBy::OPTDEPENDS:
+      return "optdepends";
+    case SearchBy::CHECKDEPENDS:
+      return "checkdepends";
+    case SearchBy::SUBMITTER:
+      return "submitter";
+    case SearchBy::PROVIDES:
+      return "provides";
+    case SearchBy::CONFLICTS:
+      return "conflicts";
+    case SearchBy::REPLACES:
+      return "replaces";
+    case SearchBy::KEYWORDS:
+      return "keywords";
+    case SearchBy::GROUPS:
+      return "groups";
+    case SearchBy::COMAINTAINERS:
+      return "comaintainers";
+    default:
+      return "";
+  }
+}
+
 // static
 RawRequest RawRequest::ForSourceFile(const Package& package,
                                      std::string_view filename) {
