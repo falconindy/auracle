@@ -111,10 +111,25 @@ class Auracle {
   void ResolveMany(const std::vector<std::string>& depstrings,
                    aur::Client::RpcResponseCallback callback);
 
+  // Resolves a set of already-parsed dependencies to the AUR packages that
+  // satisfy them (by name or by versioned/unversioned provides). This is the
+  // single seam through which auracle asks "what satisfies these
+  // depstrings?" -- if the AUR ever grows a server-side resolve/satisfier
+  // endpoint, only this function's implementation needs to change.
+  void ResolveDependencies(
+      std::vector<Dependency> deps,
+      absl::AnyInvocable<void(absl::StatusOr<std::vector<aur::Package>>) &&>
+          callback);
+
   int GetOutdatedPackages(const std::vector<std::string>& args,
                           std::vector<aur::Package>* packages);
 
   void IteratePackages(std::vector<std::string> args, PackageIterator* state);
+  void IteratePackages(std::vector<Dependency> deps, PackageIterator* state);
+  void AddPackagesAndRecurse(std::vector<aur::Package>& results,
+                             PackageIterator* state);
+  void CacheAndMaybeRecurse(aur::Package package, PackageIterator* state,
+                            bool descend);
 
   std::unique_ptr<aur::Client> client_;
   Pacman* pacman_;

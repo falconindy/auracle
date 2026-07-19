@@ -10,6 +10,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/container/flat_hash_set.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/status/statusor.h"
 #include "aur/response.hh"
 #include "auracle/dependency.hh"
@@ -112,28 +113,6 @@ void SortUnique(std::vector<aur::Package>& packages,
                   packages.begin());
 }
 
-std::vector<std::string> NotFoundPackages(
-    const std::vector<std::string>& want, const std::vector<aur::Package>& got,
-    const auracle::PackageCache& package_cache) {
-  std::vector<std::string> missing;
-
-  for (const auto& name : want) {
-    if (package_cache.LookupByPkgname(name) != nullptr) {
-      continue;
-    }
-
-    if (absl::c_find_if(got, [&](const aur::Package& pkg) {
-          return pkg.name == name;
-        }) != got.end()) {
-      continue;
-    }
-
-    missing.push_back(name);
-  }
-
-  return missing;
-}
-
 bool ChdirIfNeeded(const fs::path& target) {
   if (target.empty()) {
     return true;
@@ -168,20 +147,23 @@ Auracle::Auracle(Options options)
                                    .set_useragent("Auracle/" PROJECT_VERSION))),
       pacman_(options.pacman) {}
 
-void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
-                          aur::Client::RpcResponseCallback callback) {
-  // A naive implementation of ResolveMany could be just calling search+info in
-  // a loop, but we make this more complicated such that for N arguments, we can
-  // issue N search requests and a single info request, rather than as many as
-  // N*2 requests.
+void Auracle::ResolveDependencies(
+    std::vector<Dependency> deps,
+    absl::AnyInvocable<void(absl::StatusOr<std::vector<aur::Package>>) &&>
+        callback) {
+  // A naive implementation could be just calling search+info in a loop, but
+  // we make this more complicated such that for N arguments, we can issue N
+  // search requests and a single info request, rather than as many as N*2
+  // requests.
 
-  auto deps = std::make_shared<std::vector<Dependency>>();
+  auto deps_ptr = std::make_shared<std::vector<Dependency>>(std::move(deps));
 
   auto* merger = ResponseMerger::New(
-      [this, deps, callback = std::move(callback)](
+      [this, deps_ptr, callback = std::move(callback)](
           absl::StatusOr<std::vector<aur::Package>> packages) mutable {
         if (!packages.ok() || packages->empty()) {
-          return std::move(callback)(packages);
+          std::move(callback)(std::move(packages));
+          return;
         }
 
         aur::InfoRequest info_request;
@@ -191,94 +173,235 @@ void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
 
         client_->QueueRpcRequest(
             info_request,
-            [callback = std::move(callback),
-             deps](absl::StatusOr<aur::RpcResponse> info_response) mutable {
-              if (info_response.ok()) {
-                std::erase_if(info_response->packages,
-                              [&](const aur::Package& package) {
-                                for (const auto& dep : *deps) {
-                                  if (dep.SatisfiedBy(package)) {
-                                    return false;
-                                  }
-                                }
-                                return true;
-                              });
+            [callback = std::move(callback), deps_ptr](
+                absl::StatusOr<aur::RpcResponse> info_response) mutable {
+              if (!info_response.ok()) {
+                std::move(callback)(info_response.status());
+                return -EIO;
               }
 
-              return std::move(callback)(std::move(info_response));
-            });
+              auto packages = std::move(info_response->packages);
+              std::erase_if(packages, [&](const aur::Package& package) {
+                for (const auto& dep : *deps_ptr) {
+                  if (dep.SatisfiedBy(package)) {
+                    return false;
+                  }
+                }
+                return true;
+              });
 
-        return 0;
+              std::move(callback)(std::move(packages));
+              return 0;
+            });
       });
 
+  for (const auto& dep : *deps_ptr) {
+    client_->QueueRpcRequest(aur::SearchRequest(SearchBy::PROVIDES, dep.name()),
+                             merger->callback());
+  }
+}
+
+void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
+                          aur::Client::RpcResponseCallback callback) {
+  std::vector<Dependency> deps;
+  deps.reserve(depstrings.size());
   for (const auto& depstring : depstrings) {
-    client_->QueueRpcRequest(
-        aur::SearchRequest(SearchBy::PROVIDES,
-                           deps->emplace_back(depstring).name()),
-        merger->callback());
+    deps.emplace_back(depstring);
+  }
+
+  ResolveDependencies(
+      std::move(deps),
+      [callback = std::move(callback)](
+          absl::StatusOr<std::vector<aur::Package>> packages) mutable {
+        std::move(callback)(packages.ok()
+                                 ? absl::StatusOr<aur::RpcResponse>(
+                                       aur::RpcResponse(*std::move(packages)))
+                                 : absl::StatusOr<aur::RpcResponse>(
+                                       packages.status()));
+      });
+}
+
+void Auracle::CacheAndMaybeRecurse(aur::Package package,
+                                   Auracle::PackageIterator* state,
+                                   bool descend) {
+  // check for the pkgbase existing in our repo
+  const bool have_pkgbase =
+      state->package_cache.LookupByPkgbase(package.pkgbase) != nullptr;
+
+  // Regardless, try to add the package, as it might be another member
+  // of the same pkgbase.
+  auto [p, added] = state->package_cache.AddPackage(std::move(package));
+
+  if (!added || have_pkgbase || !descend) {
+    return;
+  }
+
+  if (state->callback) {
+    state->callback(*p);
+  }
+
+  if (state->recurse) {
+    std::vector<Dependency> alldeps;
+    alldeps.reserve(p->depends.size() + p->makedepends.size() +
+                    p->checkdepends.size());
+
+    // The same depstring can legitimately appear under more than one kind
+    // (e.g. a dependency listed in both Depends and MakeDepends) -- dedupe
+    // so it's only resolved once. Left unfiltered, a duplicate here means a
+    // duplicated search-by-provides request downstream in
+    // ResolveDependencies, and the real AUR (unlike the test fakeserver)
+    // doesn't dedupe repeated arg[] values, so that shows up as a
+    // false-positive "multiple providers" ambiguity.
+    absl::flat_hash_set<std::string> seen_depstrings;
+    for (auto kind : state->resolve_depends) {
+      for (const auto& dep : GetDependenciesByKind(p, kind)) {
+        if (seen_depstrings.insert(dep).second) {
+          alldeps.emplace_back(dep);
+        }
+      }
+    }
+
+    if (!alldeps.empty()) {
+      IteratePackages(std::move(alldeps), state);
+    }
+  }
+}
+
+void Auracle::AddPackagesAndRecurse(std::vector<aur::Package>& results,
+                                    Auracle::PackageIterator* state) {
+  for (auto& result : results) {
+    CacheAndMaybeRecurse(std::move(result), state, /*descend=*/true);
   }
 }
 
 void Auracle::IteratePackages(std::vector<std::string> args,
                               Auracle::PackageIterator* state) {
-  std::erase_if(args, [&](const std::string& arg) {
-    return state->package_cache.LookupByPkgname(arg) != nullptr;
+  std::vector<Dependency> deps;
+  deps.reserve(args.size());
+  for (auto& arg : args) {
+    deps.emplace_back(std::move(arg));
+  }
+
+  IteratePackages(std::move(deps), state);
+}
+
+void Auracle::IteratePackages(std::vector<Dependency> deps,
+                              Auracle::PackageIterator* state) {
+  // Drop anything already satisfied by a package we've already fetched,
+  // either by an exact name match or via a (possibly versioned) provides.
+  std::erase_if(deps, [&](const Dependency& dep) {
+    if (const auto* pkg = state->package_cache.LookupByPkgname(dep.name());
+        pkg != nullptr && dep.SatisfiedBy(*pkg)) {
+      return true;
+    }
+
+    return !state->package_cache.FindDependencySatisfiers(dep).empty();
   });
-  if (args.empty()) {
+  if (deps.empty()) {
     return;
   }
 
-  aur::InfoRequest info_request(args);
+  std::vector<std::string> names;
+  names.reserve(deps.size());
+  for (const auto& dep : deps) {
+    names.push_back(dep.name());
+  }
+
   client_->QueueRpcRequest(
-      info_request, [this, state, want = std::move(args)](
-                        absl::StatusOr<aur::RpcResponse> response) {
+      aur::InfoRequest(names),
+      [this, state, deps = std::move(deps)](
+          absl::StatusOr<aur::RpcResponse> response) mutable {
         if (RpcResponseIsFailure(response)) {
           return -EIO;
         }
 
         auto& results = response.value().packages;
 
-        for (const auto& p :
-             NotFoundPackages(want, results, state->package_cache)) {
-          if (!pacman_->HasPackage(p)) {
-            std::println(stderr, "no results found for {}", p);
-          }
-        }
-
-        for (auto& result : results) {
-          // check for the pkgbase existing in our repo
-          const bool have_pkgbase =
-              state->package_cache.LookupByPkgbase(result.pkgbase) != nullptr;
-
-          // Regardless, try to add the package, as it might be another member
-          // of the same pkgbase.
-          auto [p, added] = state->package_cache.AddPackage(std::move(result));
-
-          if (!added || have_pkgbase) {
+        // A name match doesn't necessarily mean satisfaction (the AUR
+        // package by that name might be out of date or otherwise
+        // incompatible with the required version) -- fall through to
+        // provider resolution for anything not actually satisfied.
+        std::vector<Dependency> unresolved;
+        for (const auto& dep : deps) {
+          if (absl::c_any_of(results, [&](const aur::Package& pkg) {
+                return dep.SatisfiedBy(pkg);
+              })) {
             continue;
           }
-
-          if (state->callback) {
-            state->callback(*p);
+          if (pacman_->HasPackage(dep.depstring())) {
+            continue;
           }
+          unresolved.push_back(dep);
+        }
 
-          if (state->recurse) {
-            std::vector<std::string> alldeps;
-            alldeps.reserve(p->depends.size() + p->makedepends.size() +
-                            p->checkdepends.size());
+        AddPackagesAndRecurse(results, state);
 
-            for (auto kind : state->resolve_depends) {
-              for (const auto& dep : GetDependenciesByKind(p, kind)) {
-                alldeps.push_back(Dependency(dep).name());
-              }
-            }
+        if (!unresolved.empty()) {
+          ResolveDependencies(
+              unresolved,
+              [this, state, unresolved](
+                  absl::StatusOr<std::vector<aur::Package>> resolved) mutable {
+                if (!resolved.ok()) {
+                  return;
+                }
 
-            if (alldeps.empty()) {
-              continue;
-            }
+                // Diagnose each unresolved depstring: no candidates at all,
+                // or more than one (ambiguous -- we don't guess, matching
+                // buildorder's UNRESOLVED handling in WalkDependencies).
+                for (const auto& dep : unresolved) {
+                  std::vector<const aur::Package*> satisfiers;
+                  for (const auto& pkg : *resolved) {
+                    if (dep.SatisfiedBy(pkg)) {
+                      satisfiers.push_back(&pkg);
+                    }
+                  }
 
-            IteratePackages(std::move(alldeps), state);
-          }
+                  if (satisfiers.empty()) {
+                    if (!pacman_->HasPackage(dep.depstring())) {
+                      std::println(stderr, "no results found for {}",
+                                  dep.depstring());
+                    }
+                  } else if (satisfiers.size() > 1) {
+                    std::print(stderr,
+                              "warning: multiple AUR packages satisfy '{}':",
+                              dep.depstring());
+                    for (const auto* s : satisfiers) {
+                      std::print(stderr, " {}", s->name);
+                    }
+                    std::println(stderr, "");
+                  }
+                }
+
+                // Cache every candidate (so a later WalkDependencies can
+                // still see and report on ambiguous providers), but only
+                // descend into a candidate's own dependencies -- and only
+                // invoke the iterator callback (e.g. clone) for it -- when
+                // it's the unambiguous resolution of at least one
+                // dependency. This is computed as a separate pass, before
+                // any moving out of *resolved below: moving a package out
+                // empties it in place, and the ambiguity check for each
+                // remaining candidate needs to see every candidate intact.
+                absl::InlinedVector<bool, 8> descend;
+                descend.reserve(resolved->size());
+                for (const auto& pkg : *resolved) {
+                  descend.push_back(
+                      absl::c_any_of(unresolved, [&](const Dependency& dep) {
+                        if (!dep.SatisfiedBy(pkg)) {
+                          return false;
+                        }
+                        return absl::c_count_if(
+                                   *resolved,
+                                   [&](const aur::Package& candidate) {
+                                     return dep.SatisfiedBy(candidate);
+                                   }) == 1;
+                      }));
+                }
+
+                for (size_t i = 0; i < resolved->size(); ++i) {
+                  CacheAndMaybeRecurse(std::move((*resolved)[i]), state,
+                                      descend[i]);
+                }
+              });
         }
 
         return 0;
@@ -563,26 +686,41 @@ int Auracle::BuildOrder(const std::vector<std::string>& args,
     return -ENOENT;
   }
 
-  std::vector<
-      std::tuple<std::string, const aur::Package*, std::vector<std::string>>>
-      total_ordering;
+  std::vector<std::tuple<std::string, std::string, const aur::Package*,
+                         std::vector<const aur::Package*>,
+                         std::vector<std::string>>>
+      total_ordering;  // name, depstring, package, ambiguous_providers,
+                       // dependency_path
   absl::flat_hash_set<std::string> seen;
   for (const auto& arg : args) {
     iter.package_cache.WalkDependencies(
         arg,
         [&](const Dependency& dep, const aur::Package* package,
+            const std::vector<const aur::Package*>& ambiguous_providers,
             const std::vector<std::string>& dependency_path) {
           if (seen.emplace(dep.name()).second) {
-            total_ordering.emplace_back(dep.name(), package, dependency_path);
+            total_ordering.emplace_back(dep.name(), dep.depstring(), package,
+                                        ambiguous_providers, dependency_path);
           }
         },
         options.resolve_depends);
   }
 
-  for (const auto& [name, pkg, dependency_path] : total_ordering) {
-    const bool satisfied = pacman_->DependencyIsSatisfied(name);
+  for (const auto& [name, depstring, pkg, ambiguous_providers,
+                    dependency_path] : total_ordering) {
+    if (!ambiguous_providers.empty()) {
+      std::print("UNRESOLVED {}", depstring);
+      for (const auto* provider : ambiguous_providers) {
+        std::print(" {}", provider->pkgbase);
+      }
+      std::println("");
+      r = -ENXIO;
+      continue;
+    }
+
+    const bool satisfied = pacman_->DependencyIsSatisfied(depstring);
     const bool from_aur = pkg != nullptr;
-    const bool unknown = !from_aur && !pacman_->HasPackage(name);
+    const bool unknown = !from_aur && !pacman_->HasPackage(depstring);
     const bool is_target = absl::c_find(args, name) != args.end();
 
     if (unknown) {

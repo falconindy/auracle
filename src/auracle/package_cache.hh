@@ -36,9 +36,16 @@ class PackageCache {
 
   bool empty() const { return size() == 0; }
 
-  using WalkDependenciesFn =
-      std::function<void(const Dependency& dep, const aur::Package* package,
-                         const std::vector<std::string>& dependency_path)>;
+  // Invoked once per dependency encountered during a walk. |package| is the
+  // resolved AUR package satisfying |dep| (by exact name match or by a
+  // single unambiguous provider), or nullptr if none was found. When |dep|
+  // is satisfied by more than one AUR provider, |package| is nullptr and
+  // |ambiguous_providers| holds the candidates -- the caller must decide how
+  // to proceed rather than have one silently picked for it.
+  using WalkDependenciesFn = std::function<void(
+      const Dependency& dep, const aur::Package* package,
+      const std::vector<const aur::Package*>& ambiguous_providers,
+      const std::vector<std::string>& dependency_path)>;
   void WalkDependencies(
       const std::string& name, WalkDependenciesFn cb,
       const absl::btree_set<DependencyKind>& dependency_kinds) const;

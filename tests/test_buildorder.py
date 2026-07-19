@@ -107,7 +107,7 @@ class TestBuildOrder(auracle_test.TestCase):
         self.assertEqual(1, r.process.returncode)
         self.assertMultiLineEqual(
             textwrap.dedent("""\
-                UNKNOWN pacman auracle-git
+                UNRESOLVED pacman pacman-fancy-progress-git pacman-git pacman-pb
                 UNKNOWN libarchive.so auracle-git
                 REPOS libcurl.so
                 UNKNOWN libsystemd.so auracle-git
@@ -136,6 +136,71 @@ class TestBuildOrder(auracle_test.TestCase):
         self.assertIn(
             'TARGETAUR mingw-w64-environment mingw-w64-environment',
             r.process.stdout.decode().strip().splitlines(),
+        )
+
+    def testVersionedDependencyResolvedByNameMismatchedProvider(self):
+        # libfoo>=2.0 isn't a real package name in the AUR; it's satisfied
+        # only by libfoo-unstable, which provides libfoo=2.0.
+        r = self.Auracle(['buildorder', 'needs-versioned-provider'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertMultiLineEqual(
+            textwrap.dedent("""\
+                AUR libfoo libfoo-unstable
+                TARGETAUR needs-versioned-provider needs-versioned-provider
+            """),
+            r.process.stdout.decode(),
+        )
+
+    def testAmbiguousProviderIsUnresolved(self):
+        # libbar is provided by two unrelated AUR packages; auracle must not
+        # guess which one to use.
+        r = self.Auracle(['buildorder', 'needs-ambiguous-provider'])
+        self.assertEqual(1, r.process.returncode)
+        self.assertMultiLineEqual(
+            textwrap.dedent("""\
+                UNRESOLVED libbar libbar-a libbar-b
+                TARGETAUR needs-ambiguous-provider needs-ambiguous-provider
+            """),
+            r.process.stdout.decode(),
+        )
+
+    def testOutdatedLocalInstallIsNotSatisfied(self):
+        # verpkg>=2.0 is available in the repos (verpkg 2.0-1), but what's
+        # actually installed locally is verpkg 1.0-1 -- that shouldn't be
+        # reported as satisfied.
+        r = self.Auracle(['buildorder', 'needs-outdated-local'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertMultiLineEqual(
+            textwrap.dedent("""\
+                REPOS verpkg
+                TARGETAUR needs-outdated-local needs-outdated-local
+            """),
+            r.process.stdout.decode(),
+        )
+
+    def testDependencyListedUnderMultipleKindsIsNotDoubleResolved(self):
+        # needs-duplicate-kind-dep lists 'shared-dep' under both Depends and
+        # MakeDepends -- a real pattern (e.g. ros-noetic-tf2-geometry-msgs
+        # depends on orocos-kdl-python this way on the live AUR). shared-dep
+        # has no exact-name AUR package and exactly one real provider
+        # (dep-provider). A duplicate depstring reaching the provider
+        # resolution fallback used to cause a duplicated search-by-provides
+        # request, which (unlike this test's fakeserver) the real AUR RPC
+        # doesn't dedupe by arg[], turning a single real provider into a
+        # false-positive "multiple providers" ambiguity.
+        r = self.Auracle(['buildorder', 'needs-duplicate-kind-dep'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertMultiLineEqual(
+            textwrap.dedent("""\
+                AUR shared-dep dep-provider
+                TARGETAUR needs-duplicate-kind-dep needs-duplicate-kind-dep
+            """),
+            r.process.stdout.decode(),
+        )
+        self.assertEqual('', r.process.stderr.decode())
+        self.assertEqual(
+            1,
+            r.request_uris.count('/rpc/v5/search/shared-dep?by=provides'),
         )
 
 

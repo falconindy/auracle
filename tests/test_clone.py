@@ -59,6 +59,23 @@ class TestClone(auracle_test.TestCase):
             os.path.exists(os.path.join(self.tempdir, 'auracle-git', 'pull'))
         )
 
+    def testCloneRecursiveResolvesNameMismatchedProvider(self):
+        r = self.Auracle(['clone', '-r', 'needs-versioned-provider'])
+        self.assertEqual(r.process.returncode, 0)
+        self.assertPkgbuildExists('needs-versioned-provider')
+        self.assertPkgbuildExists('libfoo-unstable')
+
+    def testCloneRecursiveDoesNotGuessAmbiguousProvider(self):
+        r = self.Auracle(['clone', '-r', 'needs-ambiguous-provider'])
+        self.assertEqual(r.process.returncode, 0)
+        self.assertPkgbuildExists('needs-ambiguous-provider')
+        self.assertPkgbuildNotExists('libbar-a')
+        self.assertPkgbuildNotExists('libbar-b')
+        self.assertIn(
+            "warning: multiple AUR packages satisfy 'libbar'",
+            r.process.stderr.decode(),
+        )
+
     def testCloneFailureReportsError(self):
         r = self.Auracle(['clone', 'yaourt'])
         self.assertNotEqual(r.process.returncode, 0)

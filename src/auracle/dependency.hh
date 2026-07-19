@@ -24,6 +24,8 @@ class Dependency final {
 
   const std::string& name() const { return name_; }
 
+  const std::string& depstring() const { return depstring_; }
+
   bool is_versioned() const { return !version_.empty(); }
 
   // Returns true if the given candidate package satisifes the dependency

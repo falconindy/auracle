@@ -104,6 +104,7 @@ TEST(PackageCacheTest, WalkDependencies) {
   cache.WalkDependencies(
       "pkgfile-git",
       [&](const Dependency& dep, const aur::Package* pkg,
+          const std::vector<const aur::Package*>&,
           const std::vector<std::string>&) {
         walked_packages.push_back(dep.name());
         if (pkg != nullptr) {
@@ -157,6 +158,7 @@ TEST(PackageCacheTest, WalkDependenciesWithLimitedDeps) {
 
   auto walk_dependencies_fn = [&](const Dependency& dep,
                                   const aur::Package* pkg,
+                                  const std::vector<const aur::Package*>&,
                                   const std::vector<std::string>&) {
     walked_packages.push_back(dep.name());
     if (pkg != nullptr) {

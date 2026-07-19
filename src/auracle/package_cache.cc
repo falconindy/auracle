@@ -118,7 +118,28 @@ void PackageCache::WalkDependencies(
       return;
     }
 
-    const auto* pkg = LookupByPkgname(dep.name());
+    const aur::Package* pkg = LookupByPkgname(dep.name());
+    if (pkg != nullptr && !dep.SatisfiedBy(*pkg)) {
+      // A same-named AUR package exists but doesn't actually satisfy the
+      // requirement (e.g. it's out of date) -- see if a provider does.
+      pkg = nullptr;
+    }
+
+    std::vector<const aur::Package*> ambiguous_providers;
+    if (pkg == nullptr) {
+      auto providers = FindDependencySatisfiers(dep);
+      if (providers.size() == 1) {
+        pkg = providers.front();
+      } else if (providers.size() > 1) {
+        // The AUR gives no ordering guarantee across requests, so sort for
+        // stable, reproducible output.
+        absl::c_sort(providers, [](const aur::Package* a, const aur::Package* b) {
+          return a->pkgbase < b->pkgbase;
+        });
+        ambiguous_providers = std::move(providers);
+      }
+    }
+
     if (pkg != nullptr) {
       for (auto kind : dependency_kinds) {
         const auto& deplist = GetDependenciesByKind(pkg, kind);
@@ -128,7 +149,7 @@ void PackageCache::WalkDependencies(
       }
     }
 
-    cb(dep, pkg, dependency_path);
+    cb(dep, pkg, ambiguous_providers, dependency_path);
   };
 
   walk(Dependency(name));
