@@ -7,6 +7,9 @@
 using aur::RpcResponse;
 using testing::Field;
 using testing::UnorderedElementsAre;
+using testing::IsEmpty;
+using testing::Not;
+using testing::Eq;
 
 TEST(ResponseTest, ParsesSuccessResponse) {
   const auto response = RpcResponse::Parse(R"({
@@ -122,4 +125,95 @@ TEST(ResponseTest, GracefullyHandlesInvalidJson) {
   })");
 
   ASSERT_THAT(response.status().message(), testing::HasSubstr("parse error"));
+}
+
+TEST(ResponseTest, ParsesEmptyResults) {
+  const auto response = RpcResponse::Parse(R"({
+    "version": 5,
+    "type": "multiinfo",
+    "resultcount": 0,
+    "results": []
+  })");
+
+  ASSERT_TRUE(response.ok()) << response.status();
+  EXPECT_THAT(response->packages, IsEmpty());
+}
+
+TEST(ResponseTest, IgnoresUnknownKeys) {
+  const auto response = RpcResponse::Parse(R"({
+    "version": 5,
+    "type": "multiinfo",
+    "resultcount": 1,
+    "somethingnew": "unexpected",
+    "results": [
+      {
+        "ID": 1,
+        "Name": "foo",
+        "SomeFutureField": "value"
+      }
+    ]
+  })");
+
+  ASSERT_TRUE(response.ok()) << response.status();
+  ASSERT_EQ(response->packages.size(), 1);
+  EXPECT_EQ(response->packages[0].name, "foo");
+}
+
+TEST(ResponseTest, DefaultsMissingOptionalFields) {
+  const auto response = RpcResponse::Parse(R"({
+    "version": 5,
+    "type": "multiinfo",
+    "resultcount": 1,
+    "results": [
+      {
+        "ID": 1,
+        "Name": "foo"
+      }
+    ]
+  })");
+
+  ASSERT_TRUE(response.ok()) << response.status();
+  ASSERT_EQ(response->packages.size(), 1);
+
+  const auto& result = response->packages[0];
+  EXPECT_EQ(result.description, "");
+  EXPECT_EQ(result.maintainer, "");
+  EXPECT_EQ(result.submitter, "");
+  EXPECT_EQ(result.upstream_url, "");
+  EXPECT_EQ(result.out_of_date, absl::UnixEpoch());
+  EXPECT_THAT(result.depends, IsEmpty());
+}
+
+TEST(ResponseTest, ParsesRawResponse) {
+  const auto response = aur::RawResponse::Parse("some raw bytes");
+
+  ASSERT_TRUE(response.ok());
+  EXPECT_EQ(response->bytes, "some raw bytes");
+}
+
+TEST(ResponseTest, ParsesCloneResponse) {
+  const auto response = aur::CloneResponse::Parse("clone");
+
+  ASSERT_TRUE(response.ok());
+  EXPECT_EQ(response->operation, "clone");
+}
+
+TEST(ResponseTest, PackageEqualityComparesIdsOnly) {
+  aur::Package a;
+  a.package_id = 1;
+  a.pkgbase_id = 2;
+  a.name = "a";
+
+  aur::Package b;
+  b.package_id = 1;
+  b.pkgbase_id = 2;
+  b.name = "b";
+
+  EXPECT_EQ(a, b);
+
+  aur::Package c;
+  c.package_id = 3;
+  c.pkgbase_id = 2;
+
+  EXPECT_THAT(a, Not(Eq(c)));
 }

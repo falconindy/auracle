@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 #include "aur/request.hh"
 
+#include <utility>
+#include <vector>
+
+#include "absl/strings/str_cat.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -86,6 +90,43 @@ TEST(RequestTest, UrlForSourceFilePreservesPathSeparators) {
   EXPECT_THAT(
       aur::RawRequest::ForSourceFile(p, "keys/pgp/foo.asc").Url(kBaseUrl),
       EndsWith("/keys/pgp/foo.asc?h=auracle-git"));
+}
+
+TEST(RequestTest, ParseSearchByReturnsInvalidForUnknownString) {
+  EXPECT_EQ(aur::SearchRequest::ParseSearchBy("bogus"),
+            aur::SearchRequest::SearchBy::INVALID);
+  EXPECT_EQ(aur::SearchRequest::ParseSearchBy(""),
+            aur::SearchRequest::SearchBy::INVALID);
+}
+
+TEST(RequestTest, BuildsSearchRequestForInvalidSearchBy) {
+  aur::SearchRequest request(aur::SearchRequest::SearchBy::INVALID, "foo");
+
+  EXPECT_THAT(request.Url(kBaseUrl), EndsWith("/rpc/v5/search/foo?by="));
+}
+
+TEST(RequestTest, JoinsMultipleQueryParamsWithAmpersand) {
+  aur::InfoRequest request;
+
+  request.AddArg("one");
+  request.AddArg("two");
+  request.AddArg("three");
+
+  EXPECT_EQ(request.Payload(), "arg[]=one&arg[]=two&arg[]=three");
+}
+
+TEST(RequestTest, RawRequestHasEmptyPayload) {
+  aur::RawRequest request("/foo");
+
+  EXPECT_EQ(request.Payload(), "");
+}
+
+TEST(RequestTest, HttpRequestCommandReflectsRequestType) {
+  aur::InfoRequest info_request;
+  EXPECT_EQ(info_request.command(), aur::HttpRequest::Command::POST);
+
+  aur::SearchRequest search_request(aur::SearchRequest::SearchBy::NAME, "foo");
+  EXPECT_EQ(search_request.command(), aur::HttpRequest::Command::GET);
 }
 
 TEST(RequestTest, BuildsCloneRequests) {
