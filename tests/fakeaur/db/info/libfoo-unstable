@@ -1,1 +1,28 @@
-{"version":5,"type":"multiinfo","resultcount":1,"results":[{"ID":900001,"Name":"libfoo-unstable","PackageBaseID":900001,"PackageBase":"libfoo-unstable","Version":"2.0-1","Description":"unstable libfoo, providing a newer libfoo than the repos","URL":"https://example.com/libfoo","NumVotes":1,"Popularity":0.1,"OutOfDate":null,"Maintainer":"test","FirstSubmitted":1700000000,"LastModified":1700000000,"URLPath":"/cgit/aur.git/snapshot/libfoo-unstable.tar.gz","Provides":["libfoo=2.0"],"License":[],"Keywords":[]}]}
+{
+  "version": 5,
+  "type": "multiinfo",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 900001,
+      "Name": "libfoo-unstable",
+      "PackageBaseID": 900001,
+      "PackageBase": "libfoo-unstable",
+      "Version": "2.0-1",
+      "Description": "unstable libfoo, providing a newer libfoo than the repos",
+      "URL": "https://example.com/libfoo",
+      "NumVotes": 1,
+      "Popularity": 0.1,
+      "OutOfDate": null,
+      "Maintainer": "test",
+      "FirstSubmitted": 1700000000,
+      "LastModified": 1700000000,
+      "URLPath": "/cgit/aur.git/snapshot/libfoo-unstable.tar.gz",
+      "Provides": [
+        "libfoo=2.0"
+      ],
+      "License": [],
+      "Keywords": []
+    }
+  ]
+}

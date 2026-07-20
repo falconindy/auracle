@@ -1,1 +1,31 @@
-{"version":5,"type":"multiinfo","resultcount":1,"results":[{"ID":900008,"Name":"needs-duplicate-kind-dep","PackageBaseID":900008,"PackageBase":"needs-duplicate-kind-dep","Version":"1.0-1","Description":"lists the same dependency under both Depends and MakeDepends, like ros-noetic-tf2-geometry-msgs does for orocos-kdl-python on the real AUR","URL":"https://example.com/needs-duplicate-kind-dep","NumVotes":1,"Popularity":0.1,"OutOfDate":null,"Maintainer":"test","FirstSubmitted":1700000000,"LastModified":1700000000,"URLPath":"/cgit/aur.git/snapshot/needs-duplicate-kind-dep.tar.gz","Depends":["shared-dep"],"MakeDepends":["shared-dep"],"License":[],"Keywords":[]}]}
+{
+  "version": 5,
+  "type": "multiinfo",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 900008,
+      "Name": "needs-duplicate-kind-dep",
+      "PackageBaseID": 900008,
+      "PackageBase": "needs-duplicate-kind-dep",
+      "Version": "1.0-1",
+      "Description": "lists the same dependency under both Depends and MakeDepends, like ros-noetic-tf2-geometry-msgs does for orocos-kdl-python on the real AUR",
+      "URL": "https://example.com/needs-duplicate-kind-dep",
+      "NumVotes": 1,
+      "Popularity": 0.1,
+      "OutOfDate": null,
+      "Maintainer": "test",
+      "FirstSubmitted": 1700000000,
+      "LastModified": 1700000000,
+      "URLPath": "/cgit/aur.git/snapshot/needs-duplicate-kind-dep.tar.gz",
+      "Depends": [
+        "shared-dep"
+      ],
+      "MakeDepends": [
+        "shared-dep"
+      ],
+      "License": [],
+      "Keywords": []
+    }
+  ]
+}

@@ -74,7 +74,7 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
         path = os.path.join(DBROOT, querytype, fragment)
         try:
             with open(path) as f:
-                return f.read().strip().encode()
+                return json.dumps(json.loads(f.read().strip())).encode()
         except FileNotFoundError:
             return self.make_package_reply(querytype, [])
 

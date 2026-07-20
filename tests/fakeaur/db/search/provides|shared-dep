@@ -1,1 +1,23 @@
-{"version":5,"type":"search","resultcount":1,"results":[{"ID":900007,"Name":"dep-provider","PackageBaseID":900007,"PackageBase":"dep-provider","Version":"1.0-1","Description":"the sole AUR provider of shared-dep","URL":"https://example.com/dep-provider","NumVotes":1,"Popularity":0.1,"OutOfDate":null,"Maintainer":"test","FirstSubmitted":1700000000,"LastModified":1700000000,"URLPath":"/cgit/aur.git/snapshot/dep-provider.tar.gz"}]}
+{
+  "version": 5,
+  "type": "search",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 900007,
+      "Name": "dep-provider",
+      "PackageBaseID": 900007,
+      "PackageBase": "dep-provider",
+      "Version": "1.0-1",
+      "Description": "the sole AUR provider of shared-dep",
+      "URL": "https://example.com/dep-provider",
+      "NumVotes": 1,
+      "Popularity": 0.1,
+      "OutOfDate": null,
+      "Maintainer": "test",
+      "FirstSubmitted": 1700000000,
+      "LastModified": 1700000000,
+      "URLPath": "/cgit/aur.git/snapshot/dep-provider.tar.gz"
+    }
+  ]
+}

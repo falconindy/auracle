@@ -1,1 +1,50 @@
-{"version":5,"type":"multiinfo","resultcount":1,"results":[{"ID":659046,"Name":"pkgfile-git","PackageBaseID":60915,"PackageBase":"pkgfile-git","Version":"21.38.gaa06367-1","Description":"a pacman .files metadata explorer","URL":"http:\/\/github.com\/falconindy\/pkgfile","NumVotes":43,"Popularity":0.15677,"OutOfDate":null,"Maintainer":"falconindy","FirstSubmitted":1342485230,"LastModified":1571863495,"URLPath":"\/cgit\/aur.git\/snapshot\/pkgfile-git.tar.gz","Depends":["libarchive","curl","pcre","pacman","systemd-libs"],"MakeDepends":["git","perl","meson"],"CheckDepends":["python","gtest","gmock"],"Conflicts":["pkgfile"],"Provides":["pkgfile"],"License":["MIT"],"Keywords":[]}]}
+{
+  "version": 5,
+  "type": "multiinfo",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 659046,
+      "Name": "pkgfile-git",
+      "PackageBaseID": 60915,
+      "PackageBase": "pkgfile-git",
+      "Version": "21.38.gaa06367-1",
+      "Description": "a pacman .files metadata explorer",
+      "URL": "http://github.com/falconindy/pkgfile",
+      "NumVotes": 43,
+      "Popularity": 0.15677,
+      "OutOfDate": null,
+      "Maintainer": "falconindy",
+      "FirstSubmitted": 1342485230,
+      "LastModified": 1571863495,
+      "URLPath": "/cgit/aur.git/snapshot/pkgfile-git.tar.gz",
+      "Depends": [
+        "libarchive",
+        "curl",
+        "pcre",
+        "pacman",
+        "systemd-libs"
+      ],
+      "MakeDepends": [
+        "git",
+        "perl",
+        "meson"
+      ],
+      "CheckDepends": [
+        "python",
+        "gtest",
+        "gmock"
+      ],
+      "Conflicts": [
+        "pkgfile"
+      ],
+      "Provides": [
+        "pkgfile"
+      ],
+      "License": [
+        "MIT"
+      ],
+      "Keywords": []
+    }
+  ]
+}
