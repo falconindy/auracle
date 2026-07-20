@@ -117,7 +117,7 @@ class Auracle {
   // depstrings?" -- if the AUR ever grows a server-side resolve/satisfier
   // endpoint, only this function's implementation needs to change.
   void ResolveDependencies(
-      std::vector<Dependency> deps,
+      std::shared_ptr<std::vector<Dependency>> deps,
       absl::AnyInvocable<void(absl::StatusOr<std::vector<aur::Package>>) &&>
           callback);
 

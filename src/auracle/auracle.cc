@@ -148,7 +148,7 @@ Auracle::Auracle(Options options)
       pacman_(options.pacman) {}
 
 void Auracle::ResolveDependencies(
-    std::vector<Dependency> deps,
+    std::shared_ptr<std::vector<Dependency>> deps,
     absl::AnyInvocable<void(absl::StatusOr<std::vector<aur::Package>>) &&>
         callback) {
   // A naive implementation could be just calling search+info in a loop, but
@@ -156,10 +156,8 @@ void Auracle::ResolveDependencies(
   // search requests and a single info request, rather than as many as N*2
   // requests.
 
-  auto deps_ptr = std::make_shared<std::vector<Dependency>>(std::move(deps));
-
   auto* merger = ResponseMerger::New(
-      [this, deps_ptr, callback = std::move(callback)](
+      [this, deps, callback = std::move(callback)](
           absl::StatusOr<std::vector<aur::Package>> packages) mutable {
         if (!packages.ok() || packages->empty()) {
           std::move(callback)(std::move(packages));
@@ -173,8 +171,8 @@ void Auracle::ResolveDependencies(
 
         client_->QueueRpcRequest(
             info_request,
-            [callback = std::move(callback), deps_ptr](
-                absl::StatusOr<aur::RpcResponse> info_response) mutable {
+            [callback = std::move(callback),
+             deps](absl::StatusOr<aur::RpcResponse> info_response) mutable {
               if (!info_response.ok()) {
                 std::move(callback)(info_response.status());
                 return -EIO;
@@ -182,7 +180,7 @@ void Auracle::ResolveDependencies(
 
               auto packages = std::move(info_response->packages);
               std::erase_if(packages, [&](const aur::Package& package) {
-                for (const auto& dep : *deps_ptr) {
+                for (const auto& dep : *deps) {
                   if (dep.SatisfiedBy(package)) {
                     return false;
                   }
@@ -195,7 +193,7 @@ void Auracle::ResolveDependencies(
             });
       });
 
-  for (const auto& dep : *deps_ptr) {
+  for (const auto& dep : *deps) {
     client_->QueueRpcRequest(aur::SearchRequest(SearchBy::PROVIDES, dep.name()),
                              merger->callback());
   }
@@ -203,21 +201,21 @@ void Auracle::ResolveDependencies(
 
 void Auracle::ResolveMany(const std::vector<std::string>& depstrings,
                           aur::Client::RpcResponseCallback callback) {
-  std::vector<Dependency> deps;
-  deps.reserve(depstrings.size());
+  auto deps = std::make_shared<std::vector<Dependency>>();
+  deps->reserve(depstrings.size());
   for (const auto& depstring : depstrings) {
-    deps.emplace_back(depstring);
+    deps->emplace_back(depstring);
   }
 
   ResolveDependencies(
       std::move(deps),
       [callback = std::move(callback)](
           absl::StatusOr<std::vector<aur::Package>> packages) mutable {
-        std::move(callback)(packages.ok()
-                                 ? absl::StatusOr<aur::RpcResponse>(
-                                       aur::RpcResponse(*std::move(packages)))
-                                 : absl::StatusOr<aur::RpcResponse>(
-                                       packages.status()));
+        std::move(callback)(
+            packages.ok()
+                ? absl::StatusOr<aur::RpcResponse>(
+                      aur::RpcResponse(*std::move(packages)))
+                : absl::StatusOr<aur::RpcResponse>(packages.status()));
       });
 }
 
@@ -321,7 +319,7 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
         // package by that name might be out of date or otherwise
         // incompatible with the required version) -- fall through to
         // provider resolution for anything not actually satisfied.
-        std::vector<Dependency> unresolved;
+        auto unresolved = std::make_shared<std::vector<Dependency>>();
         for (const auto& dep : deps) {
           if (absl::c_any_of(results, [&](const aur::Package& pkg) {
                 return dep.SatisfiedBy(pkg);
@@ -331,12 +329,12 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
           if (pacman_->HasPackage(dep.depstring())) {
             continue;
           }
-          unresolved.push_back(dep);
+          unresolved->push_back(dep);
         }
 
         AddPackagesAndRecurse(results, state);
 
-        if (!unresolved.empty()) {
+        if (!unresolved->empty()) {
           ResolveDependencies(
               unresolved,
               [this, state, unresolved](
@@ -348,7 +346,7 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
                 // Diagnose each unresolved depstring: no candidates at all,
                 // or more than one (ambiguous -- we don't guess, matching
                 // buildorder's UNRESOLVED handling in WalkDependencies).
-                for (const auto& dep : unresolved) {
+                for (const auto& dep : *unresolved) {
                   std::vector<const aur::Package*> satisfiers;
                   for (const auto& pkg : *resolved) {
                     if (dep.SatisfiedBy(pkg)) {
@@ -359,12 +357,12 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
                   if (satisfiers.empty()) {
                     if (!pacman_->HasPackage(dep.depstring())) {
                       std::println(stderr, "no results found for {}",
-                                  dep.depstring());
+                                   dep.depstring());
                     }
                   } else if (satisfiers.size() > 1) {
                     std::print(stderr,
-                              "warning: multiple AUR packages satisfy '{}':",
-                              dep.depstring());
+                               "warning: multiple AUR packages satisfy '{}':",
+                               dep.depstring());
                     for (const auto* s : satisfiers) {
                       std::print(stderr, " {}", s->name);
                     }
@@ -385,7 +383,7 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
                 descend.reserve(resolved->size());
                 for (const auto& pkg : *resolved) {
                   descend.push_back(
-                      absl::c_any_of(unresolved, [&](const Dependency& dep) {
+                      absl::c_any_of(*unresolved, [&](const Dependency& dep) {
                         if (!dep.SatisfiedBy(pkg)) {
                           return false;
                         }
@@ -399,7 +397,7 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
 
                 for (size_t i = 0; i < resolved->size(); ++i) {
                   CacheAndMaybeRecurse(std::move((*resolved)[i]), state,
-                                      descend[i]);
+                                       descend[i]);
                 }
               });
         }
