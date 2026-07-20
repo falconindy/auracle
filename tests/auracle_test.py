@@ -114,9 +114,10 @@ class TestCase(unittest.TestCase):
             )
 
     def Auracle(self, args):
-        requests_file = tempfile.NamedTemporaryFile(
-            dir=self.tempdir, prefix='requests-', delete=False
-        ).name
+        requests_fd, requests_file = tempfile.mkstemp(
+            dir=self.tempdir, prefix='requests-'
+        )
+        os.close(requests_fd)
 
         env = {
             'PATH': f'{__scriptdir__}/fakeaur:{os.getenv("PATH")}',
