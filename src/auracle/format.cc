@@ -106,8 +106,10 @@ struct formatter<Field<T>> {
     // parse() of value types like absl::Time (whose default spec copies the
     // non-constexpr absl::RFC3339_sec) or std::vector.
     fmt::formatter<T> value_formatter;
-    fmt::format_parse_context empty_spec("");
-    value_formatter.parse(empty_spec);
+    // Floating point fields (e.g. Popularity) get an explicit fixed-point
+    // spec so small values don't render in scientific notation.
+    fmt::format_parse_context spec_ctx(std::is_floating_point_v<T> ? "f" : "");
+    value_formatter.parse(spec_ctx);
     ctx.advance_to(value_formatter.format(f.value, ctx));
 
     return fmt::format_to(ctx.out(), "\n");
@@ -140,7 +142,7 @@ void Short(const aur::Package& package,
         fmt::format("[installed: {}]", local_ver_color(l->pkgver));
   }
 
-  fmt::print("{}{} {} ({}, {}) {}\n    {}\n", t::BoldMagenta("aur/"),
+  fmt::print("{}{} {} ({}, {:f}) {}\n    {}\n", t::BoldMagenta("aur/"),
              t::Bold(p.name), ood_color(p.version), p.votes, p.popularity,
              installed_package, p.description);
 }

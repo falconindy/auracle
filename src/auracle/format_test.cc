@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 #include "auracle/format.hh"
 
-#include <iostream>
-#include <sstream>
-
 #include "aur/package.hh"
 #include "gtest/gtest.h"
 
@@ -65,6 +62,31 @@ TEST(FormatTest, CustomFloatFormat) {
     format::Custom("{popularity:.2f}", p);
     EXPECT_EQ(capture.GetCapturedOutput(), "5.20\n");
   }
+}
+
+TEST(FormatTest, LongFormatDoesNotUseScientificNotationForPopularity) {
+  auto p = MakePackage();
+  p.popularity = 4.7e-05;
+
+  ScopedStdoutCapturer capture;
+  format::Long(p, std::nullopt);
+
+  const auto output = capture.GetCapturedOutput();
+  EXPECT_NE(output.find("Popularity     : 0.000047"), std::string::npos)
+      << output;
+  EXPECT_EQ(output.find("e-05"), std::string::npos) << output;
+}
+
+TEST(FormatTest, ShortFormatDoesNotUseScientificNotationForPopularity) {
+  auto p = MakePackage();
+  p.popularity = 4.7e-05;
+
+  ScopedStdoutCapturer capture;
+  format::Short(p, std::nullopt);
+
+  const auto output = capture.GetCapturedOutput();
+  EXPECT_NE(output.find("0.000047"), std::string::npos) << output;
+  EXPECT_EQ(output.find("e-05"), std::string::npos) << output;
 }
 
 TEST(FormatTest, CustomDateTimeFormat) {
