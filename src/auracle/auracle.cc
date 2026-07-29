@@ -164,13 +164,8 @@ void Auracle::ResolveDependencies(
           return;
         }
 
-        aur::InfoRequest info_request;
-        for (const auto& pkg : *packages) {
-          info_request.AddArg(pkg.name);
-        }
-
         client_->QueueRpcRequest(
-            info_request,
+            aur::InfoRequest(*packages),
             [callback = std::move(callback),
              deps](absl::StatusOr<aur::RpcResponse> info_response) mutable {
               if (!info_response.ok()) {
