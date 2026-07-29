@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 # SPDX-License-Identifier: MIT
 
-import gzip
 import http.server
-import io
 import json
 import os.path
 import signal
 import sys
-import tarfile
-import tempfile
 import urllib.parse
 
 DBROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
@@ -20,7 +16,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         handlers = {
             '/rpc': self.handle_rpc,
-            '/cgit/aur.git/snapshot': self.handle_download,
             '/cgit/aur.git/plain/': self.handle_source_file,
         }
 
@@ -123,27 +118,6 @@ class FakeAurHandler(http.server.BaseHTTPRequestHandler):
             return self.respond(
                 response=self.make_error_reply('Incorrect request type specified.')
             )
-
-    def handle_download(self, command, url):
-        pkgname = os.path.basename(url.path).split('.')[0]
-
-        # error injection for specific package name
-        if pkgname == 'yaourt':
-            return self.respond(response=b'you should use a better AUR helper')
-
-        with tempfile.NamedTemporaryFile() as f:
-            with tarfile.open(f.name, mode='w') as tar:
-                b = self.make_pkgbuild(pkgname)
-
-                t = tarfile.TarInfo(f'{pkgname}/PKGBUILD')
-                t.size = len(b)
-                tar.addfile(t, io.BytesIO(b))
-
-            headers = {'content-disposition': f'inline, filename={pkgname}.tar.gz'}
-
-            response = gzip.compress(f.read())
-
-            return self.respond(headers=headers, response=response)
 
     def handle_source_file(self, command, url):
         queryparams = urllib.parse.parse_qs(url.query)
