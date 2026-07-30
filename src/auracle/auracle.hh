@@ -131,6 +131,20 @@ class Auracle {
   void CacheAndMaybeRecurse(aur::Package package, PackageIterator* state,
                             bool descend);
 
+  // Returns the subset of `deps` satisfied by neither `results` nor the
+  // local pacman database -- these still need provider resolution.
+  std::shared_ptr<std::vector<Dependency>> FindUnresolvedDependencies(
+      const std::vector<Dependency>& deps,
+      const std::vector<aur::Package>& results);
+
+  // Handles the outcome of resolving `unresolved` via ResolveDependencies:
+  // diagnoses each depstring (no candidates, or ambiguous candidates) and
+  // caches/recurses into the unambiguous resolutions.
+  void CacheResolvedDependencies(
+      std::shared_ptr<std::vector<Dependency>> unresolved,
+      PackageIterator* state,
+      absl::StatusOr<std::vector<aur::Package>> resolved);
+
   std::unique_ptr<aur::Client> client_;
   Pacman* pacman_;
 };

@@ -275,6 +275,80 @@ void Auracle::IteratePackages(std::vector<std::string> args,
   IteratePackages(std::move(deps), state);
 }
 
+std::shared_ptr<std::vector<Dependency>> Auracle::FindUnresolvedDependencies(
+    const std::vector<Dependency>& deps,
+    const std::vector<aur::Package>& results) {
+  // A name match doesn't necessarily mean satisfaction (the AUR package by
+  // that name might be out of date or otherwise incompatible with the
+  // required version) -- fall through to provider resolution for anything
+  // not actually satisfied.
+  auto unresolved = std::make_shared<std::vector<Dependency>>();
+  for (const auto& dep : deps) {
+    if (absl::c_any_of(results, [&](const aur::Package& pkg) {
+          return dep.SatisfiedBy(pkg);
+        })) {
+      continue;
+    }
+    if (pacman_->HasPackage(dep.depstring())) {
+      continue;
+    }
+    unresolved->push_back(dep);
+  }
+  return unresolved;
+}
+
+void Auracle::CacheResolvedDependencies(
+    std::shared_ptr<std::vector<Dependency>> unresolved,
+    Auracle::PackageIterator* state,
+    absl::StatusOr<std::vector<aur::Package>> resolved) {
+  if (!resolved.ok()) {
+    return;
+  }
+
+  // For each unresolved depstring, find its satisfiers among *resolved
+  // once and use that same result both to diagnose the depstring (no
+  // candidates at all, or more than one -- ambiguous, we don't guess,
+  // matching buildorder's UNRESOLVED handling in WalkDependencies) and to
+  // mark its sole satisfier, if any, for descent. This is computed as a
+  // separate pass, before any moving out of *resolved below: moving a
+  // package out empties it in place, and the ambiguity check for each
+  // remaining candidate needs to see every candidate intact.
+  //
+  // Cache every candidate regardless (so a later WalkDependencies can
+  // still see and report on ambiguous providers), but only descend into a
+  // candidate's own dependencies -- and only invoke the iterator callback
+  // (e.g. clone) for it -- when it's the unambiguous resolution of at
+  // least one dependency.
+  absl::InlinedVector<bool, 8> descend(resolved->size(), false);
+  for (const auto& dep : *unresolved) {
+    std::vector<size_t> satisfiers;
+    for (size_t i = 0; i < resolved->size(); ++i) {
+      if (dep.SatisfiedBy((*resolved)[i])) {
+        satisfiers.push_back(i);
+      }
+    }
+
+    if (satisfiers.empty()) {
+      if (!pacman_->HasPackage(dep.depstring())) {
+        std::println(stderr, "no results found for {}", dep.depstring());
+      }
+    } else if (satisfiers.size() > 1) {
+      std::print(stderr, "warning: multiple AUR packages satisfy '{}':",
+                 dep.depstring());
+      for (auto idx : satisfiers) {
+        std::print(stderr, " {}", (*resolved)[idx].name);
+      }
+      std::println(stderr, "");
+    } else {
+      descend[satisfiers.front()] = true;
+    }
+  }
+
+  for (size_t i = 0; i < resolved->size(); ++i) {
+    CacheAndMaybeRecurse(std::move((*resolved)[i]), state, descend[i]);
+  }
+}
+
 void Auracle::IteratePackages(std::vector<Dependency> deps,
                               Auracle::PackageIterator* state) {
   // Drop anything already satisfied by a package we've already fetched,
@@ -306,23 +380,7 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
         }
 
         auto& results = response.value().packages;
-
-        // A name match doesn't necessarily mean satisfaction (the AUR
-        // package by that name might be out of date or otherwise
-        // incompatible with the required version) -- fall through to
-        // provider resolution for anything not actually satisfied.
-        auto unresolved = std::make_shared<std::vector<Dependency>>();
-        for (const auto& dep : deps) {
-          if (absl::c_any_of(results, [&](const aur::Package& pkg) {
-                return dep.SatisfiedBy(pkg);
-              })) {
-            continue;
-          }
-          if (pacman_->HasPackage(dep.depstring())) {
-            continue;
-          }
-          unresolved->push_back(dep);
-        }
+        auto unresolved = FindUnresolvedDependencies(deps, results);
 
         AddPackagesAndRecurse(results, state);
 
@@ -330,59 +388,9 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
           ResolveDependencies(
               unresolved,
               [this, state, unresolved](
-                  absl::StatusOr<std::vector<aur::Package>> resolved) mutable {
-                if (!resolved.ok()) {
-                  return;
-                }
-
-                // For each unresolved depstring, find its satisfiers among
-                // *resolved once and use that same result both to diagnose
-                // the depstring (no candidates at all, or more than one --
-                // ambiguous, we don't guess, matching buildorder's
-                // UNRESOLVED handling in WalkDependencies) and to mark its
-                // sole satisfier, if any, for descent. This is computed as
-                // a separate pass, before any moving out of *resolved
-                // below: moving a package out empties it in place, and the
-                // ambiguity check for each remaining candidate needs to see
-                // every candidate intact.
-                //
-                // Cache every candidate regardless (so a later
-                // WalkDependencies can still see and report on ambiguous
-                // providers), but only descend into a candidate's own
-                // dependencies -- and only invoke the iterator callback
-                // (e.g. clone) for it -- when it's the unambiguous
-                // resolution of at least one dependency.
-                absl::InlinedVector<bool, 8> descend(resolved->size(), false);
-                for (const auto& dep : *unresolved) {
-                  std::vector<size_t> satisfiers;
-                  for (size_t i = 0; i < resolved->size(); ++i) {
-                    if (dep.SatisfiedBy((*resolved)[i])) {
-                      satisfiers.push_back(i);
-                    }
-                  }
-
-                  if (satisfiers.empty()) {
-                    if (!pacman_->HasPackage(dep.depstring())) {
-                      std::println(stderr, "no results found for {}",
-                                   dep.depstring());
-                    }
-                  } else if (satisfiers.size() > 1) {
-                    std::print(stderr,
-                               "warning: multiple AUR packages satisfy '{}':",
-                               dep.depstring());
-                    for (auto idx : satisfiers) {
-                      std::print(stderr, " {}", (*resolved)[idx].name);
-                    }
-                    std::println(stderr, "");
-                  } else {
-                    descend[satisfiers.front()] = true;
-                  }
-                }
-
-                for (size_t i = 0; i < resolved->size(); ++i) {
-                  CacheAndMaybeRecurse(std::move((*resolved)[i]), state,
-                                       descend[i]);
-                }
+                  absl::StatusOr<std::vector<aur::Package>> resolved) {
+                CacheResolvedDependencies(unresolved, state,
+                                          std::move(resolved));
               });
         }
 
