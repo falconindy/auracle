@@ -175,12 +175,9 @@ void Auracle::ResolveDependencies(
 
               auto packages = std::move(info_response->packages);
               std::erase_if(packages, [&](const aur::Package& package) {
-                for (const auto& dep : *deps) {
-                  if (dep.SatisfiedBy(package)) {
-                    return false;
-                  }
-                }
-                return true;
+                return absl::c_none_of(*deps, [&](const Dependency& dep) {
+                  return dep.SatisfiedBy(package);
+                });
               });
 
               std::move(callback)(std::move(packages));
@@ -338,14 +335,29 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
                   return;
                 }
 
-                // Diagnose each unresolved depstring: no candidates at all,
-                // or more than one (ambiguous -- we don't guess, matching
-                // buildorder's UNRESOLVED handling in WalkDependencies).
+                // For each unresolved depstring, find its satisfiers among
+                // *resolved once and use that same result both to diagnose
+                // the depstring (no candidates at all, or more than one --
+                // ambiguous, we don't guess, matching buildorder's
+                // UNRESOLVED handling in WalkDependencies) and to mark its
+                // sole satisfier, if any, for descent. This is computed as
+                // a separate pass, before any moving out of *resolved
+                // below: moving a package out empties it in place, and the
+                // ambiguity check for each remaining candidate needs to see
+                // every candidate intact.
+                //
+                // Cache every candidate regardless (so a later
+                // WalkDependencies can still see and report on ambiguous
+                // providers), but only descend into a candidate's own
+                // dependencies -- and only invoke the iterator callback
+                // (e.g. clone) for it -- when it's the unambiguous
+                // resolution of at least one dependency.
+                absl::InlinedVector<bool, 8> descend(resolved->size(), false);
                 for (const auto& dep : *unresolved) {
-                  std::vector<const aur::Package*> satisfiers;
-                  for (const auto& pkg : *resolved) {
-                    if (dep.SatisfiedBy(pkg)) {
-                      satisfiers.push_back(&pkg);
+                  std::vector<size_t> satisfiers;
+                  for (size_t i = 0; i < resolved->size(); ++i) {
+                    if (dep.SatisfiedBy((*resolved)[i])) {
+                      satisfiers.push_back(i);
                     }
                   }
 
@@ -358,36 +370,13 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
                     std::print(stderr,
                                "warning: multiple AUR packages satisfy '{}':",
                                dep.depstring());
-                    for (const auto* s : satisfiers) {
-                      std::print(stderr, " {}", s->name);
+                    for (auto idx : satisfiers) {
+                      std::print(stderr, " {}", (*resolved)[idx].name);
                     }
                     std::println(stderr, "");
+                  } else {
+                    descend[satisfiers.front()] = true;
                   }
-                }
-
-                // Cache every candidate (so a later WalkDependencies can
-                // still see and report on ambiguous providers), but only
-                // descend into a candidate's own dependencies -- and only
-                // invoke the iterator callback (e.g. clone) for it -- when
-                // it's the unambiguous resolution of at least one
-                // dependency. This is computed as a separate pass, before
-                // any moving out of *resolved below: moving a package out
-                // empties it in place, and the ambiguity check for each
-                // remaining candidate needs to see every candidate intact.
-                absl::InlinedVector<bool, 8> descend;
-                descend.reserve(resolved->size());
-                for (const auto& pkg : *resolved) {
-                  descend.push_back(
-                      absl::c_any_of(*unresolved, [&](const Dependency& dep) {
-                        if (!dep.SatisfiedBy(pkg)) {
-                          return false;
-                        }
-                        return absl::c_count_if(
-                                   *resolved,
-                                   [&](const aur::Package& candidate) {
-                                     return dep.SatisfiedBy(candidate);
-                                   }) == 1;
-                      }));
                 }
 
                 for (size_t i = 0; i < resolved->size(); ++i) {
@@ -414,9 +403,7 @@ int Auracle::Info(const std::vector<std::string>& args,
                                return -EIO;
                              }
 
-                             using std::swap;
-                             swap(packages, response.value().packages);
-
+                             packages = std::move(response).value().packages;
                              return 0;
                            });
 
