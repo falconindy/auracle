@@ -1,0 +1,28 @@
+{
+  "version": 5,
+  "type": "multiinfo",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 900010,
+      "Name": "cyclic-dep-b",
+      "PackageBaseID": 900010,
+      "PackageBase": "cyclic-dep-b",
+      "Version": "1.0-1",
+      "Description": "depends only on cyclic-dep-a, which depends only on this package",
+      "URL": "https://example.com/cyclic-dep-b",
+      "NumVotes": 1,
+      "Popularity": 0.1,
+      "OutOfDate": null,
+      "Maintainer": "test",
+      "FirstSubmitted": 1700000000,
+      "LastModified": 1700000000,
+      "URLPath": "/cgit/aur.git/snapshot/cyclic-dep-b.tar.gz",
+      "Depends": [
+        "cyclic-dep-a"
+      ],
+      "License": [],
+      "Keywords": []
+    }
+  ]
+}

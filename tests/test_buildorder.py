@@ -178,6 +178,26 @@ class TestBuildOrder(auracle_test.TestCase):
             r.process.stdout.decode(),
         )
 
+    def testCyclicDependencyAlreadyCachedSendsNoEmptyRequest(self):
+        # Regression test for #107: cyclic-dep-a depends only on
+        # cyclic-dep-b, which in turn depends only on cyclic-dep-a. By the
+        # time cyclic-dep-b's dependencies are iterated, cyclic-dep-a is
+        # already cached, so the whole dependency list is filtered out. This
+        # used to leave auracle building an InfoRequest with zero args,
+        # which the real AUR rejects with "INVALID_ARGUMENT: No request
+        # type/data specified" -- rather than just skipping the request, as
+        # it should when there's nothing left to ask for.
+        r = self.Auracle(['buildorder', 'cyclic-dep-a'])
+        self.assertEqual(0, r.process.returncode)
+        self.assertMultiLineEqual(
+            textwrap.dedent("""\
+                AUR cyclic-dep-b cyclic-dep-b
+                TARGETAUR cyclic-dep-a cyclic-dep-a
+            """),
+            r.process.stdout.decode(),
+        )
+        self.assertEqual(2, r.request_uris.count('/rpc/v5/info'))
+
     def testDependencyListedUnderMultipleKindsIsNotDoubleResolved(self):
         # needs-duplicate-kind-dep lists 'shared-dep' under both Depends and
         # MakeDepends -- a real pattern (e.g. ros-noetic-tf2-geometry-msgs
