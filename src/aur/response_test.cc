@@ -5,11 +5,11 @@
 #include "gtest/gtest.h"
 
 using aur::RpcResponse;
+using testing::Eq;
 using testing::Field;
-using testing::UnorderedElementsAre;
 using testing::IsEmpty;
 using testing::Not;
-using testing::Eq;
+using testing::UnorderedElementsAre;
 
 TEST(ResponseTest, ParsesSuccessResponse) {
   const auto response = RpcResponse::Parse(R"({

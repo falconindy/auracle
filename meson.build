@@ -25,18 +25,27 @@ add_project_link_arguments(
 )
 
 if not cpp.has_header('glaze/glaze.hpp')
-  error('glaze library not found in standard include paths')
+    error('glaze library not found in standard include paths')
 endif
 
 libalpm = dependency('libalpm')
 libcurl = dependency('libcurl')
 libfmt = dependency('fmt')
 libsystemd = dependency('libsystemd')
-gtest = dependency(
-    'gtest',
-    version: '>=1.10.0',
-    required: get_option('unittests'),
-    disabler: true,
+gtest = declare_dependency(
+    dependencies: [
+        dependency(
+            'gtest',
+            version: '>=1.10.0',
+            required: get_option('unittests'),
+            disabler: true,
+        ),
+        dependency(
+            'gtest_main',
+            required: get_option('unittests'),
+            disabler: true,
+        ),
+    ],
 )
 gmock = dependency(
     'gmock',
@@ -147,6 +156,11 @@ run_target(
     ],
 )
 
+gtest_env = [
+    'TZ=UTC',
+    'LC_TIME=C',
+]
+
 # unit tests
 test(
     'libaur',
@@ -154,13 +168,13 @@ test(
         'libaur_test',
         files(
             '''
-      src/test/gtest_main.cc
       src/aur/request_test.cc
       src/aur/response_test.cc
     '''.split(),
         ),
         dependencies: [abseil, gtest, gmock, libaur],
     ),
+    env: gtest_env,
     protocol: 'gtest',
     suite: 'libaur',
 )
@@ -171,7 +185,6 @@ test(
         'libauracle_test',
         files(
             '''
-      src/test/gtest_main.cc
       src/auracle/dependency_kind_test.cc
       src/auracle/package_cache_test.cc
       src/auracle/dependency_test.cc
@@ -182,6 +195,7 @@ test(
         ),
         dependencies: [abseil, gtest, gmock, libauracle],
     ),
+    env: gtest_env,
     protocol: 'gtest',
     suite: 'libauracle',
 )

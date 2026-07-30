@@ -133,9 +133,10 @@ void PackageCache::WalkDependencies(
       } else if (providers.size() > 1) {
         // The AUR gives no ordering guarantee across requests, so sort for
         // stable, reproducible output.
-        absl::c_sort(providers, [](const aur::Package* a, const aur::Package* b) {
-          return a->pkgbase < b->pkgbase;
-        });
+        absl::c_sort(providers,
+                     [](const aur::Package* a, const aur::Package* b) {
+                       return a->pkgbase < b->pkgbase;
+                     });
         ambiguous_providers = std::move(providers);
       }
     }

@@ -387,8 +387,8 @@ void Auracle::IteratePackages(std::vector<Dependency> deps,
         if (!unresolved->empty()) {
           ResolveDependencies(
               unresolved,
-              [this, state, unresolved](
-                  absl::StatusOr<std::vector<aur::Package>> resolved) {
+              [this, state,
+               unresolved](absl::StatusOr<std::vector<aur::Package>> resolved) {
                 CacheResolvedDependencies(unresolved, state,
                                           std::move(resolved));
               });
