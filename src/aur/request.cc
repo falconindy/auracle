@@ -44,8 +44,8 @@ std::string RpcRequest::Url(std::string_view baseurl) const {
   return absl::StrCat(baseurl, endpoint_);
 }
 
-void RpcRequest::AddArg(std::string key, std::string value) {
-  params_.push_back({std::move(key), std::move(value)});
+void RpcRequest::AddArg(std::string_view key, std::string_view value) {
+  params_.push_back({std::string(key), std::string(value)});
 }
 
 std::string RpcRequest::Payload() const {

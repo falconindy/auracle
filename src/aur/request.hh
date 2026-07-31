@@ -2,6 +2,7 @@
 #ifndef AUR_REQUEST_HH_
 #define AUR_REQUEST_HH_
 
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,7 +48,7 @@ class RpcRequest : public HttpRequest {
   std::string Url(std::string_view baseurl) const override;
   std::string Payload() const override;
 
-  void AddArg(std::string key, std::string value);
+  void AddArg(std::string_view key, std::string_view value);
 
  private:
   std::string endpoint_;
@@ -60,8 +61,8 @@ class RawRequest : public HttpRequest {
   static RawRequest ForSourceFile(const Package& package,
                                   std::string_view filename);
 
-  explicit RawRequest(std::string urlpath)
-      : HttpRequest(HttpRequest::Command::GET), urlpath_(std::move(urlpath)) {}
+  explicit RawRequest(std::string_view urlpath)
+      : HttpRequest(HttpRequest::Command::GET), urlpath_(urlpath) {}
 
   RawRequest(const RawRequest&) = delete;
   RawRequest& operator=(const RawRequest&) = delete;
@@ -79,8 +80,7 @@ class RawRequest : public HttpRequest {
 // A class describing a url for a git repo hosted on the AUR.
 class CloneRequest : public Request {
  public:
-  explicit CloneRequest(std::string reponame)
-      : reponame_(std::move(reponame)) {}
+  explicit CloneRequest(std::string_view reponame) : reponame_(reponame) {}
 
   CloneRequest(const CloneRequest&) = delete;
   CloneRequest& operator=(const CloneRequest&) = delete;
@@ -98,13 +98,15 @@ class CloneRequest : public Request {
 
 class InfoRequest : public RpcRequest {
  public:
-  explicit InfoRequest(const std::vector<std::string>& args) : InfoRequest() {
+  explicit InfoRequest(std::span<const std::string> args) : InfoRequest() {
     for (const auto& arg : args) {
       AddArg(arg);
     }
   }
 
-  explicit InfoRequest(const std::vector<Package>& packages) : InfoRequest() {
+  // Convenience constructor that allows passing packages. This is useful for
+  // upgrading search results to full info-level detail.
+  explicit InfoRequest(std::span<const Package> packages) : InfoRequest() {
     for (const auto& package : packages) {
       AddArg(package.name);
     }
@@ -118,7 +120,7 @@ class InfoRequest : public RpcRequest {
 
   InfoRequest() : RpcRequest(HttpRequest::Command::POST, "/rpc/v5/info") {}
 
-  void AddArg(std::string arg) { RpcRequest::AddArg("arg[]", std::move(arg)); }
+  void AddArg(std::string_view arg) { RpcRequest::AddArg("arg[]", arg); }
 };
 
 class SearchRequest : public RpcRequest {
