@@ -87,6 +87,28 @@ class TestClone(auracle_test.TestCase):
             ),
         )
 
+    def testCloneCancellationSignalsInFlightClone(self):
+        # sigterm-clone-target depends on the magic package name '503': the
+        # clone for sigterm-clone-target itself is already forked off by the
+        # time that dependency is looked up and fails, so this exercises
+        # cancelling a clone that's still running rather than one that
+        # hasn't started yet. The fake git in tests/fakeaur/git sleeps and
+        # traps SIGTERM for this package name, writing a marker file only if
+        # it's actually signalled -- if auracle fell back to abandoning the
+        # child instead of signalling it, or signalled it with something
+        # ungraceful like SIGKILL, no marker would ever appear.
+        r = self.Auracle(['clone', '-r', 'sigterm-clone-target'])
+        self.assertNotEqual(r.process.returncode, 0)
+        self.assertIn('HTTP 503', r.process.stderr.decode())
+        self.assertTrue(
+            os.path.exists(
+                os.path.join(
+                    self.tempdir, 'sigterm-clone-target.sigterm-received'
+                )
+            )
+        )
+        self.assertPkgbuildNotExists('sigterm-clone-target')
+
 
 if __name__ == '__main__':
     auracle_test.main()

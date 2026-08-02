@@ -24,6 +24,16 @@ case $pkgname in
   yaourt)
     exit 1
     ;;
+  sigterm-clone-target)
+    # Used to verify that auracle cancels an in-flight clone by sending
+    # SIGTERM. Runs long enough to still be alive when the cancellation
+    # arrives; if signalled, records that here instead of ever reaching the
+    # mkdir/touch below.
+    sleep 5 &
+    sleep_pid=$!
+    trap 'kill "$sleep_pid" 2>/dev/null; touch "$AURACLE_TEST_TMPDIR/$pkgname.sigterm-received"; exit 0' TERM
+    wait "$sleep_pid"
+    ;;
 esac
 
 mkdir -p "$AURACLE_TEST_TMPDIR/$pkgname/.git"

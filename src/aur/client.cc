@@ -260,20 +260,34 @@ ClientImpl::~ClientImpl() {
 }
 
 void ClientImpl::Cancel(const ActiveRequests::value_type& request) {
-  std::visit(absl::Overload{
-                 [this](CURL* curl) {
-                   FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
-                                 /*dispatch_callback=*/false);
-                 },
-                 [this](sd_event_source* source) { FinishRequest(source); }},
+  std::visit(absl::Overload{[this](CURL* curl) {
+                              FinishRequest(curl, CURLE_ABORTED_BY_CALLBACK,
+                                            /*dispatch_callback=*/false);
+                            },
+                            [this](sd_event_source* source) {
+                              // Give git a chance to exit on its own. Leave the
+                              // source in active_requests_ -- it's reaped
+                              // normally by OnCloneExit once the process
+                              // actually exits, same as an unforced completion.
+                              if (sd_event_source_send_child_signal(
+                                      source, SIGTERM, nullptr, 0) >= 0) {
+                                return;
+                              }
+
+                              FinishRequest(source);
+                            }},
              request);
 }
 
 int ClientImpl::OnCancel(sd_event_source*, void* userdata) {
   auto* client = static_cast<ClientImpl*>(userdata);
 
-  while (!client->active_requests_.empty()) {
-    client->Cancel(*client->active_requests_.begin());
+  // Cancel() no longer always removes an entry synchronously (a SIGTERM'd
+  // git child is reaped asynchronously via its normal exit callback), so
+  // walk a snapshot rather than draining active_requests_ in place.
+  ActiveRequests snapshot = client->active_requests_;
+  for (const auto& request : snapshot) {
+    client->Cancel(request);
   }
 
   return 0;
@@ -574,6 +588,10 @@ void ClientImpl::QueueCloneRequest(const CloneRequest& request,
   sd_event_source* child;
   sd_event_add_child(event_, &child, pid, WEXITED, &ClientImpl::OnCloneExit,
                      handler);
+
+  // Backstop only: Cancel() sends SIGTERM itself and waits for the process
+  // to exit normally through OnCloneExit.
+  sd_event_source_set_child_process_own(child, true);
 
   active_requests_.emplace(child);
 }

@@ -1,0 +1,30 @@
+{
+  "version": 5,
+  "type": "multiinfo",
+  "resultcount": 1,
+  "results": [
+    {
+      "ID": 900001,
+      "Name": "sigterm-clone-target",
+      "PackageBaseID": 900001,
+      "PackageBase": "sigterm-clone-target",
+      "Version": "1.0-1",
+      "Description": "fixture for testing cancellation of an in-flight clone",
+      "URL": "https://example.invalid",
+      "NumVotes": 0,
+      "Popularity": 0,
+      "OutOfDate": null,
+      "Maintainer": "falconindy",
+      "FirstSubmitted": 1600000000,
+      "LastModified": 1600000000,
+      "URLPath": "/cgit/aur.git/snapshot/sigterm-clone-target.tar.gz",
+      "Depends": [
+        "503"
+      ],
+      "License": [
+        "MIT"
+      ],
+      "Keywords": []
+    }
+  ]
+}
