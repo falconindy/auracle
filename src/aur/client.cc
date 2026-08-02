@@ -10,7 +10,6 @@
 #include <fstream>
 #include <string_view>
 #include <variant>
-#include <vector>
 
 #include "absl/container/flat_hash_set.h"
 #include "absl/functional/overload.h"
@@ -539,36 +538,36 @@ void ClientImpl::QueueCloneRequest(const CloneRequest& request,
     return;
   }
 
+  const auto url = request.Url(options_.baseurl);
   if (pid == 0) {
-    const auto url = request.Url(options_.baseurl);
-
-    std::vector<const char*> cmd;
     if (update) {
-      // clang-format off
-      cmd = {
-        "git",
-         "-C",
+      auto cmd = std::to_array<const char*>({
+        // clang-format off
+        "git (auracle)",
+        "-C",
         request.reponame().c_str(),
         "pull",
-         "--quiet",
-         "--rebase",
-         "--autostash",
-         "--ff-only",
-      };
+        "--quiet",
+        "--rebase",
+        "--autostash",
+        "--ff-only",
+        nullptr,
+      });
       // clang-format on
+      execvp("git", const_cast<char* const*>(cmd.data()));
     } else {
       // clang-format off
-      cmd = {
-        "git",
+      auto cmd = std::to_array<const char*>({
+        "git (auracle)",
         "clone",
         "--quiet",
         url.c_str(),
-      };
+        nullptr,
+      });
       // clang-format on
+      execvp("git", const_cast<char* const*>(cmd.data()));
     }
-    cmd.push_back(nullptr);
 
-    execvp(cmd[0], const_cast<char* const*>(cmd.data()));
     _exit(127);
   }
 
