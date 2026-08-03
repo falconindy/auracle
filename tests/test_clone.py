@@ -102,9 +102,7 @@ class TestClone(auracle_test.TestCase):
         self.assertIn('HTTP 503', r.process.stderr.decode())
         self.assertTrue(
             os.path.exists(
-                os.path.join(
-                    self.tempdir, 'sigterm-clone-target.sigterm-received'
-                )
+                os.path.join(self.tempdir, 'sigterm-clone-target.sigterm-received')
             )
         )
         self.assertPkgbuildNotExists('sigterm-clone-target')

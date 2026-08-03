@@ -8,6 +8,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <print>
 #include <string_view>
 #include <variant>
 
@@ -88,6 +89,8 @@ class ClientImpl : public Client {
   static int OnCloneExit(sd_event_source* s, const siginfo_t* si,
                          void* userdata);
   static int OnCancel(sd_event_source* s, void* userdata);
+  static int OnSigint(sd_event_source* s, const struct signalfd_siginfo* si,
+                      void* userdata);
 
   Options options_;
 
@@ -97,6 +100,7 @@ class ClientImpl : public Client {
   sigset_t saved_ss_{};
   sd_event* event_ = nullptr;
   sd_event_source* timer_ = nullptr;
+  sd_event_source* sigint_ = nullptr;
   bool cancelled_ = false;
 
   DebugLevel debug_level_ = DebugLevel::NONE;
@@ -232,9 +236,17 @@ ClientImpl::ClientImpl(Options options) : options_(std::move(options)) {
 
   sigset_t ss{};
   sigaddset(&ss, SIGCHLD);
+  sigaddset(&ss, SIGINT);
   sigprocmask(SIG_BLOCK, &ss, &saved_ss_);
 
   sd_event_default(&event_);
+
+  // Blocked above so sd-event can pick it up via signalfd instead of the
+  // default disposition tearing the process down immediately: a Ctrl-C
+  // should cancel in-flight work the same way an internal failure does
+  // (including giving an in-flight git clone a chance to react to SIGTERM),
+  // not abandon it mid-write.
+  sd_event_add_signal(event_, &sigint_, SIGINT, &ClientImpl::OnSigint, this);
 
   std::string_view debug = GetEnv("AURACLE_DEBUG");
   if (absl::ConsumePrefix(&debug, "requests:")) {
@@ -250,6 +262,7 @@ ClientImpl::~ClientImpl() {
   curl_global_cleanup();
 
   sd_event_source_unref(timer_);
+  sd_event_source_unref(sigint_);
   sd_event_unref(event_);
 
   sigprocmask(SIG_SETMASK, &saved_ss_, nullptr);
@@ -303,6 +316,14 @@ void ClientImpl::CancelAll() {
   sd_event_source* cancel;
   sd_event_add_defer(event_, &cancel, &ClientImpl::OnCancel, this);
   active_requests_.insert(cancel);
+}
+
+// static
+int ClientImpl::OnSigint(sd_event_source*, const struct signalfd_siginfo*,
+                         void* userdata) {
+  static_cast<ClientImpl*>(userdata)->CancelAll();
+
+  return 0;
 }
 
 // static
@@ -530,9 +551,15 @@ int ClientImpl::OnCloneExit(sd_event_source* source, const siginfo_t* si,
   handler->client()->FinishRequest(source);
 
   absl::Status status;
-  if (si->si_status != 0) {
-    status = absl::InternalError(
-        absl::StrCat("git exited with unexpected exit status ", si->si_status));
+  switch (si->si_status) {
+    case 0:
+      break;
+    case 15:
+      status = absl::CancelledError("cancelled");
+      break;
+    default:
+      status = absl::InternalError(absl::StrCat(
+          "git exited with unexpected exit status ", si->si_status));
   }
 
   return handler->Finalize(std::move(status));
@@ -556,7 +583,7 @@ void ClientImpl::QueueCloneRequest(const CloneRequest& request,
   if (pid == 0) {
     if (update) {
       auto cmd = std::to_array<const char*>({
-        // clang-format off
+          // clang-format off
         "git (auracle)",
         "-C",
         request.reponame().c_str(),

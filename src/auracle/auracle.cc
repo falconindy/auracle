@@ -134,7 +134,9 @@ bool RpcResponseIsFailure(const absl::StatusOr<aur::RpcResponse>& response) {
     return false;
   }
 
-  std::println(stderr, "error: {}", response.status().ToString());
+  if (!absl::IsCancelled(response.status())) {
+    std::println(stderr, "error: {}", response.status().ToString());
+  }
   return true;
 }
 
@@ -581,8 +583,10 @@ int Auracle::Clone(const std::vector<std::string>& args,
                 std::println("{} complete: {}", response.value().operation,
                              (fs::current_path() / pkgbase).string());
               } else {
-                std::println(stderr, "error: clone failed for {}: {}", pkgbase,
-                             response.status().ToString());
+                if (!absl::IsCancelled(response.status())) {
+                  std::println(stderr, "error: clone failed for {}: {}",
+                               pkgbase, response.status().ToString());
+                }
                 ret = -EIO;
               }
               return 0;
