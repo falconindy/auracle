@@ -338,7 +338,16 @@ int ClientImpl::DispatchSocketCallback(curl_socket_t s, int action,
                                        sd_event_source* io) {
   if (action == CURL_POLL_REMOVE) {
     sd_event_source_unref(io);
-    return CheckFinished();
+
+    // Don't call CheckFinished() here: this callback runs from inside
+    // curl_multi_socket_action(), and CheckFinished() may run a completion
+    // callback that queues a new request via curl_multi_add_handle(). Calling
+    // back into the multi API while still inside curl's own call stack is
+    // recursive use that libcurl rejects (CURLM_RECURSIVE_API_CALL as of
+    // 8.22.0). OnCurlIO()/OnCurlTimer() already call CheckFinished() right
+    // after curl_multi_socket_action() returns, so finished transfers are
+    // picked up there instead, safely outside of curl's callback stack.
+    return 0;
   }
 
   uint32_t events = 0;
